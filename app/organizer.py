@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 import hmac
 import secrets
 
-from flask import Blueprint, current_app, jsonify, request, session
+from flask import Blueprint, current_app, jsonify, request, session, render_template
 from sqlalchemy.exc import SQLAlchemyError
 from werkzeug.exceptions import BadRequest
 from werkzeug.security import check_password_hash
@@ -145,3 +145,9 @@ def update_settings():
             raise InputError("O prazo precisa informar o fuso horário.")
     store().configure(venue, deadline, datetime.now(timezone.utc))
     return jsonify(settings_safe(store().settings()))
+
+
+@organizer.get("/organizar")
+def organizer_page():
+    # No private data in this template. Browser fetches it only after session login.
+    return render_template("admin.html")

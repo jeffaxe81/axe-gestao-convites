@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>Organização — Aniversário da Isadora</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='site.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='admin.css') }}">
+  <script src="{{ url_for('static', filename='admin.js') }}" defer></script>
+</head>
+<body>
+  <main class="admin-shell">
+    <header class="admin-header">
+      <div class="flowers" aria-hidden="true">🌼 ✿ 🌼</div>
+      <p class="eyebrow">Área reservada</p>
+      <h1>Festa da <span>Isadora</span></h1>
+      <p>Organização das confirmações de presença</p>
+    </header>
+
+    <section class="panel" id="login-panel" aria-labelledby="login-title">
+      <h2 id="login-title">Acesso dos organizadores</h2>
+      <p class="muted">Entre com suas credenciais para consultar as respostas.</p>
+      <div class="notice error" id="login-error" role="alert" hidden></div>
+      <form id="login-form">
+        <div class="field"><label for="admin-username">Usuário</label>
+          <input type="text" id="admin-username" autocomplete="username" required></div>
+        <div class="field"><label for="admin-password">Senha</label>
+          <input type="password" id="admin-password" autocomplete="current-password" required></div>
+        <button type="submit" class="primary full" id="login-btn">Entrar no painel</button>
+      </form>
+    </section>
+
+    <section id="dashboard-panel" hidden aria-label="Painel reservado dos organizadores">
+      <div class="admin-toolbar"><h2>Visão geral</h2><button type="button" id="logout-btn" class="secondary">Sair</button></div>
+      <p class="muted">Somente pessoas com presença confirmada entram nos contadores.</p>
+      <div class="metric-grid">
+        <article class="metric"><span>Participantes confirmados</span><strong data-testid="total-count">0</strong></article>
+        <article class="metric"><span>Contagem do buffet</span><strong data-testid="buffet-count">0</strong></article>
+        <article class="metric"><span>Crianças até 5 anos</span><strong data-testid="young-count">0</strong></article>
+        <article class="metric"><span>Lembrancinhas (0–12 anos)</span><strong data-testid="souvenir-count">0</strong></article>
+        <article class="metric"><span>Acima de 12 anos</span><strong data-testid="over-count">0</strong></article>
+      </div>
+      <p id="buffet-alert" class="notice" hidden></p>
+
+      <div class="list-grid">
+        <section class="admin-card"><h3>Confirmações</h3><ul id="confirmed-list" class="data-list"></ul></section>
+        <section class="admin-card"><h3>Não comparecerão</h3><ul id="declined-list" class="data-list"></ul></section>
+      </div>
+      <section class="admin-card"><h3>Crianças para lembrancinhas</h3><p class="muted">Lista nominal das crianças de zero a doze anos.</p>
+        <ul id="souvenir-list" class="data-list"></ul></section>
+
+      <section class="admin-card" aria-labelledby="settings-title">
+        <h3 id="settings-title">Configurações da festa</h3>
+        <p class="muted">O endereço do convite não muda ao alterar o local.</p>
+        <form id="settings-form">
+          <div class="field"><label for="venue-input">Local da festa</label>
+            <input type="text" id="venue-input" data-testid="venue" maxlength="240" placeholder="Local a confirmar"></div>
+          <div class="field"><label for="deadline-input">Prazo final para editar confirmações</label>
+            <input type="datetime-local" id="deadline-input">
+            <small>Horário de Brasília (America/Sao_Paulo). Deixe vazio para permitir edições.</small></div>
+          <div id="settings-status" role="status" aria-live="polite"></div>
+          <button type="submit" id="save-settings" class="primary full">Salvar configurações</button>
+        </form>
+      </section>
+    </section>
+    <footer>Gerenciador de convites — acesso privado 🌼</footer>
+  </main>
+</body>
+</html>
