@@ -5,7 +5,7 @@ Aniversário de dois anos da Isadora — 13/12/2026, 15h, America/Sao_Paulo. Loc
 **Estado: desenvolvimento (não disponível para convidados).**
 
 ## Barra de avanço verificado
-`[██░░░░░░░░░░░░░░] 14% — 1 de 7 etapas completas`
+`[███████░░░░░░░░░] 43% — 3 de 7 etapas com testes aprovados no CI`
 
 Detalhes: [docs/progresso.md](docs/progresso.md).
 
@@ -16,24 +16,24 @@ Detalhes: [docs/progresso.md](docs/progresso.md).
 - Modelo de dados com UUID, revisão e idempotência; transações e segredo privado de edição.
 - Migrations iniciais, ambiente Docker/Compose preparatório e teste MySQL para CI.
 
-### Testes locais
+### Testes automatizados
 ```bash
 python -m pip install -r requirements.txt -r requirements-dev.txt
 python -m pytest -q
 ```
-Em 18/10/2026: **35 passaram e 1 teste foi ignorado** porque não havia MySQL acessível. A integração com banco real é testada pelo workflow do GitHub Actions, quando executado.
+Em 18/10/2026: **49 testes aprovados no GitHub Actions**, incluindo teste de persistência com MySQL 8.4 real. Referência: https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/39171820330. Testes manuais em dispositivos e Docker Compose completo ainda pendentes.
 
-### Docker (ainda não operacional)
+### Docker (em desenvolvimento, não liberar publicamente)
 ```bash
 cp .env.example .env
 # editar as quatro credenciais e segredos para valores aleatórios e fortes
 docker compose up -d --build --wait
 ```
-A API Flask ainda será implementada; **não executar como ambiente real nesta etapa**.
+A API pública já está implementada; o painel autenticado e as interfaces ainda estão pendentes. **Não publicar a aplicação para convidados nesta etapa**.
 
 ### Planejamento
 - [Especificação](docs/superpowers/specs/2026-10-18-isadora-release-1-design.md)
 - [Plano](docs/superpowers/plans/2026-10-18-isadora-release-1.md)
 - [Progresso](docs/progresso.md)
 
-Página pública, hospedagem, domínio e distribuição de PDF/WhatsApp ainda não disponíveis. Não versionar credenciais nem nomes reais.
+A interface pública, o painel, a hospedagem, o domínio e a distribuição do PDF/WhatsApp ainda não estão disponíveis. Não versionar credenciais nem nomes reais.

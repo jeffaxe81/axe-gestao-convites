@@ -2,18 +2,20 @@
 
 Data de referência: 18/10/2026.
 
-**Barra de etapas verificadas** (cada uma vale 1/7): `[██░░░░░░░░░░░░░░] 14%`
+**Barra de etapas verificadas** (cada uma vale 1/7): `[███████░░░░░░░░░] 43%`
 
 | Etapa | Situação | Evidência |
 | --- | --- | --- |
-| 1. Regras e prazo | Concluída | 25 testes locais passando |
-| 2. MySQL e transações | Implementação inicial, validação incompleta | 10 testes com SQLite aprovados; MySQL real aguarda CI |
-| 3. API pública e edição | Não iniciada | Aguardando |
-| 4. Autenticação e painel | Não iniciada | Aguardando |
-| 5. Página do convidado | Não iniciada | Aguardando |
-| 6. Interface dos organizadores | Não iniciada | Aguardando |
-| 7. Docker, testes E2E e operação | Preparação iniciada | Compose criado mas não testado |
+| 1. Regras e prazo | Concluída | Regras de idade/prazo cobertas nos testes |
+| 2. MySQL e transações | Concluída na validação automatizada inicial | Integração MySQL real incluída no CI; concorrência de estresse reservada à etapa 7 |
+| 3. API pública e edição | Concluída na validação automatizada inicial | HTTP com autenticação por token, revisão, idempotência, expiração, privacidade e health |
+| 4. Autenticação e painel | Não iniciada | Pendente |
+| 5. Página do convidado | Não iniciada | Pendente |
+| 6. Interface dos organizadores | Não iniciada | Pendente |
+| 7. Docker, testes E2E e operação | Preparação iniciada | Dockerfile, Compose e CI existentes; teste real do Compose e navegadores pendentes |
 
-Total local: **35 testes passando, 1 teste MySQL ignorado por ausência de banco**. Docker não estava disponível no ambiente de desenvolvimento local. O aplicativo web ainda não está pronto, portanto não divulgar link de RSVP.
+**Evidência automatizada:** 49 testes aprovados em Python 3.12 no GitHub Actions (MySQL 8.4), execução: https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/39171820330.
 
-Os artefatos de Docker nesta etapa são preparatórios: o aplicativo Flask e o entrypoint `wsgi.py` serão criados na etapa de API.
+**Limitações:** os testes HTTP atuais usam SQLite como fixture isolada; o teste de persistência dedicado exercita MySQL real. O Compose não foi exercitado integralmente e testes reais em Android/iPhone ainda não foram feitos. Ainda não divulgar link para convidados, pois faltam interfaces e painel autenticado.
+
+**Critério do percentual:** etapas integralmente implementadas com a bateria automatizada inicial aprovada / 7, arredondadas. O trabalho de estresse, operação e dispositivos é contabilizado exclusivamente na etapa 7. Não transformar progresso técnico em alegação de liberação de produção.
