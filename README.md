@@ -8,7 +8,7 @@ Aniversário de dois anos da Isadora — 13/12/2026, às 15h (America/Sao_Paulo)
 
 `[█████████░░░░░░░] 86% — 6 de 7 etapas completas`
 
-Ver [docs/progresso.md](docs/progresso.md). Os testes automatizados de navegador passaram. A liberação para uso real ainda depende da etapa final de operação e segurança.
+Ver [docs/progresso.md](docs/progresso.md). Os testes automatizados de navegador passaram. A liberação para uso real ainda depende da revisão de segurança e do checklist em Android e iPhone reais.
 
 ## Implementado
 
@@ -25,8 +25,8 @@ O painel visual dos organizadores está implementado, com login, listas, indicad
 
 ## Testes
 
-**69 testes aprovados**, incluindo MySQL real, API HTTP e oito testes de navegador Chromium (convidado e organizador).
-Evidência: https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/39173412037. Ver execuções em:
+**71 testes aprovados** com MySQL real, API, concorrência (20 requisições paralelas), e Chromium. O Docker Compose também passou em um smoke test de inicialização, recriação e preservação de dados.
+Evidência: https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/39174083670. Ver execuções em:
 https://github.com/jeffaxe81/axe-gestao-convites/actions
 
 Para executar:
@@ -62,5 +62,7 @@ A página pública recebe somente informações de RSVP, não as regras financei
 - [Especificação](docs/superpowers/specs/2026-10-18-isadora-release-1-design.md)
 - [Plano](docs/superpowers/plans/2026-10-18-isadora-release-1.md)
 - [Barra de progresso](docs/progresso.md)
+- [Evidências verificadas](docs/validation.md)
+- [Checklist manual pendente](docs/manual-checklist.md)
 
 A produção e o envio do convite em PDF pelo WhatsApp são atividades externas a este aplicativo. Domínio, hospedagem e validação manual Android/iPhone estão pendentes.

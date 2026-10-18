@@ -1,21 +1,21 @@
-# Evidências de validação da Release 1 — 18/10/2026
+# Validação — Gerenciador de Convites da Isadora
 
-## Validado automaticamente
+## Automatizado e comprovado em 18/10/2026
 
-- GitHub Actions: https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/39173412037
-- Resultado: **69 testes aprovados** em Python 3.12.
-- MySQL 8.4 no CI: cenário de transações e idempotência com banco real.
-- Regras, persistência isolada, API, autenticação e checagens de privacidade HTTP.
-- Chromium: confirmação positiva, recusa, edição pelo link privado, nomes renderizados como texto, layout mobile sem rolagem horizontal.
-- Chromium: login dos organizadores, listas, totais, configuração do local/prazo, logout e login inválido.
-- Código verificado: commit 13f9a1ba85adbe051b42e6d4d0e1917b810b710d.
+GitHub Actions: https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/39174083670
 
-## Ainda não comprovado
+- **71 testes aprovados** em Python 3.12, MySQL 8.4 e Chromium.
+- Regras de RSVP, idades 0, 5, 6, 12, 13, recusa, prazo, idempotência e revisão.
+- Testes de persistência em MySQL real e concorrência: 20 requisições com chave idêntica, 20 famílias diferentes; totais exatos.
+- API pública, privacidade das famílias e do buffet, sessão administrativa e CSRF.
+- Headless Chromium: fluxo positivo, recusa, edição, nomes com HTML exibidos como texto, layout mobile; painel com login, contadores, alterações e logout.
+- Docker Compose: imagem construída, MySQL/application saudáveis, envio repetido, login, configurações e recriação dos serviços com mesmo volume.
+- Mensagem de smoke test registrada no CI: PASS: idempotency, RSVP token, MySQL volume and event settings survive recreation.
 
-- Inicialização integral do Docker Compose com todos os serviços e dados em volume persistente.
-- Teste intensivo de requisições concorrentes, indisponibilidade do banco e recuperação.
-- Link aberto pelo PDF recebido em WhatsApp em dispositivos Android e iPhone reais.
-- Configuração pública HTTPS/DNS e políticas de monitoração, backup e retenção.
-- Revisão independente de segurança antes de aceitar dados reais.
+## Não executado nesta sessão
 
-Não declarar ambiente de produção liberado antes dessas verificações. Nenhuma hospedagem, domínio, senha ou credencial de produção foi provisionado.
+- Checklist físico Android e iPhone recebendo PDF com link via WhatsApp; ambos ainda sem validação.
+- Homologação de domínio, HTTPS/TLS, proxy reverso, certificados e backup/restauração em hospedagem real.
+- Auditoria independente de segurança, rate limiting global e procedimento de recuperação operacional.
+
+Não criar um link público de convite nem marcar a Release 1 como pronta para produção sem aprovação desses pontos.

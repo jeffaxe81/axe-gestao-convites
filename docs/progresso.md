@@ -2,22 +2,26 @@
 
 Referência: 18/10/2026.
 
-**Barra de progresso verificado:** [██████████████░░] 86% — 6 de 7 etapas concluídas em testes automatizados.
+**Barra de etapas finalizadas:** [██████████████░░] 86% — 6 de 7 etapas integralmente aprovadas.
 
 | Etapa | Situação | Evidência |
 | --- | --- | --- |
 | 1. Regras e prazo | Concluída | Testes de idade, presença e prazo |
-| 2. Banco MySQL e transações | Concluída nos testes iniciais | Persistência com MySQL real no CI; estresse completo na etapa 7 |
-| 3. API pública e edição | Concluída | HTTP, idempotência, tokens, revisão e privacidade |
-| 4. Autenticação e painel de dados | Concluída | Hash de senha, sessão, CSRF, listas e configuração |
-| 5. Interface do convidado | Concluída nos testes Chromium | Presença, recusa, acompanhantes, edição, XSS e layout mobile |
-| 6. Interface dos organizadores | Concluída nos testes Chromium | Login, listas, contadores, local/prazo e logout |
-| 7. Operação e ensaios finais | Pendente | Concorrência, Docker Compose, persistência e checklist Android/iPhone |
+| 2. MySQL e transações | Concluída | MySQL 8.4, idempotência e migração |
+| 3. API pública e edição | Concluída | Tokens, privacidade e revisão |
+| 4. Acesso privado | Concluída | Sessões, CSRF e totais |
+| 5. Interface pública | Concluída | Chromium mobile com confirmação, recusa e edição |
+| 6. Interface dos organizadores | Concluída | Chromium com login, listas, configuração e logout |
+| 7. Operação final | Parcialmente validada | 71 testes, concorrência com 20 requisições, Compose e persistência OK; checklist em Android/iPhone e revisão de segurança pendentes |
 
-**Evidência:** 69 testes passaram no GitHub Actions (Python 3.12, MySQL 8.4 e Chromium): https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/39173412037
+**Evidência operacional:** https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/39174083670
+- 71 testes passaram.
+- Docker Compose construiu/subiu os serviços com MySQL em volume.
+- Confirmação repetida não duplicou registros; token permaneceu válido após recriação dos serviços.
+- Configuração do local e contadores preservados após reinício com o mesmo volume.
 
-**Pendências:** Docker Compose ainda não validado de ponta a ponta, concorrência extensiva, ensaio de recuperação e checklist real Android/iPhone. Não confundir Chromium automatizado com testes físicos de aparelhos. Domínio e hospedagem HTTPS também pendentes.
+**Ainda pendente:** testes manuais Android e iPhone abrindo o link vindo de PDF/WhatsApp, revisão de configuração pública HTTPS e revisão final de segurança. Não declarar produção liberada.
 
-**Percentual:** etapas aprovadas / 7, arredondado. Concluir a última etapa exige validações objetivas, não apenas código enviado.
+**Regra de porcentagem:** etapas concluídas / 7, arredondadas. Enquanto a última etapa tiver pendências obrigatórias, o total permanece em 86%.
 
-**Escopo:** aniversário da Isadora em 13/12/2026 às 15h, America/Sao_Paulo. Local configurável; contadores e limite de buffet estritamente internos. PDF e WhatsApp não integram esta release.
+**Evento:** 13/12/2026 às 15h, America/Sao_Paulo, local configurável; contagem de buffet só interna, 40 como alerta, não bloqueio. O aplicativo não cria nem distribui o PDF do convite.
