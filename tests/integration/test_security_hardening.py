@@ -10,7 +10,7 @@ from tests.integration.test_public_api import store
 
 @pytest.fixture
 def client(store):
-    app = create_app({"TESTING": True, "RSVP_STORE": store, "API_RATE_LIMIT": 0})
+    app = create_app({"TESTING": True, "RSVP_STORE": store, "API_RATE_LIMIT": 0, "SECRET_KEY": "hardening-test-only-secret"})
     return app.test_client()
 
 
