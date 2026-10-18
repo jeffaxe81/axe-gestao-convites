@@ -3,6 +3,7 @@
 Public responses have explicit whitelists; internal buffet data stays private.
 """
 import os
+from urllib.parse import urlsplit
 from datetime import timedelta
 
 from flask import Flask
@@ -40,6 +41,18 @@ def create_app(test_config=None):
         if not (saved_hash.startswith("scrypt:") or saved_hash.startswith("pbkdf2:")):
             raise RuntimeError("Configure ORGANIZER_PASSWORD_HASH com hash seguro Werkzeug.")
 
+    if not app.config.get("TESTING"):
+        public_url = os.environ.get("APP_PUBLIC_URL", "")
+        parsed = urlsplit(public_url)
+        is_local_http = parsed.scheme == "http" and parsed.hostname in (
+            "localhost", "127.0.0.1", "::1"
+        )
+        if not (parsed.scheme == "https" or is_local_http) or not parsed.hostname:
+            raise RuntimeError("Uma URL pública exige HTTPS; HTTP só é permitido em localhost.")
+        if parsed.username or parsed.password or parsed.query or parsed.fragment or parsed.path not in ("", "/"):
+            raise RuntimeError("APP_PUBLIC_URL deve conter apenas a origem do site.")
+        app.config["SESSION_COOKIE_SECURE"] = parsed.scheme == "https"
+
     store = app.config.get("RSVP_STORE")
     if store is None:
         secret = os.environ.get("TOKEN_SECRET", "")
@@ -66,7 +79,15 @@ def create_app(test_config=None):
     def harden(response):
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["Referrer-Policy"] = "no-referrer"
-        if response.mimetype == "application/json":
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; script-src 'self'; style-src 'self'; "
+            "connect-src 'self'; img-src 'self' data:; font-src 'self'; "
+            "form-action 'self'; base-uri 'none'; object-src 'none'; "
+            "frame-ancestors 'none'"
+        )
+        response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+        if response.mimetype in ("application/json", "text/html"):
             response.headers["Cache-Control"] = "no-store"
         return response
 
