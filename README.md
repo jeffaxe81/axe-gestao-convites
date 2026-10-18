@@ -6,9 +6,9 @@ Aniversário de dois anos da Isadora — 13/12/2026, às 15h (America/Sao_Paulo)
 
 ## Barra de avanço verificado
 
-`[█████████░░░░░░░] 57% — 4 de 7 etapas completas`
+`[█████████░░░░░░░] 86% — 6 de 7 etapas completas`
 
-Ver [docs/progresso.md](docs/progresso.md). Os testes com navegadores estão sendo implementados, e o aplicativo ainda exige validação antes do uso real.
+Ver [docs/progresso.md](docs/progresso.md). Os testes automatizados de navegador passaram. A liberação para uso real ainda depende da etapa final de operação e segurança.
 
 ## Implementado
 
@@ -21,12 +21,12 @@ Ver [docs/progresso.md](docs/progresso.md). Os testes com navegadores estão sen
 - API administrativa: confirmações/recusas, totais privados, lista de crianças, local e prazo.
 - Página pública com tema margaridas/amarelo-manteiga e formulário para celular, revisão, agradecimento e link privado para editar.
 
-O painel visual dos organizadores **ainda não foi implementado**.
+O painel visual dos organizadores está implementado, com login, listas, indicadores e ajustes do local/prazo.
 
 ## Testes
 
-No último CI validado antes dos testes de navegador: **61 testes aprovados**, incluindo MySQL real e testes HTTP.
-A suíte headless Chromium está sendo adicionada. Ver execuções em:
+**69 testes aprovados**, incluindo MySQL real, API HTTP e oito testes de navegador Chromium (convidado e organizador).
+Evidência: https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/39173412037. Ver execuções em:
 https://github.com/jeffaxe81/axe-gestao-convites/actions
 
 Para executar:
