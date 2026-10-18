@@ -1,0 +1,9 @@
+[project]
+name = "isadora-gestao-convites"
+version = "0.1.0"
+description = "Confirmacao de presenca para o aniversario da Isadora"
+requires-python = ">=3.12"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

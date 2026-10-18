@@ -1,0 +1,1 @@
+# Dependencias de producao serao fixadas junto da API Flask/MySQL (etapa 2/7).
