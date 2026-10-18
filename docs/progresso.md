@@ -12,15 +12,15 @@ Referência: 18/10/2026.
 | 4. Acesso privado | Concluída | Sessões, CSRF e totais |
 | 5. Interface pública | Concluída | Chromium mobile com confirmação, recusa e edição |
 | 6. Interface dos organizadores | Concluída | Chromium com login, listas, configuração e logout |
-| 7. Operação final | Parcialmente validada | 71 testes, concorrência com 20 requisições, Compose e persistência OK; checklist em Android/iPhone e revisão de segurança pendentes |
+| 7. Operação final | Parcialmente validada | 84 testes, concorrência com 20 requisições, Compose e persistência OK; checklist em Android/iPhone e revisão de segurança pendentes |
 
-**Evidência operacional:** https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/39174083670
-- 71 testes passaram.
+**Evidência operacional:** https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/39175630043
+- 84 testes passaram, incluindo CSP, X-Frame-Options, HTTPS obrigatório fora do localhost e proxy explicitamente confiável.
 - Docker Compose construiu/subiu os serviços com MySQL em volume.
 - Confirmação repetida não duplicou registros; token permaneceu válido após recriação dos serviços.
 - Configuração do local e contadores preservados após reinício com o mesmo volume.
 
-**Ainda pendente:** testes manuais Android e iPhone abrindo o link vindo de PDF/WhatsApp, revisão de configuração pública HTTPS e revisão final de segurança. Não declarar produção liberada.
+**Ainda pendente:** testes manuais Android e iPhone abrindo o link vindo de PDF/WhatsApp, instalação/homologação do proxy HTTPS e revisão independente de segurança. Não declarar produção liberada.
 
 **Regra de porcentagem:** etapas concluídas / 7, arredondadas. Enquanto a última etapa tiver pendências obrigatórias, o total permanece em 86%.
 

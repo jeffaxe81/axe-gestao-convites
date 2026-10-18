@@ -25,8 +25,8 @@ O painel visual dos organizadores está implementado, com login, listas, indicad
 
 ## Testes
 
-**71 testes aprovados** com MySQL real, API, concorrência (20 requisições paralelas), e Chromium. O Docker Compose também passou em um smoke test de inicialização, recriação e preservação de dados.
-Evidência: https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/39174083670. Ver execuções em:
+**84 testes aprovados** com MySQL real, API, concorrência, Chromium e proteção HTTP. Docker Compose validado com reinício e persistência de dados.
+Evidência: https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/39175630043. Ver execuções em:
 https://github.com/jeffaxe81/axe-gestao-convites/actions
 
 Para executar:
@@ -37,7 +37,7 @@ python -m playwright install --with-deps chromium
 python -m pytest -q
 ```
 
-## Execução local com Docker (ainda em validação)
+## Execução local com Docker (validada no CI; produção pendente)
 
 ```bash
 cp .env.example .env
@@ -55,7 +55,9 @@ python -c "from werkzeug.security import generate_password_hash; import getpass;
 
 Copie o hash para o arquivo privado .env. Coloque o valor entre aspas simples porque ele contém sinais de dólar. Nunca versione credenciais reais.
 
-A página pública recebe somente informações de RSVP, não as regras financeiras do buffet. Em produção, usar domínio HTTPS e segredos fortes.
+A página pública recebe somente informações de RSVP, não as regras financeiras do buffet. A porta 8080 é vinculada a `127.0.0.1`; acesso externo requer proxy HTTPS no mesmo servidor. O ambiente de produção ainda não foi homologado.
+
+Não habilite `TRUSTED_PROXY_HOPS=1` sem configurar um proxy local que SOBRESCREVA `X-Forwarded-For`. Veja o procedimento de segurança e os riscos remanescentes na documentação.
 
 ## Documentação
 
@@ -64,5 +66,6 @@ A página pública recebe somente informações de RSVP, não as regras financei
 - [Barra de progresso](docs/progresso.md)
 - [Evidências verificadas](docs/validation.md)
 - [Checklist manual pendente](docs/manual-checklist.md)
+- [Segurança para publicação e riscos](docs/security-deployment.md)
 
 A produção e o envio do convite em PDF pelo WhatsApp são atividades externas a este aplicativo. Domínio, hospedagem e validação manual Android/iPhone estão pendentes.

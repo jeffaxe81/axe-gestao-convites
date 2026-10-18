@@ -26,6 +26,8 @@ Todas as caixas abaixo permanecem desmarcadas até testes reais. Registrar data,
 
 ## Operação e liberação
 - [ ] Confirmar DNS, certificado TLS, reverse proxy e cookies Secure em produção.
+- [ ] Se ativar TRUSTED_PROXY_HOPS=1, conferir que a aplicação não é exposta diretamente e o proxy substitui X-Forwarded-For (nunca repassa valor arbitrário do cliente).
+- [ ] Conferir limites distribuídos no proxy/WAF, porque o rate limit do Flask é apenas por processo.
 - [ ] Configurar autenticação/segredos fortes sem arquivos sensíveis versionados.
 - [ ] Configurar backups, testar restauração e definir retenção/eliminação de dados pessoais.
 - [ ] Registrar aprovador técnico antes de compartilhar o convite.

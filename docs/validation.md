@@ -2,12 +2,14 @@
 
 ## Automatizado e comprovado em 18/10/2026
 
-GitHub Actions: https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/39174083670
+GitHub Actions: https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/39175630043
 
-- **71 testes aprovados** em Python 3.12, MySQL 8.4 e Chromium.
+- **84 testes aprovados** em Python 3.12, MySQL 8.4 e Chromium.
 - Regras de RSVP, idades 0, 5, 6, 12, 13, recusa, prazo, idempotência e revisão.
 - Testes de persistência em MySQL real e concorrência: 20 requisições com chave idêntica, 20 famílias diferentes; totais exatos.
 - API pública, privacidade das famílias e do buffet, sessão administrativa e CSRF.
+- Testes de cabeçalhos CSP, X-Frame-Options, Cache-Control, Referrer-Policy, proteção da URL HTTPS, porta HTTP ligada apenas em loopback.
+- Testes de proxy: sem confiança explícita, X-Forwarded-For é ignorado; com um proxy confiável, o limitador distingue os visitantes.
 - Headless Chromium: fluxo positivo, recusa, edição, nomes com HTML exibidos como texto, layout mobile; painel com login, contadores, alterações e logout.
 - Docker Compose: imagem construída, MySQL/application saudáveis, envio repetido, login, configurações e recriação dos serviços com mesmo volume.
 - Mensagem de smoke test registrada no CI: PASS: idempotency, RSVP token, MySQL volume and event settings survive recreation.
