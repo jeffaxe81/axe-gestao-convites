@@ -1,28 +1,19 @@
 # Evolução do projeto — Gerenciador de Convites da Isadora
 
-Atualizado em 18/10/2026. Percentual calculado por **etapas concluídas e testadas** (1 de 7 = 14%), não por horas previstas.
+Data de referência: 18/10/2026.
 
-`[██░░░░░░░░░░░░░░] 14%`
+**Barra de etapas verificadas** (cada uma vale 1/7): `[██░░░░░░░░░░░░░░] 14%`
 
-| Etapa | Status | Evidência |
+| Etapa | Situação | Evidência |
 | --- | --- | --- |
-| 1. Regras e prazo | Concluída localmente | 25 testes pytest aprovados (Python 3.13.5) |
-| 2. MySQL e transações | Pendente | Sem integração executada |
-| 3. API pública e edição | Pendente | Sem integração executada |
-| 4. Autenticação e painel privado | Pendente | Sem integração executada |
-| 5. Página mobile do convidado | Pendente | Sem testes em navegador |
-| 6. Interface de organizadores | Pendente | Sem testes em navegador |
-| 7. Docker, concorrência, CI e validação final | Pendente | Sem execução em Docker |
+| 1. Regras e prazo | Concluída | 25 testes locais passando |
+| 2. MySQL e transações | Implementação inicial, validação incompleta | 10 testes com SQLite aprovados; MySQL real aguarda CI |
+| 3. API pública e edição | Não iniciada | Aguardando |
+| 4. Autenticação e painel | Não iniciada | Aguardando |
+| 5. Página do convidado | Não iniciada | Aguardando |
+| 6. Interface dos organizadores | Não iniciada | Aguardando |
+| 7. Docker, testes E2E e operação | Preparação iniciada | Compose criado mas não testado |
 
-## Entregue agora
+Total local: **35 testes passando, 1 teste MySQL ignorado por ausência de banco**. Docker não estava disponível no ambiente de desenvolvimento local. O aplicativo web ainda não está pronto, portanto não divulgar link de RSVP.
 
-- Validação de respostas positivas e negativas, participantes, principal, nomes e idade.
-- Faixas de idade 0–5, 6–12 e acima de 12, contagens de buffet e lembrancinhas.
-- Edição sem prazo configurado ou encerramento no instante limite.
-- 25 testes de unidade passando; nenhuma dependência de banco ou frontend na etapa 1.
-
-## Ainda não validado
-
-O aplicativo web, API, persistência, autenticação, Docker, concorrência, CI e testes mobile ainda não foram implementados nem validados. Não divulgar link de RSVP até completar essas etapas. A informação do buffet não poderá aparecer na página pública.
-
-Referências: especificação e plano em docs/superpowers.
+Os artefatos de Docker nesta etapa são preparatórios: o aplicativo Flask e o entrypoint `wsgi.py` serão criados na etapa de API.

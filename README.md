@@ -1,36 +1,39 @@
 # Gerenciador de Convites da Isadora 🌼
 
-Projeto para confirmação de presença no aniversário de **2 anos da Isadora**, dia **13/12/2026 às 15h** (America/Sao_Paulo). O local será configurado depois.
+Aniversário de dois anos da Isadora — 13/12/2026, 15h, America/Sao_Paulo. Local a confirmar.
 
-**Estado:** desenvolvimento iniciado. As regras de negócio foram implementadas e testadas; **o aplicativo ainda não recebe confirmações**.
+**Estado: desenvolvimento (não disponível para convidados).**
 
-## Progresso da release 1
+## Barra de avanço verificado
+`[██░░░░░░░░░░░░░░] 14% — 1 de 7 etapas completas`
 
-`[██░░░░░░░░░░░░░░] 14% — 1/7 etapas verificadas`
+Detalhes: [docs/progresso.md](docs/progresso.md).
 
-O [andamento detalhado](docs/progresso.md) separa o que funciona daquilo que falta validar.
+### Implementado
+- Regras de RSVP positivo/negativo, familiares e faixas de idade.
+- 0–5 anos: lembrancinha, sem consumir buffet; 6–12: buffet e lembrancinha; acima de 12: buffet.
+- Limite de 40 apenas para alerta interno; recusas não contam.
+- Modelo de dados com UUID, revisão e idempotência; transações e segredo privado de edição.
+- Migrations iniciais, ambiente Docker/Compose preparatório e teste MySQL para CI.
 
-## Contagens
-
-- 0–5 anos: lembrancinha, sem contar para o buffet.
-- 6–12 anos: lembrancinha e buffet.
-- Acima de 12 anos: buffet, sem lembrancinha infantil.
-- Recusas: zero participantes.
-- Limite de buffet 40: **alerta interno**, nunca regra pública de bloqueio.
-
-## Rodar testes existentes
-
+### Testes locais
 ```bash
-python -m pip install -r requirements-dev.txt
-python -m pytest tests/unit/test_domain.py -q
+python -m pip install -r requirements.txt -r requirements-dev.txt
+python -m pytest -q
 ```
+Em 18/10/2026: **35 passaram e 1 teste foi ignorado** porque não havia MySQL acessível. A integração com banco real é testada pelo workflow do GitHub Actions, quando executado.
 
-Em 18/10/2026: **25 passed**, Python 3.13.5, pytest 9.0.2. Produção planejada com Python 3.12, Flask, MySQL e Docker (ainda sem validação).
+### Docker (ainda não operacional)
+```bash
+cp .env.example .env
+# editar as quatro credenciais e segredos para valores aleatórios e fortes
+docker compose up -d --build --wait
+```
+A API Flask ainda será implementada; **não executar como ambiente real nesta etapa**.
 
-## Planejamento
-
-- [Especificação da release 1](docs/superpowers/specs/2026-10-18-isadora-release-1-design.md)
-- [Plano de implementação](docs/superpowers/plans/2026-10-18-isadora-release-1.md)
+### Planejamento
+- [Especificação](docs/superpowers/specs/2026-10-18-isadora-release-1-design.md)
+- [Plano](docs/superpowers/plans/2026-10-18-isadora-release-1.md)
 - [Progresso](docs/progresso.md)
 
-A página pública, domínio, hospedagem e envio do convite em PDF pelo WhatsApp ainda não estão disponíveis. Não versionar senhas nem dados reais de convidados.
+Página pública, hospedagem, domínio e distribuição de PDF/WhatsApp ainda não disponíveis. Não versionar credenciais nem nomes reais.
