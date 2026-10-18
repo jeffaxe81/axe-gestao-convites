@@ -19,7 +19,7 @@ def _store():
     return current_app.extensions["isadora_store"]
 
 
-def _error(status, code, message):
+def error_response(status, code, message):
     return jsonify({"error": {"code": code, "message": message}}), status
 
 
@@ -51,33 +51,33 @@ def restrict_guest_requests():
     if request.path.startswith("/api/rsvps/") or request.path == "/api/rsvps":
         limiter = current_app.extensions["isadora_rate_limiter"]
         if not limiter.allow(request.remote_addr or "unknown"):
-            return _error(429, "TOO_MANY_REQUESTS", "Tente novamente mais tarde.")
+            return error_response(429, "TOO_MANY_REQUESTS", "Tente novamente mais tarde.")
 
 
 @public.errorhandler(InputError)
 def handle_invalid(_error):
-    return _error(422, "INVALID_INPUT", str(_error))
+    return error_response(422, "INVALID_INPUT", str(_error))
 
 
 @public.errorhandler(BadRequest)
 def handle_bad_json(_error):
-    return _error(400, "INVALID_JSON", "JSON inválido.")
+    return error_response(400, "INVALID_JSON", "JSON inválido.")
 
 
 @public.errorhandler(AccessDenied)
 def handle_access_denied(_error):
-    return _error(401, "UNAUTHORIZED", "Acesso não autorizado.")
+    return error_response(401, "UNAUTHORIZED", "Acesso não autorizado.")
 
 
 @public.errorhandler(EditClosed)
 def handle_expired(_error):
-    return _error(403, "EDIT_CLOSED", "O prazo de edição foi encerrado.")
+    return error_response(403, "EDIT_CLOSED", "O prazo de edição foi encerrado.")
 
 
 @public.errorhandler(IdempotencyConflict)
 @public.errorhandler(RevisionConflict)
 def handle_conflict(_error):
-    return _error(409, "CONFLICT", "Esta operação entra em conflito com uma resposta existente.")
+    return error_response(409, "CONFLICT", "Esta operação entra em conflito com uma resposta existente.")
 
 
 @public.errorhandler(SQLAlchemyError)
@@ -85,7 +85,7 @@ def handle_conflict(_error):
 @public.errorhandler(OSError)
 def handle_unavailable(_error):
     # Never expose SQL/credentials, connection strings, names or secrets.
-    return _error(503, "SERVICE_UNAVAILABLE", "Serviço temporariamente indisponível.")
+    return error_response(503, "SERVICE_UNAVAILABLE", "Serviço temporariamente indisponível.")
 
 
 @public.get("/health/live")
@@ -98,7 +98,7 @@ def ready():
     try:
         _store().settings()
     except Exception:
-        return _error(503, "SERVICE_UNAVAILABLE", "Serviço temporariamente indisponível.")
+        return error_response(503, "SERVICE_UNAVAILABLE", "Serviço temporariamente indisponível.")
     return jsonify({"status": "ready"})
 
 
