@@ -1,21 +1,23 @@
-# Evolução do projeto — Gerenciador de Convites da Isadora
+# Evolução — gerenciador de convites da Isadora
 
-Data de referência: 18/10/2026.
+Referência: 18/10/2026.
 
-**Barra de etapas verificadas** (cada uma vale 1/7): `[███████░░░░░░░░░] 43%`
+**Barra de progresso verificado:** `[█████████░░░░░░░] 57%` — 4 de 7 etapas aprovadas em testes automatizados.
 
 | Etapa | Situação | Evidência |
 | --- | --- | --- |
-| 1. Regras e prazo | Concluída | Regras de idade/prazo cobertas nos testes |
-| 2. MySQL e transações | Concluída na validação automatizada inicial | Integração MySQL real incluída no CI; concorrência de estresse reservada à etapa 7 |
-| 3. API pública e edição | Concluída na validação automatizada inicial | HTTP com autenticação por token, revisão, idempotência, expiração, privacidade e health |
-| 4. Autenticação e painel | Não iniciada | Pendente |
-| 5. Página do convidado | Não iniciada | Pendente |
-| 6. Interface dos organizadores | Não iniciada | Pendente |
-| 7. Docker, testes E2E e operação | Preparação iniciada | Dockerfile, Compose e CI existentes; teste real do Compose e navegadores pendentes |
+| 1. Regras e prazo | Concluída | Testes de idade, presença e limite temporal |
+| 2. Banco MySQL e transações | Concluída inicialmente | Testes de persistência com MySQL real no CI; estresse na etapa 7 |
+| 3. API RSVP/edição | Concluída inicialmente | HTTP, tokens, idempotência, privacidade, erros e revisão |
+| 4. Autenticação e painel de dados | Concluída inicialmente | Sessão, CSRF, login, listas privadas, contadores e configuração |
+| 5. Página do convidado | Interface implementada; E2E em validação | Formulário responsivo, recusa, acompanhante, revisão, link privado, suíte Chromium |
+| 6. Interface dos organizadores | Pendente | Telas de login, listas e configurações |
+| 7. Operação e ensaios finais | Pendente | Docker Compose real, concorrência, persistência, Android/iPhone, revisão de segurança |
 
-**Evidência automatizada:** 49 testes aprovados em Python 3.12 no GitHub Actions (MySQL 8.4), execução: https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/39171820330.
+**Testes aprovados:** 61 no GitHub Actions, incluindo MySQL 8.4 e verificação de presença das páginas. A suíte de navegador Chromium está sendo adicionada e só será contabilizada quando houver evidência de execução verde. Execuções: https://github.com/jeffaxe81/axe-gestao-convites/actions
 
-**Limitações:** os testes HTTP atuais usam SQLite como fixture isolada; o teste de persistência dedicado exercita MySQL real. O Compose não foi exercitado integralmente e testes reais em Android/iPhone ainda não foram feitos. Ainda não divulgar link para convidados, pois faltam interfaces e painel autenticado.
+**Critério:** etapas validadas / 7, arredondando a percentagem. 1=14%, 2=29%, 3=43%, 4=57%, 5=71%, 6=86%, 7=100%.
 
-**Critério do percentual:** etapas integralmente implementadas com a bateria automatizada inicial aprovada / 7, arredondadas. O trabalho de estresse, operação e dispositivos é contabilizado exclusivamente na etapa 7. Não transformar progresso técnico em alegação de liberação de produção.
+**Restrições:** CI HTTP usa SQLite em fixtures controladas e MySQL dedicado para a integração de persistência. O Compose completo e a execução em aparelhos físicos não foram validados. Não divulgar a aplicação para convidados nesta fase.
+
+**Festa:** domingo, 13/12/2026, 15h, fuso America/Sao_Paulo. Local editável pelos organizadores. Não expor limite de buffet ou contagens em respostas públicas. Convite PDF e envio por WhatsApp não fazem parte desta release.
