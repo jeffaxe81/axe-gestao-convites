@@ -7,6 +7,7 @@ from urllib.parse import urlsplit
 from datetime import timedelta
 
 from flask import Flask
+from werkzeug.middleware.proxy_fix import ProxyFix
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.db import new_engine, session_factory
@@ -21,6 +22,7 @@ def create_app(test_config=None):
         JSON_AS_ASCII=False,
         API_RATE_LIMIT=30,  # requests / minute / IP, per worker (not a global DDoS solution)
         AUTH_RATE_LIMIT=5,
+        TRUSTED_PROXY_HOPS=int(os.environ.get("TRUSTED_PROXY_HOPS", "0")),
         SECRET_KEY=os.environ.get("SESSION_SECRET"),
         ORGANIZER_USERNAME=os.environ.get("ORGANIZER_USERNAME"),
         ORGANIZER_PASSWORD_HASH=os.environ.get("ORGANIZER_PASSWORD_HASH"),
@@ -31,6 +33,14 @@ def create_app(test_config=None):
     )
     if test_config:
         app.config.update(test_config)
+
+    proxy_hops = int(app.config["TRUSTED_PROXY_HOPS"])
+    if proxy_hops not in (0, 1):
+        raise ValueError("TRUSTED_PROXY_HOPS deve ser 0 ou 1.")
+    # Only use with a local reverse proxy that OVERWRITES X-Forwarded-For.
+    # Default is 0: client-supplied forwarding headers are ignored.
+    if proxy_hops:
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1)
 
     if not app.config.get("TESTING"):
         if len(app.config.get("SECRET_KEY") or "") < 32:
