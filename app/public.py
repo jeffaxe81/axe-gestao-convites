@@ -3,7 +3,7 @@ from dataclasses import asdict
 from datetime import datetime, timezone
 from uuid import UUID
 
-from flask import Blueprint, current_app, jsonify, request
+from flask import Blueprint, current_app, jsonify, request, render_template
 from sqlalchemy.exc import SQLAlchemyError
 from werkzeug.exceptions import BadRequest
 
@@ -163,3 +163,14 @@ def update_rsvp(family_id):
     payload = validate_rsvp({key: body[key] for key in ("contact_name", "attending", "participants")})
     receipt = _store().update(family_id, token, revision, payload, datetime.now(timezone.utc))
     return jsonify(_public_receipt(receipt))
+
+
+@public.get("/")
+def guest_page():
+    return render_template("index.html")
+
+
+@public.get("/editar")
+def guest_edit_page():
+    # The secret is passed as a URL fragment, never included in HTTP path or logs.
+    return render_template("index.html")
