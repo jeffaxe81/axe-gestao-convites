@@ -48,3 +48,32 @@ A ferramenta não faz recuperação destrutiva da base principal. O restore real
 - Monitoramento de execução, espaço livre e falhas.
 - Ensaio de desastre na infraestrutura final, com RPO e RTO definidos.
 - Política de descarte de dados pessoais após o evento.
+
+## Criptografia autenticada — novidade
+
+O script `scripts/secure_backup.py` usa **AES-256-GCM**, nonce aleatório, salt aleatório e chave derivada com scrypt. A criptografia é em fluxo, sem precisar manter o dump completo em memória. O arquivo resultante tem extensão `.isadora`. Qualquer alteração no arquivo cifrado ou senha incorreta faz a recuperação falhar.
+
+Instalar a dependência na máquina de operação:
+
+```bash
+python -m pip install -r requirements-ops.txt
+```
+
+Para cifrar o backup, execute os comandos em um terminal privado. O programa pede a frase secreta sem mostrá-la na linha de comando, caso `ISADORA_BACKUP_PASSPHRASE` não esteja definido:
+
+```bash
+python scripts/secure_backup.py encrypt --input "$HOME/isadora-backups/isadora-2026-10-18.sql.gz" --output "$HOME/isadora-backups/isadora-2026-10-18.sql.gz.isadora"
+```
+
+Para recuperar o backup **em um diretório privado**:
+
+```bash
+python scripts/secure_backup.py decrypt --input "$HOME/isadora-backups/isadora-2026-10-18.sql.gz.isadora" --output "$HOME/isadora-backups/restaurado.sql.gz"
+python scripts/backup_mysql.py verify-restore --input "$HOME/isadora-backups/restaurado.sql.gz"
+```
+
+A ferramenta não exclui automaticamente o backup original sem criptografia, pois a exclusão deve ocorrer **somente depois** de conferir a recuperação e a retenção necessárias. Apague com segurança cópias temporárias conforme as políticas do servidor. Armazene a chave/frase secreta em gerenciador externo, separado dos arquivos. **Perder a frase secreta impede recuperar o backup cifrado.**
+
+Os testes automatizados de ida-e-volta da cifra e a prova MySQL estão na CI. **Ainda é obrigatório** testar o procedimento em hospedagem real e assegurar backup externo seguro.
+
+Para execução automatizada sem terminal, a variável `ISADORA_BACKUP_PASSPHRASE` é suportada, mas deve vir de um cofre de segredos; não incluí-la em logs, histórico de shell, `.env` versionado ou comandos compartilhados.
