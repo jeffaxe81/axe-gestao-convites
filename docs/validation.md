@@ -21,3 +21,15 @@ GitHub Actions: https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/39
 - Auditoria independente de segurança, rate limiting global e procedimento de recuperação operacional.
 
 Não criar um link público de convite nem marcar a Release 1 como pronta para produção sem aprovação desses pontos.
+
+## Incremento operacional comprovado em 18/10/2026 (horário de Brasília)
+
+Execução: https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/39180698046
+
+- **95 testes Python passaram** (14,33 s na etapa de testes).
+- Docker Compose e testes de persistência aprovados.
+- Backup SQL comprimido gerado em arquivo com permissão 0600 no runner, fora do repositório.
+- Restauração realizada em banco temporário; comparação de event_settings, families e participants **idêntica** à origem.
+- Banco restaurado temporário removido ao final, sem modificar o banco original.
+
+**Não comprovado:** criptografia e armazenamento externo de backup, restauração em hospedagem real, auditoria independente, domínio/HTTPS ativo ou dispositivos físicos Android/iPhone. O script de inspeção pública HTTPS requer implantação real e não foi executado nesta CI.
