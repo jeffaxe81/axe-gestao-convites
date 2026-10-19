@@ -60,15 +60,19 @@ def encrypt(source, target, passphrase):
     key = _derive(passphrase, salt)
     encryptor = Cipher(algorithms.AES(key), modes.GCM(nonce)).encryptor()
     encryptor.authenticate_additional_data(header)
+    created = False
     try:
-        with source.open("rb") as plain, _output(target) as encrypted:
-            encrypted.write(header)
-            while block := plain.read(BLOCK_SIZE):
-                encrypted.write(encryptor.update(block))
-            encrypted.write(encryptor.finalize())
-            encrypted.write(encryptor.tag)
+        with _output(target) as encrypted:
+            created = True
+            with source.open("rb") as plain:
+                encrypted.write(header)
+                while block := plain.read(BLOCK_SIZE):
+                    encrypted.write(encryptor.update(block))
+                encrypted.write(encryptor.finalize())
+                encrypted.write(encryptor.tag)
     except BaseException:
-        target.unlink(missing_ok=True)
+        if created:
+            target.unlink(missing_ok=True)
         raise
     print("PASS: arquivo cifrado com AES-256-GCM:", target)
 
@@ -94,8 +98,10 @@ def decrypt(source, target, passphrase):
         decryptor.authenticate_additional_data(header)
         encrypted.seek(header_len)
         remaining = length - header_len - TAG_SIZE
+        created = False
         try:
             with _output(target) as plain:
+                created = True
                 while remaining:
                     block = encrypted.read(min(BLOCK_SIZE, remaining))
                     if not block:
@@ -105,7 +111,8 @@ def decrypt(source, target, passphrase):
                 # A integridade é autenticada antes que o arquivo seja aceito.
                 plain.write(decryptor.finalize())
         except BaseException:
-            target.unlink(missing_ok=True)
+            if created:
+                target.unlink(missing_ok=True)
             raise
     print("PASS: arquivo autenticado e decifrado:", target)
     print("ATENÇÃO: o arquivo .sql.gz resultante contém dados pessoais não cifrados.")
