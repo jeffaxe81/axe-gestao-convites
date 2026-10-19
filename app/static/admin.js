@@ -121,6 +121,34 @@
     } catch (error) { $('settings-status').textContent = error.message; }
     finally { $('save-settings').disabled = false; }
   }
+  async function exportCsv() {
+    const button = $('export-csv-btn');
+    button.disabled = true;
+    $('export-status').textContent = '';
+    try {
+      const response = await fetch('/api/admin/export.csv', {
+        credentials: 'same-origin', cache: 'no-store'
+      });
+      if (!response.ok) throw new Error('Não foi possível exportar. Entre novamente no painel.');
+      const csvBlob = await response.blob();
+      const href = URL.createObjectURL(csvBlob);
+      try {
+        const download = document.createElement('a');
+        download.href = href;
+        download.download = 'isadora-confirmacoes.csv';
+        document.body.append(download);
+        download.click();
+        download.remove();
+      } finally {
+        URL.revokeObjectURL(href);
+      }
+      $('export-status').textContent = 'Relatório preparado para download. Mantenha o arquivo em local privado.';
+    } catch (error) {
+      $('export-status').textContent = error.message;
+    } finally {
+      button.disabled = false;
+    }
+  }
   async function logOut() {
     try {
       await api('/api/auth/logout', {method:'POST',headers:{'X-CSRF-Token':await ensureCsrf()}});
@@ -128,12 +156,14 @@
       $('dashboard-panel').hidden = true;
       $('login-panel').hidden = false;
       ['confirmed-list','declined-list','souvenir-list'].forEach(clearList);
+      $('export-status').textContent = '';
       $('venue-input').value = ''; $('deadline-input').value = '';
     } catch (error) { $('settings-status').textContent = error.message; }
   }
   $('login-form').addEventListener('submit', logIn);
   $('settings-form').addEventListener('submit', saveSettings);
   $('logout-btn').addEventListener('click', logOut);
+  $('export-csv-btn').addEventListener('click', exportCsv);
   ensureCsrf().then(loadDashboard).catch(() => {
     $('login-panel').hidden = false;
     $('dashboard-panel').hidden = true;
