@@ -4,7 +4,7 @@ import io
 
 from app.reports import export_attendance_csv, safe_cell
 from tests.integration.test_organizer_api import client, login
-from tests.integration.test_public_api import invitation, send
+from tests.integration.test_public_api import invitation, send, store
 
 
 def rows(raw):
