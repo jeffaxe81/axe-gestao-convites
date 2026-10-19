@@ -25,8 +25,8 @@ O painel visual dos organizadores está implementado, com login, listas, indicad
 
 ## Testes
 
-**84 testes aprovados** com MySQL real, API, concorrência, Chromium e proteção HTTP. Docker Compose validado com reinício e persistência de dados.
-Evidência: https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/39175630043. Ver execuções em:
+**95 testes aprovados** com MySQL real, API, concorrência, Chromium e proteção HTTP. Docker Compose validado com reinício, persistência e restauração isolada a partir de dump comprimido.
+Evidência: https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/39180698046. Ver execuções em:
 https://github.com/jeffaxe81/axe-gestao-convites/actions
 
 Para executar:
@@ -74,6 +74,6 @@ A produção e o envio do convite em PDF pelo WhatsApp são atividades externas 
 
 ## Operação da Release 1 (implantação pendente)
 
-Foram incluídos scripts de backup do MySQL e verificação de restauração em banco temporário, além de um verificador de publicação HTTPS somente de leitura. O GitHub Actions foi ampliado para tentar backup + restauração após o teste de persistência; consulte a execução mais recente antes de considerar a nova rotina validada.
+Foram incluídos scripts de backup do MySQL e verificação de restauração em banco temporário, além de um verificador de publicação HTTPS somente de leitura. O GitHub Actions foi ampliado para tentar backup + restauração após o teste de persistência; o teste real em CI confirmou o backup/restauração sem modificar a base original. A homologação em hospedagem real ainda é necessária.
 
 Exemplos, riscos e procedimentos constam nos documentos operacionais acima. **Um dump SQL não é criptografado por estar comprimido.** Hospedagem real, restauração em ambiente definitivo, revisão independente de segurança e testes manuais de iPhone/Android permanecem obrigatórios antes da publicação.
