@@ -19,6 +19,7 @@ Ver [docs/progresso.md](docs/progresso.md). Os testes automatizados de navegador
 - API pública com token de edição, prazo e respostas limitadas à própria família.
 - Autenticação dos organizadores com hash de senha, sessão e CSRF.
 - API administrativa: confirmações/recusas, totais privados, lista de crianças, local e prazo.
+- Exportação CSV privada: confirmação, recusa, faixa etária, buffet e lembrancinhas; proteção contra injeção de fórmulas.
 - Página pública com tema margaridas/amarelo-manteiga e formulário para celular, revisão, agradecimento e link privado para editar.
 
 O painel visual dos organizadores está implementado, com login, listas, indicadores e ajustes do local/prazo.
@@ -69,6 +70,7 @@ Não habilite `TRUSTED_PROXY_HOPS=1` sem configurar um proxy local que SOBRESCRE
 - [Segurança para publicação e riscos](docs/security-deployment.md)
 - [Backup, verificação de restauração e recuperação](docs/backup-restore.md)
 - [Publicação HTTPS e smoke test sem alterar convites](docs/https-deployment.md)
+- [Antecipação de 1 mês, entregas e pendências](docs/antecipacao-1-mes.md)
 
 A produção e o envio do convite em PDF pelo WhatsApp são atividades externas a este aplicativo. Domínio, hospedagem e validação manual Android/iPhone estão pendentes.
 
@@ -77,3 +79,12 @@ A produção e o envio do convite em PDF pelo WhatsApp são atividades externas 
 Foram incluídos scripts de backup do MySQL e verificação de restauração em banco temporário, além de um verificador de publicação HTTPS somente de leitura. O GitHub Actions foi ampliado para tentar backup + restauração após o teste de persistência; o teste real em CI confirmou o backup/restauração sem modificar a base original. A homologação em hospedagem real ainda é necessária.
 
 Exemplos, riscos e procedimentos constam nos documentos operacionais acima. **Um dump SQL não é criptografado por estar comprimido.** Hospedagem real, restauração em ambiente definitivo, revisão independente de segurança e testes manuais de iPhone/Android permanecem obrigatórios antes da publicação.
+
+## Entregas de operação antecipadas
+
+- **Relatório CSV:** o organizador, após login em `/organizar`, pode clicar em *Exportar confirmações (CSV)*. O arquivo contém dados pessoais e deve permanecer restrito.
+- **Criptografia AES-256-GCM:** instalar `python -m pip install -r requirements-ops.txt` e executar `python scripts/secure_backup.py --help`. Cifrar o backup antes de movê-lo para armazenamento externo; validar restauração.
+- **Pré-checagem de produção:** executar `python scripts/preflight.py --env-file .env` (arquivo privado chmod 600). Este teste não substitui DNS/HTTPS efetivo.
+- **Revisão mensal acelerada:** ver `docs/antecipacao-1-mes.md`.
+
+A PR permanece como rascunho, sem publicar a página para convidados. A prova de publicação em domínio real e os testes em dispositivos físicos ainda são obrigatórios.
