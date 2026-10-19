@@ -47,7 +47,7 @@ def test_csv_injection_is_neutralized(client):
     entries = rows(client.get("/api/admin/export.csv").data)
     assert entries[1][1] == "'=HYPERLINK(1)"
     assert entries[1][2] == "'=HYPERLINK(1)"
-    assert entries[2][1] == "'+SUM(5)"
+    assert entries[-1][1] == "'+SUM(5)"
 
 
 def test_csv_formula_edge_cases():
