@@ -55,4 +55,4 @@ jobs:
         run: rm -f "$RUNNER_TEMP/isadora-ci.sql.gz" "$RUNNER_TEMP/isadora-ci.sql.gz.isadora" "$RUNNER_TEMP/isadora-decrypted.sql.gz"
       - name: Stop test containers without deleting data volumes
         if: always()
-        run: docker compose down
+        run: if [ -f .env ]; then docker compose down; fi
