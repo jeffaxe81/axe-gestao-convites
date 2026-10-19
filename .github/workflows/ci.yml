@@ -37,6 +37,13 @@ jobs:
         run: docker compose up -d --build --wait
       - name: Verify Compose persistence and idempotency
         run: python scripts/check_persistence.py
+      - name: Verify disposable MySQL restore
+        run: |
+          python scripts/backup_mysql.py backup --output "$RUNNER_TEMP/isadora-ci.sql.gz"
+          python scripts/backup_mysql.py verify-restore --input "$RUNNER_TEMP/isadora-ci.sql.gz"
+      - name: Remove disposable backup
+        if: always()
+        run: rm -f "$RUNNER_TEMP/isadora-ci.sql.gz"
       - name: Stop test containers without deleting data volumes
         if: always()
         run: docker compose down
