@@ -4,12 +4,13 @@ from datetime import datetime, timezone
 import hmac
 import secrets
 
-from flask import Blueprint, current_app, jsonify, request, session, render_template
+from flask import Blueprint, current_app, jsonify, request, session, render_template, make_response
 from sqlalchemy.exc import SQLAlchemyError
 from werkzeug.exceptions import BadRequest
 from werkzeug.security import check_password_hash
 
 from app.domain import InputError
+from app.reports import export_attendance_csv
 
 organizer = Blueprint("organizer", __name__)
 
@@ -118,6 +119,18 @@ def dashboard():
         "buffet_limit": report["buffet_limit"],
         "buffet_limit_reached": report["buffet_limit_reached"],
     })
+
+
+@organizer.get("/api/admin/export.csv")
+def export_csv():
+    # Protegido pelo mesmo login da API administrativa; nunca servir publicamente.
+    content = export_attendance_csv(store().summary())
+    response = make_response(content, 200)
+    response.headers["Content-Type"] = "text/csv; charset=utf-8"
+    response.headers["Content-Disposition"] = 'attachment; filename="isadora-confirmacoes.csv"'
+    response.headers["Cache-Control"] = "no-store, private"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    return response
 
 
 @organizer.get("/api/admin/settings")
