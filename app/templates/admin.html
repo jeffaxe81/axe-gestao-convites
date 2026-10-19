@@ -32,7 +32,8 @@
     </section>
 
     <section id="dashboard-panel" hidden aria-label="Painel reservado dos organizadores">
-      <div class="admin-toolbar"><h2>Visão geral</h2><button type="button" id="logout-btn" class="secondary">Sair</button></div>
+      <div class="admin-toolbar"><h2>Visão geral</h2><div><button type="button" id="export-csv-btn" class="secondary">Exportar confirmações (CSV)</button> <button type="button" id="logout-btn" class="secondary">Sair</button></div></div>
+      <p id="export-status" role="status" aria-live="polite"></p>
       <p class="muted">Somente pessoas com presença confirmada entram nos contadores.</p>
       <div class="metric-grid">
         <article class="metric"><span>Participantes confirmados</span><strong data-testid="total-count">0</strong></article>
