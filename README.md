@@ -6,7 +6,7 @@ Aniversário de dois anos da Isadora — 13/12/2026, às 15h (America/Sao_Paulo)
 
 ## Barra de avanço verificado
 
-`[█████████░░░░░░░] 86% — 6 de 7 etapas completas`
+`[██████████████░░] 86% — 6 de 7 etapas completas`
 
 Ver [docs/progresso.md](docs/progresso.md). Os testes automatizados de navegador passaram. A liberação para uso real ainda depende da revisão de segurança e do checklist em Android e iPhone reais.
 
@@ -67,5 +67,13 @@ Não habilite `TRUSTED_PROXY_HOPS=1` sem configurar um proxy local que SOBRESCRE
 - [Evidências verificadas](docs/validation.md)
 - [Checklist manual pendente](docs/manual-checklist.md)
 - [Segurança para publicação e riscos](docs/security-deployment.md)
+- [Backup, verificação de restauração e recuperação](docs/backup-restore.md)
+- [Publicação HTTPS e smoke test sem alterar convites](docs/https-deployment.md)
 
 A produção e o envio do convite em PDF pelo WhatsApp são atividades externas a este aplicativo. Domínio, hospedagem e validação manual Android/iPhone estão pendentes.
+
+## Operação da Release 1 (implantação pendente)
+
+Foram incluídos scripts de backup do MySQL e verificação de restauração em banco temporário, além de um verificador de publicação HTTPS somente de leitura. O GitHub Actions foi ampliado para tentar backup + restauração após o teste de persistência; consulte a execução mais recente antes de considerar a nova rotina validada.
+
+Exemplos, riscos e procedimentos constam nos documentos operacionais acima. **Um dump SQL não é criptografado por estar comprimido.** Hospedagem real, restauração em ambiente definitivo, revisão independente de segurança e testes manuais de iPhone/Android permanecem obrigatórios antes da publicação.
