@@ -20,6 +20,8 @@ Referência: 18/10/2026.
 - Confirmação repetida não duplicou registros; token permaneceu válido após recriação dos serviços.
 - Configuração do local e contadores preservados após reinício com o mesmo volume.
 
+**Incrementos operacionais incluídos em 18/10/2026:** scripts/backup_mysql.py (dump MySQL com acesso restrito + restauração em banco temporário com comparação de dados), scripts/check_production.py (verificações HTTPS sem gravação) e testes das validações de entrada. A nova execução da CI precisa terminar com sucesso para esses incrementos serem considerados comprovados. Documentos: docs/backup-restore.md e docs/https-deployment.md.
+
 **Ainda pendente:** testes manuais Android e iPhone abrindo o link vindo de PDF/WhatsApp, instalação/homologação do proxy HTTPS e revisão independente de segurança. Não declarar produção liberada.
 
 **Regra de porcentagem:** etapas concluídas / 7, arredondadas. Enquanto a última etapa tiver pendências obrigatórias, o total permanece em 86%.
