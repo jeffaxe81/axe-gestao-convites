@@ -147,6 +147,23 @@
     }
     return data;
   }
+  function validateReceipt(result, expected) {
+    // HTTP 200 alone is not evidence of a confirmed response. A broken
+    // intermediary can return HTML, an empty object or stale JSON.
+    const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const token = /^[0-9a-f]{64}$/i;
+    if (!result || typeof result !== 'object' ||
+        !uuid.test(result.id || '') ||
+        !Number.isSafeInteger(result.revision) || result.revision < 1 ||
+        !token.test(result.edit_token || '') ||
+        typeof result.attending !== 'boolean' ||
+        result.attending !== expected.attending ||
+        (editing && (result.id !== familyId || result.edit_token !== editToken ||
+                     result.revision !== revision + 1))) {
+      throw new Error('Não foi possível verificar a confirmação. Tente novamente sem alterar os dados.');
+    }
+    return result;
+  }
   async function submit() {
     clearError();
     $('submit-btn').disabled = true;
@@ -154,21 +171,21 @@
     try {
       let result;
       if (editing) {
-        result = await requestJson('/api/rsvps/' + encodeURIComponent(familyId), {
+        result = validateReceipt(await requestJson('/api/rsvps/' + encodeURIComponent(familyId), {
           method: 'PUT',
           headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + editToken},
           body: JSON.stringify(Object.assign({revision: revision}, pendingPayload))
-        });
+        }), pendingPayload);
       } else {
         if (!submissionKey) {
           submissionKey = crypto.randomUUID();
           sessionStorage.setItem('isadora_submission_key', submissionKey);
         }
-        result = await requestJson('/api/rsvps', {
+        result = validateReceipt(await requestJson('/api/rsvps', {
           method: 'POST',
           headers: {'Content-Type': 'application/json', 'Idempotency-Key': submissionKey},
           body: JSON.stringify(pendingPayload)
-        });
+        }), pendingPayload);
         sessionStorage.removeItem('isadora_submission_key');
       }
       renderSuccess(result);
