@@ -97,3 +97,51 @@ def test_failed_login_never_shows_private_lists(page, organizer_server):
     login(page, base, password="senha-incorreta")
     expect(page.locator("#login-error")).to_be_visible()
     expect(page.locator("#dashboard-panel")).to_be_hidden()
+
+
+def test_guest_search_by_contact_companion_and_decline(page, organizer_server):
+    base, store = organizer_server
+    store.create(validate_rsvp({
+        "contact_name": "Ana", "attending": True,
+        "participants": [
+            {"name": "Ana", "kind": "OVER_12", "age_years": None},
+            {"name": "Cecília", "kind": "CHILD", "age_years": 6},
+        ],
+    }), "organizer-search-family-ana-001", datetime.now(timezone.utc))
+    store.create(validate_rsvp({
+        "contact_name": "Beatriz", "attending": False, "participants": [],
+    }), "organizer-search-family-bia-002", datetime.now(timezone.utc))
+    login(page, base)
+    expect(page.get_by_test_id("total-count")).to_have_text("5")
+    expect(page.locator("#search-summary")).to_contain_text("3 de 3 respostas")
+    page.locator("#guest-search").fill("cecilia")
+    expect(page.locator("#confirmed-list")).to_contain_text("Ana")
+    expect(page.locator("#confirmed-list")).not_to_contain_text("João")
+    expect(page.locator("#souvenir-list")).to_contain_text("Cecília")
+    expect(page.locator("#souvenir-list")).not_to_contain_text("Lia")
+    expect(page.locator("#search-summary")).to_contain_text("1 de 3 respostas")
+    # Global counters must never be changed by a visual-only filter.
+    expect(page.get_by_test_id("total-count")).to_have_text("5")
+    page.locator("#guest-search").fill("BEATRIZ")
+    expect(page.locator("#declined-list")).to_contain_text("Beatriz")
+    expect(page.locator("#confirmed-list")).to_contain_text("Nenhum registro")
+    page.locator("#guest-search").fill("nome-inexistente")
+    expect(page.locator("#search-summary")).to_contain_text("0 de 3 respostas")
+    page.locator("#clear-search").click()
+    expect(page.locator("#confirmed-list")).to_contain_text("João")
+    expect(page.locator("#declined-list")).to_contain_text("Beatriz")
+    expect(page.locator("#guest-search")).to_have_value("")
+
+
+def test_logout_resets_private_search_without_local_persistence(page, organizer_server):
+    base, _ = organizer_server
+    login(page, base)
+    expect(page.locator("#confirmed-list")).to_contain_text("João")
+    page.locator("#guest-search").fill("Joao")
+    expect(page.locator("#confirmed-list")).to_contain_text("João")
+    page.locator("#logout-btn").click()
+    expect(page.locator("#dashboard-panel")).to_be_hidden()
+    expect(page.locator("#guest-search")).to_have_value("")
+    expect(page.locator("#search-summary")).to_have_text("")
+    login(page, base)
+    expect(page.locator("#search-summary")).to_contain_text("1 de 1 respostas")

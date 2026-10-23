@@ -23,3 +23,10 @@
 #dashboard-panel{padding-bottom:20px}
 #dashboard-panel footer{margin:20px}
 @media(max-width:650px){.admin-shell{width:min(100% - 16px,1060px);margin:8px auto}.list-grid{grid-template-columns:1fr}.admin-toolbar{align-items:stretch}.admin-toolbar button{width:auto}.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.metric{padding:13px;min-height:115px}.metric strong{font-size:1.8rem}.admin-card{padding:17px;margin:12px 0}}
+
+.guest-search-row{display:flex;gap:12px;align-items:end;flex-wrap:wrap}
+.guest-search-row .field{flex:1 1 240px;margin:0}
+.guest-search-row input{width:100%}
+.guest-search-row button{flex:0 0 auto}
+.guest-search-card #search-summary{font-weight:700;margin:12px 0 4px}
+@media(max-width:450px){.guest-search-row button{width:100%}}

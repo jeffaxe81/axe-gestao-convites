@@ -44,6 +44,20 @@
       </div>
       <p id="buffet-alert" class="notice" hidden></p>
 
+      <section class="admin-card guest-search-card" aria-labelledby="search-title">
+        <h3 id="search-title">Localizar convidados</h3>
+        <div class="guest-search-row">
+          <div class="field">
+            <label for="guest-search">Pesquisar nome do convidado ou acompanhante</label>
+            <input id="guest-search" type="search" maxlength="160" autocomplete="off"
+                   placeholder="Digite um nome" aria-describedby="search-summary">
+          </div>
+          <button type="button" id="clear-search" class="secondary" hidden>Limpar busca</button>
+        </div>
+        <p id="search-summary" class="muted" role="status" aria-live="polite"></p>
+        <p class="muted">A pesquisa filtra somente as listas abaixo. Os totais acima são gerais.</p>
+      </section>
+
       <div class="list-grid">
         <section class="admin-card"><h3>Confirmações</h3><ul id="confirmed-list" class="data-list"></ul></section>
         <section class="admin-card"><h3>Não comparecerão</h3><ul id="declined-list" class="data-list"></ul></section>

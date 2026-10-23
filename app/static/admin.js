@@ -3,6 +3,7 @@
   const $ = (id) => document.getElementById(id);
   if (!$('login-form')) return;
   let csrfToken = null;
+  let dashboardData = null;
 
   function setError(message) {
     $('login-error').textContent = message;
@@ -42,7 +43,44 @@
     li.append(name, details);
     $(id).append(li);
   }
+  // Search happens only in the organizer's authenticated browser session.
+  // No private names are sent in the URL, logs or local storage.
+  function fold(value) {
+    return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR');
+  }
+  function matchesFamily(family, term) {
+    return fold(family.contact_name).includes(term) ||
+      family.participants.some((person) => fold(person.name).includes(term));
+  }
+  function renderGuestLists(data) {
+    const term = fold($('guest-search').value.trim());
+    const confirmed = data.confirmed.filter((family) => matchesFamily(family, term));
+    const declined = data.declined.filter((family) => matchesFamily(family, term));
+    const matchingContacts = new Set(confirmed.filter(
+      (family) => fold(family.contact_name).includes(term)
+    ).map((family) => family.id));
+    const children = data.souvenir_children.filter((child) =>
+      matchingContacts.has(child.family_id) || fold(child.name).includes(term)
+    );
+    clearList('confirmed-list'); clearList('declined-list'); clearList('souvenir-list');
+    confirmed.forEach((family) => appendFamily('confirmed-list', family));
+    declined.forEach((family) => appendFamily('declined-list', family));
+    children.forEach((child) => {
+      const li = document.createElement('li');
+      li.textContent = child.name + ' — ' + child.age_years + ' ano(s)';
+      $('souvenir-list').append(li);
+    });
+    if (!confirmed.length) putEmpty('confirmed-list');
+    if (!declined.length) putEmpty('declined-list');
+    if (!children.length) putEmpty('souvenir-list');
+    const found = confirmed.length + declined.length;
+    const total = data.confirmed.length + data.declined.length;
+    $('search-summary').textContent = 'Exibindo ' + found + ' de ' + total +
+      ' respostas. Crianças na lista: ' + children.length + '.';
+    $('clear-search').hidden = !$('guest-search').value;
+  }
   function drawDashboard(data) {
+    dashboardData = data;
     const counts = data.counts;
     document.querySelector('[data-testid=total-count]').textContent = String(counts.total);
     document.querySelector('[data-testid=buffet-count]').textContent = String(counts.buffet);
@@ -53,17 +91,7 @@
     if (data.buffet_limit_reached) {
       $('buffet-alert').textContent = 'Atenção: contagem do buffet alcançou o limite interno de ' + data.buffet_limit + '.';
     }
-    clearList('confirmed-list'); clearList('declined-list'); clearList('souvenir-list');
-    data.confirmed.forEach((family) => appendFamily('confirmed-list', family));
-    data.declined.forEach((family) => appendFamily('declined-list', family));
-    data.souvenir_children.forEach((child) => {
-      const li = document.createElement('li');
-      li.textContent = child.name + ' — ' + child.age_years + ' ano(s)';
-      $('souvenir-list').append(li);
-    });
-    if (!data.confirmed.length) putEmpty('confirmed-list');
-    if (!data.declined.length) putEmpty('declined-list');
-    if (!data.souvenir_children.length) putEmpty('souvenir-list');
+    renderGuestLists(data);
   }
   function eventTime(utc) {
     if (!utc) return '';
@@ -156,6 +184,10 @@
       $('dashboard-panel').hidden = true;
       $('login-panel').hidden = false;
       ['confirmed-list','declined-list','souvenir-list'].forEach(clearList);
+      dashboardData = null;
+      $('guest-search').value = '';
+      $('search-summary').textContent = '';
+      $('clear-search').hidden = true;
       $('export-status').textContent = '';
       $('venue-input').value = ''; $('deadline-input').value = '';
     } catch (error) { $('settings-status').textContent = error.message; }
@@ -164,6 +196,14 @@
   $('settings-form').addEventListener('submit', saveSettings);
   $('logout-btn').addEventListener('click', logOut);
   $('export-csv-btn').addEventListener('click', exportCsv);
+  $('guest-search').addEventListener('input', () => {
+    if (dashboardData) renderGuestLists(dashboardData);
+  });
+  $('clear-search').addEventListener('click', () => {
+    $('guest-search').value = '';
+    if (dashboardData) renderGuestLists(dashboardData);
+    $('guest-search').focus();
+  });
   ensureCsrf().then(loadDashboard).catch(() => {
     $('login-panel').hidden = false;
     $('dashboard-panel').hidden = true;
