@@ -145,3 +145,59 @@ def test_logout_resets_private_search_without_local_persistence(page, organizer_
     expect(page.locator("#search-summary")).to_have_text("")
     login(page, base)
     expect(page.locator("#search-summary")).to_contain_text("1 de 1 respostas")
+
+
+def test_manual_refresh_preserves_search_and_unsaved_settings(page, organizer_server):
+    base, store = organizer_server
+    login(page, base)
+    expect(page.get_by_test_id("total-count")).to_have_text("3")
+    page.locator("#guest-search").fill("Ana")
+    page.locator("#venue-input").fill("Novo local ainda não salvo")
+
+    store.create(validate_rsvp({
+        "contact_name": "Ana", "attending": True,
+        "participants": [
+            {"name": "Ana", "kind": "OVER_12", "age_years": None},
+            {"name": "Mila", "kind": "CHILD", "age_years": 5},
+        ],
+    }), "organizer-refresh-ana-001", datetime.now(timezone.utc))
+
+    page.locator("#refresh-dashboard-btn").click()
+    expect(page.get_by_test_id("total-count")).to_have_text("5")
+    expect(page.locator("#confirmed-list")).to_contain_text("Ana")
+    expect(page.locator("#confirmed-list")).not_to_contain_text("João")
+    expect(page.locator("#guest-search")).to_have_value("Ana")
+    expect(page.locator("#venue-input")).to_have_value("Novo local ainda não salvo")
+    expect(page.locator("#refresh-status")).to_contain_text("Dados atualizados")
+    assert store.settings()["venue"] is None
+
+
+def test_refresh_failure_keeps_previous_private_counts(page, organizer_server):
+    base, _ = organizer_server
+    login(page, base)
+    expect(page.get_by_test_id("total-count")).to_have_text("3")
+    page.route("**/api/admin/dashboard", lambda route: route.fulfill(
+        status=503, content_type="application/json",
+        body='{"error":{"message":"Temporariamente indisponível"}}'
+    ))
+    page.locator("#refresh-dashboard-btn").click()
+    expect(page.locator("#refresh-status")).to_contain_text("Falha ao atualizar")
+    expect(page.get_by_test_id("total-count")).to_have_text("3")
+    expect(page.locator("#refresh-dashboard-btn")).to_be_enabled()
+
+
+def test_expired_refresh_session_hides_private_data(page, organizer_server):
+    base, _ = organizer_server
+    login(page, base)
+    expect(page.locator("#confirmed-list")).to_contain_text("João")
+    page.locator("#refresh-interval").select_option("15")
+    page.route("**/api/admin/dashboard", lambda route: route.fulfill(
+        status=401, content_type="application/json",
+        body='{"error":{"message":"Acesso não autorizado."}}'
+    ))
+    page.locator("#refresh-dashboard-btn").click()
+    expect(page.locator("#dashboard-panel")).to_be_hidden()
+    expect(page.locator("#login-panel")).to_be_visible()
+    expect(page.locator("#login-error")).to_contain_text("sessão expirou")
+    expect(page.locator("#confirmed-list")).to_have_text("")
+    expect(page.locator("#refresh-interval")).to_have_value("0")

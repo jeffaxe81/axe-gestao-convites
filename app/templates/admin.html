@@ -33,6 +33,19 @@
 
     <section id="dashboard-panel" hidden aria-label="Painel reservado dos organizadores">
       <div class="admin-toolbar"><h2>Visão geral</h2><div><button type="button" id="export-csv-btn" class="secondary">Exportar confirmações (CSV)</button> <button type="button" id="logout-btn" class="secondary">Sair</button></div></div>
+      <div class="refresh-controls" aria-label="Atualização das confirmações">
+        <button type="button" id="refresh-dashboard-btn" class="secondary">Atualizar dados</button>
+        <div class="field">
+          <label for="refresh-interval">Atualização automática</label>
+          <select id="refresh-interval">
+            <option value="0" selected>Desativada — manual</option>
+            <option value="15">A cada 15 segundos</option>
+            <option value="30">A cada 30 segundos</option>
+            <option value="60">A cada 60 segundos</option>
+          </select>
+        </div>
+        <p id="refresh-status" role="status" aria-live="polite"></p>
+      </div>
       <p id="export-status" role="status" aria-live="polite"></p>
       <p class="muted">Somente pessoas com presença confirmada entram nos contadores.</p>
       <div class="metric-grid">

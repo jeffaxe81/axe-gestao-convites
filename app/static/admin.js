@@ -4,6 +4,9 @@
   if (!$('login-form')) return;
   let csrfToken = null;
   let dashboardData = null;
+  let sessionGeneration = 0;
+  let refreshPending = false;
+  let refreshTimer = null;
 
   function setError(message) {
     $('login-error').textContent = message;
@@ -14,7 +17,9 @@
     const response = await fetch(path, request);
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
-      throw new Error((data.error && data.error.message) || 'Não foi possível concluir.');
+      const error = new Error((data.error && data.error.message) || 'Não foi possível concluir.');
+      error.status = response.status;
+      throw error;
     }
     return data;
   }
@@ -110,6 +115,72 @@
     $('venue-input').value = settings.venue || '';
     $('deadline-input').value = eventTime(settings.edit_deadline_utc);
   }
+  function stopRefreshTimer() {
+    if (refreshTimer !== null) {
+      clearInterval(refreshTimer);
+      refreshTimer = null;
+    }
+  }
+  function configureRefreshTimer() {
+    stopRefreshTimer();
+    const seconds = Number($('refresh-interval').value);
+    if (!dashboardData || $('dashboard-panel').hidden || ![15, 30, 60].includes(seconds)) {
+      return;
+    }
+    refreshTimer = setInterval(() => {
+      if (!document.hidden) void refreshDashboard();
+    }, seconds * 1000);
+  }
+  function clearPrivateDashboard() {
+    sessionGeneration += 1;
+    stopRefreshTimer();
+    dashboardData = null;
+    refreshPending = false;
+    $('dashboard-panel').hidden = true;
+    $('login-panel').hidden = false;
+    ['confirmed-list', 'declined-list', 'souvenir-list'].forEach(clearList);
+    $('guest-search').value = '';
+    $('search-summary').textContent = '';
+    $('clear-search').hidden = true;
+    $('refresh-interval').value = '0';
+    $('refresh-status').textContent = '';
+    $('refresh-dashboard-btn').disabled = false;
+    $('refresh-dashboard-btn').textContent = 'Atualizar dados';
+    $('export-status').textContent = '';
+    $('venue-input').value = '';
+    $('deadline-input').value = '';
+  }
+  async function refreshDashboard() {
+    if (refreshPending || !dashboardData || $('dashboard-panel').hidden) return;
+    const generation = sessionGeneration;
+    refreshPending = true;
+    $('refresh-dashboard-btn').disabled = true;
+    $('refresh-dashboard-btn').textContent = 'Atualizando...';
+    $('refresh-status').textContent = 'Consultando confirmações...';
+    try {
+      const data = await api('/api/admin/dashboard');
+      if (generation !== sessionGeneration || $('dashboard-panel').hidden) return;
+      // Keep the search term and any unsaved venue/deadline edits unchanged.
+      drawDashboard(data);
+      $('refresh-status').textContent = 'Dados atualizados às ' +
+        new Intl.DateTimeFormat('pt-BR', {hour: '2-digit', minute: '2-digit',
+          second: '2-digit'}).format(new Date()) + '.';
+    } catch (error) {
+      if (generation !== sessionGeneration || $('dashboard-panel').hidden) return;
+      if (error.status === 401 || error.status === 403) {
+        clearPrivateDashboard();
+        setError('Sua sessão expirou. Entre novamente para consultar os convidados.');
+      } else {
+        $('refresh-status').textContent = 'Falha ao atualizar. Os dados exibidos são da última consulta.';
+      }
+    } finally {
+      if (generation === sessionGeneration) {
+        refreshPending = false;
+        $('refresh-dashboard-btn').disabled = false;
+        $('refresh-dashboard-btn').textContent = 'Atualizar dados';
+      }
+    }
+  }
   async function logIn(event) {
     event.preventDefault();
     $('login-error').hidden = true;
@@ -125,6 +196,7 @@
         })
       });
       csrfToken = result.csrf_token;
+      sessionGeneration += 1;
       $('admin-password').value = '';
       await loadDashboard();
     } catch (error) { setError(error.message); }
@@ -181,21 +253,20 @@
     try {
       await api('/api/auth/logout', {method:'POST',headers:{'X-CSRF-Token':await ensureCsrf()}});
       csrfToken = null;
-      $('dashboard-panel').hidden = true;
-      $('login-panel').hidden = false;
-      ['confirmed-list','declined-list','souvenir-list'].forEach(clearList);
-      dashboardData = null;
-      $('guest-search').value = '';
-      $('search-summary').textContent = '';
-      $('clear-search').hidden = true;
-      $('export-status').textContent = '';
-      $('venue-input').value = ''; $('deadline-input').value = '';
+      clearPrivateDashboard();
     } catch (error) { $('settings-status').textContent = error.message; }
   }
   $('login-form').addEventListener('submit', logIn);
   $('settings-form').addEventListener('submit', saveSettings);
   $('logout-btn').addEventListener('click', logOut);
   $('export-csv-btn').addEventListener('click', exportCsv);
+  $('refresh-dashboard-btn').addEventListener('click', refreshDashboard);
+  $('refresh-interval').addEventListener('change', () => {
+    configureRefreshTimer();
+    $('refresh-status').textContent = $('refresh-interval').value === '0'
+      ? 'Atualização manual selecionada.'
+      : 'Atualização automática a cada ' + $('refresh-interval').value + ' segundos.';
+  });
   $('guest-search').addEventListener('input', () => {
     if (dashboardData) renderGuestLists(dashboardData);
   });
