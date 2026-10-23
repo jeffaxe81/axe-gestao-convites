@@ -201,3 +201,37 @@ def test_expired_refresh_session_hides_private_data(page, organizer_server):
     expect(page.locator("#login-error")).to_contain_text("sessão expirou")
     expect(page.locator("#confirmed-list")).to_have_text("")
     expect(page.locator("#refresh-interval")).to_have_value("0")
+
+
+def test_refresh_after_cookie_expiration_allows_new_login(page, organizer_server):
+    base, _ = organizer_server
+    login(page, base)
+    expect(page.locator("#confirmed-list")).to_contain_text("João")
+    # Model a truly expired Flask session (not just a mocked HTTP error).
+    page.context.clear_cookies()
+    page.locator("#refresh-dashboard-btn").click()
+    expect(page.locator("#dashboard-panel")).to_be_hidden()
+    expect(page.locator("#login-error")).to_contain_text("sessão expirou")
+    # The next login must retrieve a fresh session-specific CSRF token.
+    page.locator("#admin-username").fill("organizador")
+    page.locator("#admin-password").fill("senha-de-teste")
+    page.locator("#login-btn").click()
+    expect(page.locator("#confirmed-list")).to_contain_text("João")
+    expect(page.get_by_test_id("total-count")).to_have_text("3")
+
+
+def test_automatic_refresh_at_selected_interval(page, organizer_server):
+    base, store = organizer_server
+    page.clock.install()
+    login(page, base)
+    expect(page.get_by_test_id("total-count")).to_have_text("3")
+    page.locator("#refresh-interval").select_option("15")
+    store.create(validate_rsvp({
+        "contact_name": "Pedro", "attending": True,
+        "participants": [{"name": "Pedro", "kind": "OVER_12", "age_years": None}],
+    }), "organizer-auto-refresh-pedro-001", datetime.now(timezone.utc))
+    # Playwright's virtual clock avoids a 15-second sleep in CI.
+    page.clock.fast_forward(15_000)
+    expect(page.get_by_test_id("total-count")).to_have_text("4")
+    expect(page.locator("#confirmed-list")).to_contain_text("Pedro")
+    expect(page.locator("#refresh-status")).to_contain_text("Dados atualizados")

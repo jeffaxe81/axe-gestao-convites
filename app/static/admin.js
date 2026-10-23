@@ -133,6 +133,8 @@
   }
   function clearPrivateDashboard() {
     sessionGeneration += 1;
+    // Expired Flask sessions no longer have the previous CSRF token.
+    csrfToken = null;
     stopRefreshTimer();
     dashboardData = null;
     refreshPending = false;
