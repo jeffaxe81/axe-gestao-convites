@@ -101,3 +101,55 @@ def test_mobile_page_does_not_scroll_horizontally(page, server):
     url, _ = server
     page.goto(url)
     assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1")
+
+
+def test_invalid_http_success_does_not_claim_rsvp(page, server):
+    """A proxy returning 200 with broken JSON must not create false confidence."""
+    url, store = server
+    page.goto(url)
+    page.locator("#contact-name").fill("Ana")
+    page.locator("#review-btn").click()
+    pattern = "**/api/rsvps"
+    page.route(pattern, lambda route: route.fulfill(
+        status=200, content_type="application/json", body="{}"
+    ))
+    page.locator("#submit-btn").click()
+    expect(page.locator("#error")).to_contain_text("Não foi possível verificar")
+    expect(page.locator("#success")).to_be_hidden()
+    expect(page.locator("#submit-btn")).to_be_enabled()
+    assert page.evaluate("sessionStorage.getItem('isadora_submission_key')")
+    assert store.summary()["counts"].total == 0
+
+    # A retry with the same idempotency key can still complete safely.
+    page.unroute(pattern)
+    page.locator("#submit-btn").click()
+    expect(page.locator("#success")).to_be_visible()
+    assert store.summary()["counts"].total == 1
+    assert page.evaluate("sessionStorage.getItem('isadora_submission_key')") is None
+
+
+def test_invalid_edit_receipt_does_not_claim_updated_confirmation(page, server):
+    """An invalid update reply must keep the editing form and its data."""
+    url, store = server
+    page.goto(url)
+    page.locator("#contact-name").fill("Ana")
+    page.locator("#review-btn").click()
+    page.locator("#submit-btn").click()
+    expect(page.locator("#success")).to_be_visible()
+    link = page.locator("#edit-link").input_value()
+    page.goto(link)
+    expect(page.locator("#contact-name")).to_have_value("Ana")
+    page.locator("#contact-name").fill("Ana Maria")
+    page.locator("#review-btn").click()
+    pattern = "**/api/rsvps/*"
+    page.route(pattern, lambda route: route.fulfill(
+        status=200, content_type="application/json", body="{}"
+    ))
+    page.locator("#submit-btn").click()
+    expect(page.locator("#error")).to_contain_text("Não foi possível verificar")
+    expect(page.locator("#success")).to_be_hidden()
+    assert store.summary()["confirmed"][0]["contact_name"] == "Ana"
+    page.unroute(pattern)
+    page.locator("#submit-btn").click()
+    expect(page.locator("#success")).to_be_visible()
+    assert store.summary()["confirmed"][0]["contact_name"] == "Ana Maria"
