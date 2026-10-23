@@ -1,5 +1,18 @@
 # Validação — Gerenciador de Convites da Isadora
 
+## Situação atual — 23/10/2026
+
+**Última execução integralmente aprovada:** https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/40033488738
+
+- **132 testes aprovados** (Python/Playwright), atualização manual/automática 15/30/60 s do painel, busca privada e reautenticação após expiração.
+- Docker Compose e verificações de idempotência e persistência aprovados.
+- Backup MySQL, restauração isolada, cifragem autenticada e restauração do arquivo decifrado aprovados no runner.
+- Novos testes de resposta administrativa HTTP 200 malformada/incoerente adicionados após essa execução; observar a CI da branch para a contagem atual.
+- **Permanece não comprovado:** operação real em domínio HTTPS, revisão independente, armazenamento externo operacional e teste físico Android/iPhone a partir do PDF/WhatsApp.
+
+### Histórico de verificações
+
+
 ## Automatizado e comprovado em 18/10/2026
 
 GitHub Actions: https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/39175630043

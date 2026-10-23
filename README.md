@@ -22,12 +22,12 @@ Ver [docs/progresso.md](docs/progresso.md). Os testes automatizados de navegador
 - Exportação CSV privada: confirmação, recusa, faixa etária, buffet e lembrancinhas; proteção contra injeção de fórmulas.
 - Página pública com tema margaridas/amarelo-manteiga e formulário para celular, revisão, agradecimento e link privado para editar.
 
-O painel visual dos organizadores está implementado, com login, listas, indicadores e ajustes do local/prazo.
+O painel visual dos organizadores está implementado, com login, listas, indicadores, pesquisa de convidados (inclusive acompanhantes e sem distinção de acentos), atualização manual ou automática a cada 15/30/60 segundos e ajustes do local/prazo. A atualização preserva pesquisas e campos não salvos; sessões expiradas ocultam dados privados.
 
 ## Testes
 
-**95 testes aprovados** com MySQL real, API, concorrência, Chromium e proteção HTTP. Docker Compose validado com reinício, persistência e restauração isolada a partir de dump comprimido.
-Evidência: https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/39180698046. Ver execuções em:
+**132 testes aprovados** em 23/10/2026, com MySQL real, API, concorrência, Chromium e proteção HTTP. Docker Compose validado com reinício, persistência, backup e restauração isolada e criptografada. Esta quantidade corresponde à última CI aprovada antes dos testes adicionais de validação do painel.
+Evidência: https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/40033488738. Ver execuções em:
 https://github.com/jeffaxe81/axe-gestao-convites/actions
 
 Para executar:

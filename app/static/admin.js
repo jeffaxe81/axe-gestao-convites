@@ -84,6 +84,67 @@
       ' respostas. Crianças na lista: ' + children.length + '.';
     $('clear-search').hidden = !$('guest-search').value;
   }
+  // Reject incomplete HTTP 200 payloads before touching private counters or lists.
+  function validDashboardSnapshot(data) {
+    if (!data || typeof data !== 'object' || Array.isArray(data) ||
+        !data.counts || typeof data.counts !== 'object' ||
+        !Array.isArray(data.confirmed) || !Array.isArray(data.declined) ||
+        !Array.isArray(data.souvenir_children) ||
+        !Number.isSafeInteger(data.buffet_limit) || data.buffet_limit < 1 ||
+        typeof data.buffet_limit_reached !== 'boolean') return false;
+
+    const values = {total: 0, buffet: 0, children_0_5: 0, children_0_12: 0, over_12: 0};
+    const familyIds = new Set();
+    const expectedChildren = [];
+    for (const [attending, families] of [[true, data.confirmed], [false, data.declined]]) {
+      for (const family of families) {
+        if (!family || typeof family.id !== 'string' || !family.id ||
+            typeof family.contact_name !== 'string' || !family.contact_name.trim() ||
+            family.attending !== attending || !Array.isArray(family.participants) ||
+            familyIds.has(family.id) || (attending && !family.participants.length) ||
+            (!attending && family.participants.length)) return false;
+        familyIds.add(family.id);
+        for (const person of family.participants) {
+          if (!person || typeof person.name !== 'string' || !person.name.trim()) return false;
+          values.total += 1;
+          if (person.kind === 'OVER_12' && person.age_years === null) {
+            values.over_12 += 1;
+            values.buffet += 1;
+          } else if (person.kind === 'CHILD' &&
+                     Number.isInteger(person.age_years) &&
+                     person.age_years >= 0 && person.age_years <= 12) {
+            values.children_0_12 += 1;
+            if (person.age_years <= 5) values.children_0_5 += 1;
+            else values.buffet += 1;
+            expectedChildren.push([family.id, person.name, person.age_years]);
+          } else return false;
+        }
+      }
+    }
+    if (Object.entries(values).some(([key, value]) =>
+      !Number.isSafeInteger(data.counts[key]) || data.counts[key] !== value)) return false;
+    if (data.buffet_limit_reached !== (values.buffet >= data.buffet_limit) ||
+        data.souvenir_children.length !== expectedChildren.length) return false;
+
+    // Match every listed child to one actual participant, preserving duplicates.
+    const unmatched = [...expectedChildren];
+    for (const child of data.souvenir_children) {
+      if (!child) return false;
+      const index = unmatched.findIndex(([familyId, name, age]) =>
+        familyId === child.family_id && name === child.name && age === child.age_years);
+      if (index === -1) return false;
+      unmatched.splice(index, 1);
+    }
+    return unmatched.length === 0;
+  }
+  async function fetchDashboardSnapshot() {
+    const snapshot = await api('/api/admin/dashboard');
+    if (!validDashboardSnapshot(snapshot)) {
+      throw new Error('Dados incompletos recebidos do servidor.');
+    }
+    return snapshot;
+  }
+
   function drawDashboard(data) {
     dashboardData = data;
     const counts = data.counts;
@@ -107,7 +168,7 @@
     return values.replace(' ', 'T').slice(0, 16);
   }
   async function loadDashboard() {
-    const data = await api('/api/admin/dashboard');
+    const data = await fetchDashboardSnapshot();
     const settings = await api('/api/admin/settings');
     $('login-panel').hidden = true;
     $('dashboard-panel').hidden = false;
@@ -160,7 +221,7 @@
     $('refresh-dashboard-btn').textContent = 'Atualizando...';
     $('refresh-status').textContent = 'Consultando confirmações...';
     try {
-      const data = await api('/api/admin/dashboard');
+      const data = await fetchDashboardSnapshot();
       if (generation !== sessionGeneration || $('dashboard-panel').hidden) return;
       // Keep the search term and any unsaved venue/deadline edits unchanged.
       drawDashboard(data);

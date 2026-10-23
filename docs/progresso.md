@@ -1,6 +1,6 @@
 # Evolução — gerenciador de convites da Isadora
 
-Referência: 18/10/2026.
+Referência: 23/10/2026.
 
 **Barra de etapas finalizadas:** [██████████████░░] 86% — 6 de 7 etapas integralmente aprovadas.
 
@@ -12,13 +12,15 @@ Referência: 18/10/2026.
 | 4. Acesso privado | Concluída | Sessões, CSRF e totais |
 | 5. Interface pública | Concluída | Chromium mobile com confirmação, recusa e edição |
 | 6. Interface dos organizadores | Concluída | Chromium com login, listas, configuração e logout |
-| 7. Operação final | Parcialmente validada | 95 testes, concorrência com 20 requisições, Compose e persistência OK; checklist em Android/iPhone e revisão de segurança pendentes |
+| 7. Operação final | Parcialmente validada | 132 testes na última CI verde; concorrência com 20 requisições, Compose, persistência, backup com restauração e criptografia verificados; aparelhos físicos/HTTPS e auditoria pendentes |
 
-**Evidência operacional:** https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/39180698046
-- 95 testes passaram, incluindo CSP, X-Frame-Options, HTTPS obrigatório fora do localhost e proxy explicitamente confiável.
+**Evidência operacional mais recente (código anterior à validação adicional de payload):** https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/40033488738
+- 132 testes passaram, incluindo CSP, X-Frame-Options, HTTPS obrigatório fora do localhost, proxy explicitamente confiável, painel pesquisável e atualização manual/automática.
+- Dois testes novos sobre respostas HTTP 200 incompletas/incoerentes estão sendo acrescentados e exigem nova CI aprovada para integrar a contagem verificada.
 - Docker Compose construiu/subiu os serviços com MySQL em volume.
 - Confirmação repetida não duplicou registros; token permaneceu válido após recriação dos serviços.
 - Configuração do local e contadores preservados após reinício com o mesmo volume.
+- Criptografia AES-256-GCM, comparação criptográfica e restauração de dump decifrado verificadas em CI; não equivalem a restauração de produção.
 
 **Incrementos operacionais incluídos em 18/10/2026:** scripts/backup_mysql.py (dump MySQL com acesso restrito + restauração em banco temporário com comparação de dados), scripts/check_production.py (verificações HTTPS sem gravação) e testes das validações de entrada. A CI de 18/10/2026 foi aprovada e comprovou backup MySQL e restauração em banco isolado; o teste de HTTPS público exige hospedagem real. Documentos: docs/backup-restore.md e docs/https-deployment.md.
 

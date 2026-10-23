@@ -235,3 +235,46 @@ def test_automatic_refresh_at_selected_interval(page, organizer_server):
     expect(page.get_by_test_id("total-count")).to_have_text("4")
     expect(page.locator("#confirmed-list")).to_contain_text("Pedro")
     expect(page.locator("#refresh-status")).to_contain_text("Dados atualizados")
+
+
+def test_invalid_success_snapshot_does_not_corrupt_dashboard(page, organizer_server):
+    base, store = organizer_server
+    login(page, base)
+    expect(page.get_by_test_id("total-count")).to_have_text("3")
+    store.create(validate_rsvp({
+        "contact_name": "Rosa", "attending": True,
+        "participants": [{"name": "Rosa", "kind": "OVER_12", "age_years": None}],
+    }), "organizer-broken-response-rosa-1", datetime.now(timezone.utc))
+    page.route("**/api/admin/dashboard", lambda route: route.fulfill(
+        status=200, content_type="application/json", body="{}"
+    ))
+    page.locator("#refresh-dashboard-btn").click()
+    expect(page.locator("#refresh-status")).to_contain_text("Falha ao atualizar")
+    expect(page.get_by_test_id("total-count")).to_have_text("3")
+    page.locator("#guest-search").fill("Joao")
+    expect(page.locator("#confirmed-list")).to_contain_text("João")
+    page.unroute("**/api/admin/dashboard")
+    page.locator("#refresh-dashboard-btn").click()
+    expect(page.get_by_test_id("total-count")).to_have_text("4")
+    expect(page.locator("#refresh-status")).to_contain_text("Dados atualizados")
+    expect(page.locator("#guest-search")).to_have_value("Joao")
+
+
+def test_inconsistent_success_snapshot_rejected_without_wrong_buffet(page, organizer_server):
+    base, _ = organizer_server
+    login(page, base)
+    expect(page.get_by_test_id("buffet-count")).to_have_text("2")
+
+    def corrupt_buffet(route):
+        import json
+        response = route.fetch()
+        data = response.json()
+        data["counts"]["buffet"] = 1000
+        route.fulfill(status=200, content_type="application/json",
+                      body=json.dumps(data))
+
+    page.route("**/api/admin/dashboard", corrupt_buffet)
+    page.locator("#refresh-dashboard-btn").click()
+    expect(page.locator("#refresh-status")).to_contain_text("Falha ao atualizar")
+    expect(page.get_by_test_id("buffet-count")).to_have_text("2")
+    expect(page.locator("#refresh-dashboard-btn")).to_be_enabled()
