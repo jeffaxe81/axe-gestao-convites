@@ -1,0 +1,345 @@
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  if (!$('login-form')) return;
+  let csrfToken = null;
+  let dashboardData = null;
+  let sessionGeneration = 0;
+  let refreshPending = false;
+  let refreshTimer = null;
+
+  function setError(message) {
+    $('login-error').textContent = message;
+    $('login-error').hidden = false;
+  }
+  async function api(path, options) {
+    const request = Object.assign({credentials: 'same-origin', cache: 'no-store'}, options || {});
+    const response = await fetch(path, request);
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const error = new Error((data.error && data.error.message) || 'Não foi possível concluir.');
+      error.status = response.status;
+      throw error;
+    }
+    return data;
+  }
+  async function ensureCsrf() {
+    if (!csrfToken) csrfToken = (await api('/api/auth/csrf')).csrf_token;
+    return csrfToken;
+  }
+  function clearList(id) { $(id).replaceChildren(); }
+  function putEmpty(id) {
+    const li = document.createElement('li');
+    li.textContent = 'Nenhum registro.';
+    li.className = 'empty';
+    $(id).append(li);
+  }
+  function appendFamily(id, family) {
+    const li = document.createElement('li');
+    const name = document.createElement('strong');
+    name.textContent = family.contact_name;
+    const details = document.createElement('p');
+    details.className = 'muted';
+    details.textContent = family.participants.length
+      ? family.participants.map((p) => p.name + (
+          p.kind === 'CHILD' ? ' (' + p.age_years + ' anos)' : ''
+        )).join(', ')
+      : 'Não comparecerá';
+    li.append(name, details);
+    $(id).append(li);
+  }
+  // Search happens only in the organizer's authenticated browser session.
+  // No private names are sent in the URL, logs or local storage.
+  function fold(value) {
+    return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR');
+  }
+  function matchesFamily(family, term) {
+    return fold(family.contact_name).includes(term) ||
+      family.participants.some((person) => fold(person.name).includes(term));
+  }
+  function renderGuestLists(data) {
+    const term = fold($('guest-search').value.trim());
+    const confirmed = data.confirmed.filter((family) => matchesFamily(family, term));
+    const declined = data.declined.filter((family) => matchesFamily(family, term));
+    const matchingContacts = new Set(confirmed.filter(
+      (family) => fold(family.contact_name).includes(term)
+    ).map((family) => family.id));
+    const children = data.souvenir_children.filter((child) =>
+      matchingContacts.has(child.family_id) || fold(child.name).includes(term)
+    );
+    clearList('confirmed-list'); clearList('declined-list'); clearList('souvenir-list');
+    confirmed.forEach((family) => appendFamily('confirmed-list', family));
+    declined.forEach((family) => appendFamily('declined-list', family));
+    children.forEach((child) => {
+      const li = document.createElement('li');
+      li.textContent = child.name + ' — ' + child.age_years + ' ano(s)';
+      $('souvenir-list').append(li);
+    });
+    if (!confirmed.length) putEmpty('confirmed-list');
+    if (!declined.length) putEmpty('declined-list');
+    if (!children.length) putEmpty('souvenir-list');
+    const found = confirmed.length + declined.length;
+    const total = data.confirmed.length + data.declined.length;
+    $('search-summary').textContent = 'Exibindo ' + found + ' de ' + total +
+      ' respostas. Crianças na lista: ' + children.length + '.';
+    $('clear-search').hidden = !$('guest-search').value;
+  }
+  // Reject incomplete HTTP 200 payloads before touching private counters or lists.
+  function validDashboardSnapshot(data) {
+    if (!data || typeof data !== 'object' || Array.isArray(data) ||
+        !data.counts || typeof data.counts !== 'object' ||
+        !Array.isArray(data.confirmed) || !Array.isArray(data.declined) ||
+        !Array.isArray(data.souvenir_children) ||
+        !Number.isSafeInteger(data.buffet_limit) || data.buffet_limit < 1 ||
+        typeof data.buffet_limit_reached !== 'boolean') return false;
+
+    const values = {total: 0, buffet: 0, children_0_5: 0, children_0_12: 0, over_12: 0};
+    const familyIds = new Set();
+    const expectedChildren = [];
+    for (const [attending, families] of [[true, data.confirmed], [false, data.declined]]) {
+      for (const family of families) {
+        if (!family || typeof family.id !== 'string' || !family.id ||
+            typeof family.contact_name !== 'string' || !family.contact_name.trim() ||
+            family.attending !== attending || !Array.isArray(family.participants) ||
+            familyIds.has(family.id) || (attending && !family.participants.length) ||
+            (!attending && family.participants.length)) return false;
+        familyIds.add(family.id);
+        for (const person of family.participants) {
+          if (!person || typeof person.name !== 'string' || !person.name.trim()) return false;
+          values.total += 1;
+          if (person.kind === 'OVER_12' && person.age_years === null) {
+            values.over_12 += 1;
+            values.buffet += 1;
+          } else if (person.kind === 'CHILD' &&
+                     Number.isInteger(person.age_years) &&
+                     person.age_years >= 0 && person.age_years <= 12) {
+            values.children_0_12 += 1;
+            if (person.age_years <= 5) values.children_0_5 += 1;
+            else values.buffet += 1;
+            expectedChildren.push([family.id, person.name, person.age_years]);
+          } else return false;
+        }
+      }
+    }
+    if (Object.entries(values).some(([key, value]) =>
+      !Number.isSafeInteger(data.counts[key]) || data.counts[key] !== value)) return false;
+    if (data.buffet_limit_reached !== (values.buffet >= data.buffet_limit) ||
+        data.souvenir_children.length !== expectedChildren.length) return false;
+
+    // Match every listed child to one actual participant, preserving duplicates.
+    const unmatched = [...expectedChildren];
+    for (const child of data.souvenir_children) {
+      if (!child) return false;
+      const index = unmatched.findIndex(([familyId, name, age]) =>
+        familyId === child.family_id && name === child.name && age === child.age_years);
+      if (index === -1) return false;
+      unmatched.splice(index, 1);
+    }
+    return unmatched.length === 0;
+  }
+  async function fetchDashboardSnapshot() {
+    const snapshot = await api('/api/admin/dashboard');
+    if (!validDashboardSnapshot(snapshot)) {
+      throw new Error('Dados incompletos recebidos do servidor.');
+    }
+    return snapshot;
+  }
+
+  function drawDashboard(data) {
+    dashboardData = data;
+    const counts = data.counts;
+    document.querySelector('[data-testid=total-count]').textContent = String(counts.total);
+    document.querySelector('[data-testid=buffet-count]').textContent = String(counts.buffet);
+    document.querySelector('[data-testid=young-count]').textContent = String(counts.children_0_5);
+    document.querySelector('[data-testid=souvenir-count]').textContent = String(counts.children_0_12);
+    document.querySelector('[data-testid=over-count]').textContent = String(counts.over_12);
+    $('buffet-alert').hidden = !data.buffet_limit_reached;
+    if (data.buffet_limit_reached) {
+      $('buffet-alert').textContent = 'Atenção: contagem do buffet alcançou o limite interno de ' + data.buffet_limit + '.';
+    }
+    renderGuestLists(data);
+  }
+  function eventTime(utc) {
+    if (!utc) return '';
+    const values = new Intl.DateTimeFormat('sv-SE', {
+      timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit',
+      hour:'2-digit',minute:'2-digit',hourCycle:'h23'
+    }).format(new Date(utc));
+    return values.replace(' ', 'T').slice(0, 16);
+  }
+  async function loadDashboard() {
+    const data = await fetchDashboardSnapshot();
+    const settings = await api('/api/admin/settings');
+    $('login-panel').hidden = true;
+    $('dashboard-panel').hidden = false;
+    drawDashboard(data);
+    $('venue-input').value = settings.venue || '';
+    $('deadline-input').value = eventTime(settings.edit_deadline_utc);
+  }
+  function stopRefreshTimer() {
+    if (refreshTimer !== null) {
+      clearInterval(refreshTimer);
+      refreshTimer = null;
+    }
+  }
+  function configureRefreshTimer() {
+    stopRefreshTimer();
+    const seconds = Number($('refresh-interval').value);
+    if (!dashboardData || $('dashboard-panel').hidden || ![15, 30, 60].includes(seconds)) {
+      return;
+    }
+    refreshTimer = setInterval(() => {
+      if (!document.hidden) void refreshDashboard();
+    }, seconds * 1000);
+  }
+  function clearPrivateDashboard() {
+    sessionGeneration += 1;
+    // Expired Flask sessions no longer have the previous CSRF token.
+    csrfToken = null;
+    stopRefreshTimer();
+    dashboardData = null;
+    refreshPending = false;
+    $('dashboard-panel').hidden = true;
+    $('login-panel').hidden = false;
+    ['confirmed-list', 'declined-list', 'souvenir-list'].forEach(clearList);
+    $('guest-search').value = '';
+    $('search-summary').textContent = '';
+    $('clear-search').hidden = true;
+    $('refresh-interval').value = '0';
+    $('refresh-status').textContent = '';
+    $('refresh-dashboard-btn').disabled = false;
+    $('refresh-dashboard-btn').textContent = 'Atualizar dados';
+    $('export-status').textContent = '';
+    $('venue-input').value = '';
+    $('deadline-input').value = '';
+  }
+  async function refreshDashboard() {
+    if (refreshPending || !dashboardData || $('dashboard-panel').hidden) return;
+    const generation = sessionGeneration;
+    refreshPending = true;
+    $('refresh-dashboard-btn').disabled = true;
+    $('refresh-dashboard-btn').textContent = 'Atualizando...';
+    $('refresh-status').textContent = 'Consultando confirmações...';
+    try {
+      const data = await fetchDashboardSnapshot();
+      if (generation !== sessionGeneration || $('dashboard-panel').hidden) return;
+      // Keep the search term and any unsaved venue/deadline edits unchanged.
+      drawDashboard(data);
+      $('refresh-status').textContent = 'Dados atualizados às ' +
+        new Intl.DateTimeFormat('pt-BR', {hour: '2-digit', minute: '2-digit',
+          second: '2-digit'}).format(new Date()) + '.';
+    } catch (error) {
+      if (generation !== sessionGeneration || $('dashboard-panel').hidden) return;
+      if (error.status === 401 || error.status === 403) {
+        clearPrivateDashboard();
+        setError('Sua sessão expirou. Entre novamente para consultar os convidados.');
+      } else {
+        $('refresh-status').textContent = 'Falha ao atualizar. Os dados exibidos são da última consulta.';
+      }
+    } finally {
+      if (generation === sessionGeneration) {
+        refreshPending = false;
+        $('refresh-dashboard-btn').disabled = false;
+        $('refresh-dashboard-btn').textContent = 'Atualizar dados';
+      }
+    }
+  }
+  async function logIn(event) {
+    event.preventDefault();
+    $('login-error').hidden = true;
+    $('login-btn').disabled = true;
+    try {
+      const token = await ensureCsrf();
+      const result = await api('/api/auth/login', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json', 'X-CSRF-Token':token},
+        body: JSON.stringify({
+          username: $('admin-username').value,
+          password: $('admin-password').value
+        })
+      });
+      csrfToken = result.csrf_token;
+      sessionGeneration += 1;
+      $('admin-password').value = '';
+      await loadDashboard();
+    } catch (error) { setError(error.message); }
+    finally { $('login-btn').disabled = false; }
+  }
+  async function saveSettings(event) {
+    event.preventDefault();
+    $('settings-status').textContent = '';
+    $('save-settings').disabled = true;
+    try {
+      const rawDeadline = $('deadline-input').value;
+      // The party uses America/Sao_Paulo (UTC-03 in 2026).
+      const payload = {
+        venue: $('venue-input').value.trim() || null,
+        edit_deadline_utc: rawDeadline ? rawDeadline + ':00-03:00' : null
+      };
+      await api('/api/admin/settings', {
+        method:'PUT', headers:{'Content-Type':'application/json','X-CSRF-Token':await ensureCsrf()},
+        body:JSON.stringify(payload)
+      });
+      $('settings-status').textContent = 'Configuração salva com sucesso.';
+    } catch (error) { $('settings-status').textContent = error.message; }
+    finally { $('save-settings').disabled = false; }
+  }
+  async function exportCsv() {
+    const button = $('export-csv-btn');
+    button.disabled = true;
+    $('export-status').textContent = '';
+    try {
+      const response = await fetch('/api/admin/export.csv', {
+        credentials: 'same-origin', cache: 'no-store'
+      });
+      if (!response.ok) throw new Error('Não foi possível exportar. Entre novamente no painel.');
+      const csvBlob = await response.blob();
+      const href = URL.createObjectURL(csvBlob);
+      try {
+        const download = document.createElement('a');
+        download.href = href;
+        download.download = 'isadora-confirmacoes.csv';
+        document.body.append(download);
+        download.click();
+        download.remove();
+      } finally {
+        URL.revokeObjectURL(href);
+      }
+      $('export-status').textContent = 'Relatório preparado para download. Mantenha o arquivo em local privado.';
+    } catch (error) {
+      $('export-status').textContent = error.message;
+    } finally {
+      button.disabled = false;
+    }
+  }
+  async function logOut() {
+    try {
+      await api('/api/auth/logout', {method:'POST',headers:{'X-CSRF-Token':await ensureCsrf()}});
+      csrfToken = null;
+      clearPrivateDashboard();
+    } catch (error) { $('settings-status').textContent = error.message; }
+  }
+  $('login-form').addEventListener('submit', logIn);
+  $('settings-form').addEventListener('submit', saveSettings);
+  $('logout-btn').addEventListener('click', logOut);
+  $('export-csv-btn').addEventListener('click', exportCsv);
+  $('refresh-dashboard-btn').addEventListener('click', refreshDashboard);
+  $('refresh-interval').addEventListener('change', () => {
+    configureRefreshTimer();
+    $('refresh-status').textContent = $('refresh-interval').value === '0'
+      ? 'Atualização manual selecionada.'
+      : 'Atualização automática a cada ' + $('refresh-interval').value + ' segundos.';
+  });
+  $('guest-search').addEventListener('input', () => {
+    if (dashboardData) renderGuestLists(dashboardData);
+  });
+  $('clear-search').addEventListener('click', () => {
+    $('guest-search').value = '';
+    if (dashboardData) renderGuestLists(dashboardData);
+    $('guest-search').focus();
+  });
+  ensureCsrf().then(loadDashboard).catch(() => {
+    $('login-panel').hidden = false;
+    $('dashboard-panel').hidden = true;
+  });
+})();
