@@ -26,8 +26,8 @@ O painel visual dos organizadores está implementado, com login, listas, indicad
 
 ## Testes
 
-**134 testes aprovados** em 23/10/2026, com MySQL real, API, concorrência, Chromium e proteção HTTP. Docker Compose validado com reinício, persistência, backup e restauração isolada e criptografada. Incluem-se testes para rejeitar respostas administrativas HTTP 200 incompletas ou com totais incoerentes.
-Evidência: https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/40042632010. Ver execuções em:
+**137 testes aprovados** em 25/10/2026, com MySQL real, API, concorrência, Chromium e proteção HTTP. Docker Compose validado com reinício, persistência, backup e restauração isolada e criptografada. Incluem-se testes para rejeitar respostas administrativas HTTP 200 incompletas ou com totais incoerentes, edições concorrentes e prazo verificado após bloqueios MySQL.
+Evidência da execução atual: [fechamento técnico de 25/10/2026](docs/release-1-final-verification.md). A execução local incluiu MySQL real, Chromium e Compose; a CI do commit enviado deve ser conferida na PR. Ver execuções em:
 https://github.com/jeffaxe81/axe-gestao-convites/actions
 
 Para executar:

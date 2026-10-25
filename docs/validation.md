@@ -1,6 +1,12 @@
 # Validação — Gerenciador de Convites da Isadora
 
-## Situação atual — 23/10/2026
+## Situação atual — 25/10/2026
+
+**Execução atual nesta sessão:** 137 testes aprovados, sem falhas ou skips, em 51,39 s; Python 3.12, MySQL 8.4 e Chromium. Três casos novos verificam duas edições simultâneas da mesma família, mudança concorrente do prazo e relógio cruzando o prazo durante espera por lock. O último caso falhou antes da correção e passou depois.
+
+Ver [relatório de fechamento técnico](release-1-final-verification.md) para comandos, revisão independente por agente, evidências Docker/backup e pendências de homologação. A CI do novo commit precisa ser conferida depois do push.
+
+### Evidência anterior — 23/10/2026
 
 **Última execução integralmente aprovada:** https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/40042632010
 

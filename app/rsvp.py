@@ -145,7 +145,7 @@ class RsvpStore:
                     'can_edit': can_edit(datetime.now(timezone.utc), _to_aware(settings.edit_deadline_utc))}
 
     def update(self, family_id: str, edit_token: str, expected_revision: int,
-               data: RsvpInput, now_utc: datetime) -> RsvpReceipt:
+               data: RsvpInput, now_utc: datetime | Callable[[], datetime]) -> RsvpReceipt:
         if type(expected_revision) is not int or expected_revision <= 0 or not isinstance(data, RsvpInput):
             raise InputError('Revisão ou resposta inválida.')
         with self.session_factory.begin() as session:
@@ -153,7 +153,9 @@ class RsvpStore:
             if settings is None:
                 raise RuntimeError('Configuração do evento não inicializada.')
             family = self._authorized(session, family_id, edit_token, lock=True)
-            if not can_edit(now_utc, _to_aware(settings.edit_deadline_utc)):
+            # HTTP requests provide a clock: lock waits must not freeze the cutoff check.
+            decision_time = now_utc() if callable(now_utc) else now_utc
+            if not can_edit(decision_time, _to_aware(settings.edit_deadline_utc)):
                 raise EditClosed('Prazo de edição encerrado.')
             if family.revision != expected_revision:
                 raise RevisionConflict('Os dados foram alterados em outra aba.')

@@ -1,6 +1,6 @@
 # Evolução — gerenciador de convites da Isadora
 
-Referência: 23/10/2026.
+Referência: 25/10/2026.
 
 **Barra de etapas finalizadas:** [██████████████░░] 86% — 6 de 7 etapas integralmente aprovadas.
 
@@ -12,7 +12,7 @@ Referência: 23/10/2026.
 | 4. Acesso privado | Concluída | Sessões, CSRF e totais |
 | 5. Interface pública | Concluída | Chromium mobile com confirmação, recusa e edição |
 | 6. Interface dos organizadores | Concluída | Chromium com login, listas, configuração e logout |
-| 7. Operação final | Parcialmente validada | 134 testes na última CI verde; concorrência com 20 requisições, Compose, persistência, backup com restauração e criptografia verificados; aparelhos físicos/HTTPS e auditoria pendentes |
+| 7. Operação final | Parcialmente validada | 137 testes na execução local integral de 25/10/2026; concorrência com 20 requisições, Compose, persistência, backup com restauração e criptografia verificados; revisão de código independente realizada; aparelhos físicos, HTTPS definitivo e aceite operacional pendentes |
 
 **Evidência operacional mais recente (código anterior à validação adicional de payload):** https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/40042632010
 - 134 testes passaram, incluindo CSP, X-Frame-Options, HTTPS obrigatório fora do localhost, proxy explicitamente confiável, painel pesquisável e atualização manual/automática.
@@ -23,6 +23,8 @@ Referência: 23/10/2026.
 - Criptografia AES-256-GCM, comparação criptográfica e restauração de dump decifrado verificadas em CI; não equivalem a restauração de produção.
 
 **Incrementos operacionais incluídos em 18/10/2026:** scripts/backup_mysql.py (dump MySQL com acesso restrito + restauração em banco temporário com comparação de dados), scripts/check_production.py (verificações HTTPS sem gravação) e testes das validações de entrada. A CI de 18/10/2026 foi aprovada e comprovou backup MySQL e restauração em banco isolado; o teste de HTTPS público exige hospedagem real. Documentos: docs/backup-restore.md e docs/https-deployment.md.
+
+**Revisão técnica de 25/10/2026:** análise de código por outro agente encontrou uma falha no prazo durante espera por locks MySQL. Regressão reproduzida (HTTP 200 indevido), corrigida e validada; ver [relatório de fechamento](release-1-final-verification.md). Essa revisão não representa auditoria externa de segurança.
 
 **Ainda pendente:** testes manuais Android e iPhone abrindo o link vindo de PDF/WhatsApp, instalação/homologação do proxy HTTPS e revisão independente de segurança. Não declarar produção liberada.
 

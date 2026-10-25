@@ -161,7 +161,7 @@ def update_rsvp(family_id):
         raise InputError("Informe revisão e dados completos da confirmação.")
     revision = body["revision"]
     payload = validate_rsvp({key: body[key] for key in ("contact_name", "attending", "participants")})
-    receipt = _store().update(family_id, token, revision, payload, datetime.now(timezone.utc))
+    receipt = _store().update(family_id, token, revision, payload, lambda: datetime.now(timezone.utc))
     return jsonify(_public_receipt(receipt))
 
 
