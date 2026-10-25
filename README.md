@@ -4,6 +4,12 @@ Aniversário de dois anos da Isadora — 13/12/2026, às 15h (America/Sao_Paulo)
 
 **Estado: desenvolvimento. Não divulgar ainda o endereço para convidados.**
 
+## Apresentação visual no GitHub Pages
+
+Há uma demonstração estática separada na branch `gh-pages`, com o formulário e o tema da Isadora. Ela permite simular confirmação/recusa e acompanhantes, **sem enviar ou gravar respostas**. Não representa a aplicação em produção.
+
+A ativação do Pages ainda depende do proprietário em Settings → Pages (branch `gh-pages`, pasta `/(root)`); a integração recebeu HTTP 403 ao tentar habilitá-lo. Veja [instruções e testes da apresentação](docs/pages-preview.md).
+
 ## Barra de avanço verificado
 
 `[██████████████░░] 86% — 6 de 7 etapas completas`
