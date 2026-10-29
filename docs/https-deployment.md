@@ -36,7 +36,7 @@ Após a implantação HTTPS, no computador de administração execute:
 
     python scripts/check_production.py --url https://convites.example.com
 
-O comando não cria nem modifica convites. Verifica certificado TLS via biblioteca do sistema, health check, conteúdo da API pública, painel privado inacessível sem login, política CSP, não-cache, X-Frame-Options, HSTS e flags Secure/HttpOnly do cookie. HSTS deve ser emitido pelo proxy.
+O comando não cria nem modifica convites. Verifica certificado TLS via biblioteca do sistema, health check, conteúdo da API pública, painel privado inacessível sem login, política CSP, não-cache, X-Frame-Options, HSTS e atributos reais do cookie de sessão (Secure, HttpOnly, SameSite=Lax e Path=/). A verificação usa parser de cookies para evitar falsos positivos quando essas palavras aparecem apenas no nome ou valor. HSTS deve ser emitido pelo proxy.
 
 Se a verificação falhar, manter o acesso restrito e corrigir. Aprovação desse script é necessária, mas **não substitui** auditoria, teste de carga, restauração ou ensaio manual de dispositivos.
 

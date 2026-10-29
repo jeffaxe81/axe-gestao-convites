@@ -1,10 +1,11 @@
 """Testes de proteção das ferramentas operacionais sem Docker ou internet."""
 from pathlib import Path
+from email.message import Message
 
 import pytest
 
 from scripts.backup_mysql import backup
-from scripts.check_production import validate_origin
+from scripts.check_production import has_safe_admin_cookie, validate_origin
 
 
 @pytest.mark.parametrize("value", [
@@ -40,3 +41,35 @@ def test_backup_requires_gzip_sql_extension_without_writing(tmp_path):
     with pytest.raises(ValueError, match="sql.gz"):
         backup(destination)
     assert not destination.exists()
+
+
+def _cookie_headers(*entries):
+    headers = Message()
+    for entry in entries:
+        headers.add_header("Set-Cookie", entry)
+    return headers
+
+
+def test_checker_accepts_real_secure_admin_cookie():
+    headers = _cookie_headers(
+        "other=value; Path=/; Secure; HttpOnly",
+        "session=abc123; Path=/; Secure; HttpOnly; SameSite=Lax",
+    )
+    assert has_safe_admin_cookie(headers)
+
+
+@pytest.mark.parametrize("header", [
+    "session=abc123; Path=/; HttpOnly; SameSite=Lax",
+    "session=abc123; Path=/; Secure; SameSite=Lax",
+    "session=abc123; Path=/; Secure; HttpOnly; SameSite=None",
+    "session=abc123; Path=/organizar; Secure; HttpOnly; SameSite=Lax",
+    "session=abc123; Path=/; insecure=true; nothttponly=true; SameSite=Lax",
+    "insecure_session=abc123; Path=/; Secure; HttpOnly; SameSite=Lax",
+    "session=abc123; Path=/; Secure; HttpOnly",
+])
+def test_checker_rejects_insecure_or_misleading_cookie(header):
+    assert not has_safe_admin_cookie(_cookie_headers(header))
+
+
+def test_checker_rejects_empty_cookie_headers():
+    assert not has_safe_admin_cookie(_cookie_headers())

@@ -4,6 +4,7 @@
 Não envia RSVPs nem acessa dados de convidados. Exige uma URL HTTPS real.
 """
 import argparse
+from http.cookies import CookieError, SimpleCookie
 import json
 import ssl
 import sys
@@ -47,6 +48,24 @@ def json_body(data):
     return value
 
 
+def has_safe_admin_cookie(headers):
+    """Exige atributos reais do cookie Flask 'session', não substrings no nome/valor."""
+    for header in headers.get_all("Set-Cookie", []):
+        cookies = SimpleCookie()
+        try:
+            cookies.load(header)
+        except CookieError:
+            continue
+        session_cookie = cookies.get("session")
+        if session_cookie is None:
+            continue
+        if (bool(session_cookie["secure"]) and bool(session_cookie["httponly"])
+                and session_cookie["samesite"].lower() == "lax"
+                and session_cookie["path"] == "/"):
+            return True
+    return False
+
+
 def verify(url):
     origin, hostname = validate_origin(url)
     status, headers, data = fetch(origin, hostname, "/health/ready")
@@ -82,11 +101,8 @@ def verify(url):
     status, headers, data = fetch(origin, hostname, "/api/auth/csrf")
     if status != 200 or "csrf_token" not in json_body(data):
         raise RuntimeError("Rota CSRF indisponível.")
-    cookies = headers.get_all("Set-Cookie", [])
-    if not cookies or not any(
-        "secure" in c.lower() and "httponly" in c.lower() for c in cookies
-    ):
-        raise RuntimeError("Cookie administrativo não tem Secure e HttpOnly.")
+    if not has_safe_admin_cookie(headers):
+        raise RuntimeError("Cookie de sessão administrativa exige Secure, HttpOnly, SameSite=Lax e Path=/.")
     print("PASS: TLS, disponibilidade, acesso privado, CSP, HSTS e cookie seguro.")
 
 
