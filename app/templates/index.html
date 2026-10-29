@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>Um dia especial para Isadora 🌼</title>
+  <meta name="theme-color" content="#f6e6b1">
+  <link rel="stylesheet" href="{{ url_for('static', filename='site.css') }}">
+  <script src="{{ url_for('static', filename='guest.js') }}" defer></script>
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <div class="flowers" aria-hidden="true">✿ 🌼 ✿</div>
+      <p class="eyebrow">Você é nosso convidado especial!</p>
+      <h1>Os 2 aninhos da <span>Isadora</span></h1>
+      <p class="intro">Um dia florido, cheio de amor e de sorrisos. Queremos muito celebrar com você!</p>
+      <div class="details">
+        <div><strong>Quando</strong><span id="event-date">Domingo, 13 de dezembro de 2026 às 15h</span></div>
+        <div><strong>Onde</strong><span id="event-venue">Local a confirmar</span></div>
+      </div>
+    </header>
+
+    <section class="panel" aria-labelledby="form-title">
+      <div id="error" class="notice error" role="alert" hidden></div>
+      <p id="loading" class="notice" role="status" hidden>Carregando sua confirmação...</p>
+
+      <form id="rsvp-form" novalidate>
+        <p class="eyebrow">Confirmação de presença</p>
+        <h2 id="form-title">Vamos festejar juntos?</h2>
+        <p class="muted">Conte para nós se você poderá participar. Se vier acompanhado, inclua cada pessoa.</p>
+        <fieldset class="attendance">
+          <legend>Você vai comparecer?</legend>
+          <div class="choice-row">
+            <label class="choice"><input type="radio" name="attendance" value="yes" checked> <span>Sim, estarei lá! 🌼</span></label>
+            <label class="choice"><input type="radio" name="attendance" value="no"> <span>Não poderei ir</span></label>
+          </div>
+        </fieldset>
+
+        <div class="field">
+          <label for="contact-name">Seu nome completo</label>
+          <input id="contact-name" name="contact-name" type="text" autocomplete="name" maxlength="160" required placeholder="Como podemos identificar você?">
+        </div>
+
+        <div id="attendance-details">
+          <div class="section-head">
+            <h3>Quem estará presente?</h3>
+            <p class="muted">Inclua você e seus acompanhantes. Crianças têm idade informada em anos completos.</p>
+          </div>
+          <div id="participants" class="participant-list"></div>
+          <button type="button" id="add-companion" class="secondary">+ Adicionar acompanhante</button>
+        </div>
+
+        <p class="footnote">Você poderá atualizar sua resposta pelo link privado gerado após o envio, enquanto a edição estiver aberta.</p>
+        <button type="button" id="review-btn" class="primary full">Revisar minha resposta</button>
+      </form>
+
+      <div id="review" hidden>
+        <p class="eyebrow">Quase lá!</p>
+        <h2>Confira seus dados</h2>
+        <div id="review-data" class="review-data"></div>
+        <div class="actions">
+          <button type="button" id="back-btn" class="secondary">Voltar e corrigir</button>
+          <button type="button" id="submit-btn" class="primary">Enviar confirmação</button>
+        </div>
+      </div>
+
+      <div id="success" class="success" role="status" hidden>
+        <div class="flowers" aria-hidden="true">🌼 ✿ 🌼</div>
+        <h2>Obrigado pelo carinho!</h2>
+        <p id="success-message"></p>
+        <label for="edit-link">Guarde este link privado para alterar sua resposta:</label>
+        <input type="text" id="edit-link" readonly spellcheck="false" aria-label="Link privado de edição">
+        <button type="button" id="copy-link" class="secondary full">Copiar link de edição</button>
+      </div>
+    </section>
+    <footer>Feito com carinho para celebrar a Isadora <span aria-hidden="true">🌼</span></footer>
+  </main>
+</body>
+</html>
