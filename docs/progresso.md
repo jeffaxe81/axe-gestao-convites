@@ -12,11 +12,12 @@ Referência: 29/10/2026.
 | 4. Acesso privado | Concluída | Sessões, CSRF e totais |
 | 5. Interface pública | Concluída | Chromium mobile com confirmação, recusa e edição |
 | 6. Interface dos organizadores | Concluída | Chromium com login, listas, configuração e logout |
-| 7. Operação final | Parcialmente validada | 152 testes na CI de 29/10/2026; concorrência com 20 requisições, Compose, persistência, backup com restauração e criptografia verificados; revisão de código independente realizada; aparelhos físicos, HTTPS definitivo e aceite operacional pendentes |
+| 7. Operação final | Parcialmente validada | 165 testes na CI de 29/10/2026; concorrência com 20 requisições, Compose, persistência, backup com restauração e criptografia verificados; revisão de código independente realizada; aparelhos físicos, HTTPS definitivo e aceite operacional pendentes |
 
-**Evidência operacional mais recente:** https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/40909637407
-- 152 testes passaram, incluindo CSP, X-Frame-Options, HTTPS obrigatório fora do localhost, proxy explicitamente confiável, painel pesquisável e atualização manual/automática.
+**Evidência operacional mais recente:** https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/40917656389
+- 165 testes passaram, incluindo CSP, X-Frame-Options, HTTPS obrigatório fora do localhost, proxy explicitamente confiável, painel pesquisável e atualização manual/automática.
 - Validação do painel contra respostas inconsistentes, concorrência no fechamento de edições e gerador offline de PDF com botão/QR Code HTTPS aprovados.
+- Sessão expirada durante configurações ou exportação e falha de logout tratadas com limpeza imediata de nomes, métricas e campos, verificadas em quatro novos testes E2E.
 - Docker Compose construiu/subiu os serviços com MySQL em volume.
 - Confirmação repetida não duplicou registros; token permaneceu válido após recriação dos serviços.
 - Configuração do local e contadores preservados após reinício com o mesmo volume.

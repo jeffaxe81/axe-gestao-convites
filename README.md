@@ -22,12 +22,12 @@ Ver [docs/progresso.md](docs/progresso.md). Os testes automatizados de navegador
 - Exportação CSV privada: confirmação, recusa, faixa etária, buffet e lembrancinhas; proteção contra injeção de fórmulas.
 - Página pública com tema margaridas/amarelo-manteiga e formulário para celular, revisão, agradecimento e link privado para editar.
 
-O painel visual dos organizadores está implementado, com login, listas, indicadores, pesquisa de convidados (inclusive acompanhantes e sem distinção de acentos), atualização manual ou automática a cada 15/30/60 segundos e ajustes do local/prazo. A atualização preserva pesquisas e campos não salvos; sessões expiradas ocultam dados privados.
+O painel visual dos organizadores está implementado, com login, listas, indicadores, pesquisa de convidados (inclusive acompanhantes e sem distinção de acentos), atualização manual ou automática a cada 15/30/60 segundos e ajustes do local/prazo. A atualização preserva pesquisas e campos não salvos; sessões expiradas durante atualização, exportação ou gravação ocultam e limpam dados privados, e falha de logout nunca deixa listas visíveis.
 
 ## Testes
 
-**152 testes aprovados** em 29/10/2026, com MySQL real, API, concorrência, Chromium e proteção HTTP. Docker Compose validado com reinício, persistência, backup e restauração isolada e criptografada. Incluem-se testes de respostas administrativas HTTP 200 inconsistentes, edições concorrentes, prazo após locks MySQL, geração de convite PDF com QR Code e validação de URL HTTPS segura.
-**CI atual aprovada:** https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/40909637407 (152 testes, Docker, MySQL e restauração). A [verificação técnica anterior de 25/10/2026](docs/release-1-final-verification.md) documenta os ensaios de concorrência/locks e continua válida como histórico. Ver execuções em:
+**165 testes aprovados** em 29/10/2026, com MySQL real, API, concorrência, Chromium e proteção HTTP. Docker Compose validado com reinício, persistência, backup e restauração isolada e criptografada. Incluem-se testes de respostas administrativas HTTP 200 inconsistentes, edições concorrentes, prazo após locks MySQL, geração de convite PDF com QR Code e validação de URL HTTPS segura.
+**CI atual aprovada:** https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/40917656389 (165 testes, Docker, MySQL e restauração). A [verificação técnica anterior de 25/10/2026](docs/release-1-final-verification.md) documenta os ensaios de concorrência/locks e continua válida como histórico. Ver execuções em:
 https://github.com/jeffaxe81/axe-gestao-convites/actions
 
 Para executar:
