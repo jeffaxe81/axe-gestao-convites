@@ -5,7 +5,7 @@ from urllib.request import Request
 
 import pytest
 
-from scripts.backup_mysql import backup
+from scripts.backup_mysql import backup, validated_backup_source
 from scripts.check_production import _StrictOriginRedirect, has_safe_admin_cookie, validate_origin
 
 
@@ -96,3 +96,23 @@ def test_checker_blocks_off_origin_redirect_before_following(target):
 def test_checker_rejects_non_public_or_malformed_hosts(value):
     with pytest.raises(ValueError):
         validate_origin(value)
+
+
+def test_restore_rejects_symlink_even_when_target_is_private(tmp_path):
+    original = tmp_path / "original.sql.gz"
+    original.write_bytes(b"backup")
+    original.chmod(0o600)
+    alias = tmp_path / "alias.sql.gz"
+    alias.symlink_to(original)
+    with pytest.raises(ValueError, match="link simbólico"):
+        validated_backup_source(alias)
+
+
+def test_restore_rejects_world_readable_personal_data(tmp_path):
+    file = tmp_path / "backup.sql.gz"
+    file.write_bytes(b"backup")
+    file.chmod(0o644)
+    with pytest.raises(ValueError, match="chmod 600"):
+        validated_backup_source(file)
+    file.chmod(0o600)
+    assert validated_backup_source(file) == file

@@ -123,10 +123,17 @@ def query_digest(database, table, columns):
     return digest.hexdigest(), total
 
 
-def verify_restore(source):
+def validated_backup_source(source):
     source = Path(source).expanduser()
-    if not source.is_file() or not source.name.endswith(".sql.gz"):
-        raise ValueError("Informe um backup .sql.gz existente.")
+    if source.is_symlink() or not source.is_file() or not source.name.endswith(".sql.gz"):
+        raise ValueError("Informe um backup .sql.gz regular, sem link simbólico.")
+    if os.name == "posix" and source.stat().st_mode & 0o077:
+        raise ValueError("Proteja o backup com chmod 600 antes de restaurar.")
+    return source
+
+
+def verify_restore(source):
+    source = validated_backup_source(source)
     original = database_name()
     temporary = "isadora_restore_" + secrets.token_hex(6)
     baseline = {

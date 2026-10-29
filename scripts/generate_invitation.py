@@ -165,11 +165,18 @@ def main():
     selected.add_argument("--preview", action="store_true", help="PDF de demonstração sem link")
     parser.add_argument("--output", required=True, help="Caminho de saída .pdf fora do Git")
     parser.add_argument("--venue", help="Local da festa, se já confirmado")
+    parser.add_argument("--check-production", action="store_true",
+                        help="Confere HTTPS e acesso privado antes de gerar PDF final")
     args = parser.parse_args()
     try:
+        if args.check_production:
+            if args.preview:
+                raise ValueError("--check-production exige --url HTTPS final.")
+            from scripts.check_production import verify
+            verify(args.url)
         target = save_invitation(args.output, url=args.url, venue=args.venue,
                                  preview=args.preview)
-    except (ValueError, OSError) as error:
+    except (ValueError, RuntimeError, OSError) as error:
         parser.error(str(error))
     print("Convite criado: " + str(target))
     if args.preview:

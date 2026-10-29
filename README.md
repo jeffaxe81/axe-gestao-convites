@@ -46,7 +46,7 @@ O gerador não faz envio nem contém nomes de convidados. Instale as dependênci
 python -m pip install -r requirements-ops.txt
 python scripts/generate_invitation.py --preview --output /tmp/isadora-demonstracao.pdf
 # Após homologar seu domínio HTTPS:
-python scripts/generate_invitation.py --url https://convites.seu-dominio.com.br --output /tmp/isadora-convite.pdf --venue "Local confirmado"
+python scripts/generate_invitation.py --url https://convites.seu-dominio.com.br --check-production --output /tmp/isadora-convite.pdf --venue "Local confirmado"
 ```
 
 O modo `--preview` produz uma demonstração marcada, **sem link** e não deve ser enviada. A geração final exige domínio HTTPS real; nunca usar endereço provisório, link de edição privada ou incluir tokens. Confirmar QR Code e botão em celulares antes de encaminhar o PDF via WhatsApp.
@@ -80,6 +80,7 @@ Não habilite `TRUSTED_PROXY_HOPS=1` sem configurar um proxy local que SOBRESCRE
 - [Barra de progresso](docs/progresso.md)
 - [Evidências verificadas](docs/validation.md)
 - [Checklist manual pendente](docs/manual-checklist.md)
+- [Seis frentes técnicas e critérios de fechamento](docs/frentes-paralelas.md)
 - [Segurança para publicação e riscos](docs/security-deployment.md)
 - [Backup, verificação de restauração e recuperação](docs/backup-restore.md)
 - [Publicação HTTPS e smoke test sem alterar convites](docs/https-deployment.md)

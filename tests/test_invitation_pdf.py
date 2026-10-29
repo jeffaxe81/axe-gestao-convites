@@ -59,3 +59,34 @@ def test_reject_conflicting_modes_and_excessive_venue():
         invitation_bytes(preview=True, url="https://convites.festa.com.br")
     with pytest.raises(ValueError):
         invitation_bytes(preview=True, venue="x" * 180)
+
+
+def test_checked_pdf_requires_successful_live_verification(monkeypatch, tmp_path):
+    import sys
+    from scripts import check_production, generate_invitation
+    target = tmp_path / "ready.pdf"
+    checked = []
+    monkeypatch.setattr(check_production, "verify", lambda url: checked.append(url))
+    monkeypatch.setattr(sys, "argv", [
+        "generate_invitation.py", "--url", "https://convites.festa.com.br",
+        "--check-production", "--output", str(target)
+    ])
+    generate_invitation.main()
+    assert checked == ["https://convites.festa.com.br"]
+    assert target.is_file()
+
+
+def test_pdf_not_written_when_live_check_fails(monkeypatch, tmp_path):
+    import sys
+    from scripts import check_production, generate_invitation
+    target = tmp_path / "blocked.pdf"
+    def reject(_url):
+        raise RuntimeError("HTTPS não homologado")
+    monkeypatch.setattr(check_production, "verify", reject)
+    monkeypatch.setattr(sys, "argv", [
+        "generate_invitation.py", "--url", "https://convites.festa.com.br",
+        "--check-production", "--output", str(target)
+    ])
+    with pytest.raises(SystemExit):
+        generate_invitation.main()
+    assert not target.exists()
