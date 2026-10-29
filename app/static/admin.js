@@ -259,6 +259,9 @@
     event.preventDefault();
     $('login-error').hidden = true;
     $('login-btn').disabled = true;
+    // Never keep plaintext password in the form after a failed login/network request.
+    const password = $('admin-password').value;
+    $('admin-password').value = '';
     try {
       const token = await ensureCsrf();
       const result = await api('/api/auth/login', {
@@ -266,7 +269,7 @@
         headers: {'Content-Type':'application/json', 'X-CSRF-Token':token},
         body: JSON.stringify({
           username: $('admin-username').value,
-          password: $('admin-password').value
+          password: password
         })
       });
       csrfToken = result.csrf_token;

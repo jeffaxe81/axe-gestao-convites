@@ -97,6 +97,19 @@ def test_failed_login_never_shows_private_lists(page, organizer_server):
     login(page, base, password="senha-incorreta")
     expect(page.locator("#login-error")).to_be_visible()
     expect(page.locator("#dashboard-panel")).to_be_hidden()
+    expect(page.locator("#admin-password")).to_have_value("")
+
+
+def test_unavailable_login_clears_password_field(page, organizer_server):
+    base, _ = organizer_server
+    page.route("**/api/auth/login", lambda route: route.fulfill(
+        status=503, content_type="application/json",
+        body='{"error":{"message":"Serviço indisponível"}}'
+    ))
+    login(page, base)
+    expect(page.locator("#login-error")).to_contain_text("Serviço indisponível")
+    expect(page.locator("#admin-password")).to_have_value("")
+    expect(page.locator("#dashboard-panel")).to_be_hidden()
 
 
 def test_guest_search_by_contact_companion_and_decline(page, organizer_server):

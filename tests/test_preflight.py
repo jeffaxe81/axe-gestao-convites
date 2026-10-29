@@ -80,3 +80,16 @@ def test_env_never_follows_symlink(tmp_path):
     link.symlink_to(target)
     with pytest.raises(ValueError, match="regular"):
         load_env(link)
+
+
+@pytest.mark.parametrize("url", [
+    "https://convites.isadora.com.br:8443",
+    "https://convites..isadora.com.br",
+    "https://convites.invalid",
+    "https://convites.localhost",
+    "https://convites.isadora.com.br:abc",
+])
+def test_reject_invalid_dns_hostname_and_custom_ports(url):
+    config = configuration()
+    config["APP_PUBLIC_URL"] = url
+    assert validate(config)

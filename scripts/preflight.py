@@ -66,9 +66,10 @@ def validate(values, *, allow_proxy=False):
     try:
         url = urlsplit(values.get("APP_PUBLIC_URL", ""))
         hostname = url.hostname
-        if (url.scheme != "https" or not hostname or "." not in hostname
+        if (url.scheme != "https" or not hostname
             or url.username or url.password or url.query or url.fragment
-            or url.path not in ("", "/")):
+            or url.path not in ("", "/") or url.port is not None
+            or not re.fullmatch(r"(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}", hostname)):
             errors.append("APP_PUBLIC_URL deve ser apenas a origem HTTPS do domínio público.")
         if hostname:
             try:
@@ -76,7 +77,7 @@ def validate(values, *, allow_proxy=False):
                 errors.append("APP_PUBLIC_URL deve usar um domínio DNS, não endereço IP.")
             except ValueError:
                 pass
-            if hostname.endswith((".local", ".internal", ".example", ".test")):
+            if hostname.endswith((".local", ".internal", ".example", ".test", ".invalid", ".localhost")):
                 errors.append("APP_PUBLIC_URL deve usar domínio de produção.")
     except ValueError:
         errors.append("APP_PUBLIC_URL inválida.")

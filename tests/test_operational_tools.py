@@ -1,11 +1,12 @@
 """Testes de proteção das ferramentas operacionais sem Docker ou internet."""
 from pathlib import Path
 from email.message import Message
+from urllib.request import Request
 
 import pytest
 
 from scripts.backup_mysql import backup
-from scripts.check_production import has_safe_admin_cookie, validate_origin
+from scripts.check_production import _StrictOriginRedirect, has_safe_admin_cookie, validate_origin
 
 
 @pytest.mark.parametrize("value", [
@@ -73,3 +74,25 @@ def test_checker_rejects_insecure_or_misleading_cookie(header):
 
 def test_checker_rejects_empty_cookie_headers():
     assert not has_safe_admin_cookie(_cookie_headers())
+
+
+@pytest.mark.parametrize("target", [
+    "http://convites.example.com/api/event",
+    "https://outro.example.com/api/event",
+    "https://convites.example.com.evil.com/api/event",
+])
+def test_checker_blocks_off_origin_redirect_before_following(target):
+    redirect = _StrictOriginRedirect("convites.example.com")
+    request = Request("https://convites.example.com/api/event")
+    with pytest.raises(RuntimeError, match="Redirecionamento"):
+        redirect.redirect_request(request, None, 302, "Found", {}, target)
+
+
+@pytest.mark.parametrize("value", [
+    "https://127.0.0.1", "https://10.0.0.8",
+    "https://convites.example.com:8443", "https://convites.local",
+    "https://convites.invalid", "https://convites..com",
+])
+def test_checker_rejects_non_public_or_malformed_hosts(value):
+    with pytest.raises(ValueError):
+        validate_origin(value)

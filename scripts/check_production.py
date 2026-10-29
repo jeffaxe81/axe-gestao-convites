@@ -6,29 +6,53 @@ Não envia RSVPs nem acessa dados de convidados. Exige uma URL HTTPS real.
 import argparse
 from http.cookies import CookieError, SimpleCookie
 import json
+import ipaddress
+import re
 import ssl
 import sys
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
-from urllib.request import Request, urlopen
+from urllib.request import HTTPSHandler, HTTPRedirectHandler, Request, build_opener
 
 
 def validate_origin(value):
     parsed = urlsplit(value)
+    host = parsed.hostname
     if (
-        parsed.scheme != "https" or not parsed.hostname
-        or parsed.hostname in {"localhost", "127.0.0.1", "::1"}
+        parsed.scheme != "https" or not host
         or parsed.username or parsed.password or parsed.query or parsed.fragment
-        or parsed.path not in ("", "/")
+        or parsed.path not in ("", "/") or parsed.port is not None
+        or not re.fullmatch(r"(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}", host)
+        or host.endswith((".local", ".internal", ".test", ".example", ".invalid", ".localhost"))
     ):
         raise ValueError("Informe somente a origem HTTPS pública (sem caminhos ou credenciais).")
-    return value.rstrip("/"), parsed.netloc
+    try:
+        ipaddress.ip_address(host)
+    except ValueError:
+        pass
+    else:
+        raise ValueError("Informe um domínio DNS, nunca IP privado ou público.")
+    return "https://" + host, host
+
+
+class _StrictOriginRedirect(HTTPRedirectHandler):
+    """Reject off-origin redirects BEFORE contacting the redirected address."""
+    def __init__(self, host):
+        self.host = host
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        target = urlsplit(newurl)
+        if target.scheme != "https" or target.netloc != self.host:
+            raise RuntimeError("Redirecionamento externo ou HTTP bloqueado.")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
 def fetch(origin, expected_host, path):
     request = Request(origin + path, headers={"Accept": "application/json"})
+    opener = build_opener(HTTPSHandler(context=ssl.create_default_context()),
+                          _StrictOriginRedirect(expected_host))
     try:
-        response = urlopen(request, timeout=15, context=ssl.create_default_context())
+        response = opener.open(request, timeout=15)
     except HTTPError as exc:
         response = exc
     with response:
