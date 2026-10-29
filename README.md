@@ -38,6 +38,19 @@ python -m playwright install --with-deps chromium
 python -m pytest -q
 ```
 
+## Convite PDF com link para WhatsApp (geração offline)
+
+O gerador não faz envio nem contém nomes de convidados. Instale as dependências operacionais fora do contêiner web:
+
+```bash
+python -m pip install -r requirements-ops.txt
+python scripts/generate_invitation.py --preview --output /tmp/isadora-demonstracao.pdf
+# Após homologar seu domínio HTTPS:
+python scripts/generate_invitation.py --url https://convites.seu-dominio.com.br --output /tmp/isadora-convite.pdf --venue "Local confirmado"
+```
+
+O modo `--preview` produz uma demonstração marcada, **sem link** e não deve ser enviada. A geração final exige domínio HTTPS real; nunca usar endereço provisório, link de edição privada ou incluir tokens. Confirmar QR Code e botão em celulares antes de encaminhar o PDF via WhatsApp.
+
 ## Execução local com Docker (validada no CI; produção pendente)
 
 ```bash
@@ -70,9 +83,10 @@ Não habilite `TRUSTED_PROXY_HOPS=1` sem configurar um proxy local que SOBRESCRE
 - [Segurança para publicação e riscos](docs/security-deployment.md)
 - [Backup, verificação de restauração e recuperação](docs/backup-restore.md)
 - [Publicação HTTPS e smoke test sem alterar convites](docs/https-deployment.md)
+- [Implantação opcional via Cloudflare Tunnel](docs/cloudflare-tunnel.md)
 - [Antecipação de 1 mês, entregas e pendências](docs/antecipacao-1-mes.md)
 
-A produção e o envio do convite em PDF pelo WhatsApp são atividades externas a este aplicativo. Domínio, hospedagem e validação manual Android/iPhone estão pendentes.
+O PDF do convite agora pode ser gerado **offline** com botão e QR Code clicáveis por `scripts/generate_invitation.py`. O aplicativo não envia mensagens por WhatsApp: a distribuição é manual e fica bloqueada até homologação de domínio, HTTPS e dispositivos físicos.
 
 ## Operação da Release 1 (implantação pendente)
 

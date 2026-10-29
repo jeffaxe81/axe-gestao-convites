@@ -1,2 +1,5 @@
 # Ferramenta offline de criptografia/decifragem AES-256-GCM dos backups.
 cryptography==46.0.4
+
+# Geração offline de convite PDF (não instalada no contêiner web).
+reportlab==4.4.9

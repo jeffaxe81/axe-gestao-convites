@@ -2,6 +2,11 @@
 
 Todas as caixas abaixo permanecem desmarcadas até testes reais. Registrar data, dispositivo/versão, responsável, passos e evidência sem publicar nomes de convidados.
 
+## Preparação do PDF
+- [ ] Gerar PDF final apenas após validação da origem HTTPS real.
+- [ ] Validar QR Code e botão do PDF; não encaminhar a demonstração.
+- [ ] Testar PDF em leitor e WhatsApp de aparelhos reais; conferir que não expõe link de edição privada.
+
 ## Android — abertura do convite via WhatsApp
 - [ ] Receber PDF do convite no WhatsApp e abrir o link de confirmação.
 - [ ] Conferir legibilidade, contraste, foco, teclado, toque e ausência de rolagem horizontal.
