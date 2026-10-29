@@ -1,6 +1,6 @@
 # Evolução — gerenciador de convites da Isadora
 
-Referência: 25/10/2026.
+Referência: 29/10/2026.
 
 **Barra de etapas finalizadas:** [██████████████░░] 86% — 6 de 7 etapas integralmente aprovadas.
 
@@ -12,11 +12,11 @@ Referência: 25/10/2026.
 | 4. Acesso privado | Concluída | Sessões, CSRF e totais |
 | 5. Interface pública | Concluída | Chromium mobile com confirmação, recusa e edição |
 | 6. Interface dos organizadores | Concluída | Chromium com login, listas, configuração e logout |
-| 7. Operação final | Parcialmente validada | 137 testes na execução local integral de 25/10/2026; concorrência com 20 requisições, Compose, persistência, backup com restauração e criptografia verificados; revisão de código independente realizada; aparelhos físicos, HTTPS definitivo e aceite operacional pendentes |
+| 7. Operação final | Parcialmente validada | 152 testes na CI de 29/10/2026; concorrência com 20 requisições, Compose, persistência, backup com restauração e criptografia verificados; revisão de código independente realizada; aparelhos físicos, HTTPS definitivo e aceite operacional pendentes |
 
-**Evidência operacional mais recente (código anterior à validação adicional de payload):** https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/40042632010
-- 134 testes passaram, incluindo CSP, X-Frame-Options, HTTPS obrigatório fora do localhost, proxy explicitamente confiável, painel pesquisável e atualização manual/automática.
-- Dois testes adicionais sobre respostas HTTP 200 incompletas/incoerentes foram aprovados; o painel mantém o último retrato íntegro.
+**Evidência operacional mais recente:** https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/40909637407
+- 152 testes passaram, incluindo CSP, X-Frame-Options, HTTPS obrigatório fora do localhost, proxy explicitamente confiável, painel pesquisável e atualização manual/automática.
+- Validação do painel contra respostas inconsistentes, concorrência no fechamento de edições e gerador offline de PDF com botão/QR Code HTTPS aprovados.
 - Docker Compose construiu/subiu os serviços com MySQL em volume.
 - Confirmação repetida não duplicou registros; token permaneceu válido após recriação dos serviços.
 - Configuração do local e contadores preservados após reinício com o mesmo volume.
@@ -26,7 +26,7 @@ Referência: 25/10/2026.
 
 **Revisão técnica de 25/10/2026:** análise de código por outro agente encontrou uma falha no prazo durante espera por locks MySQL. Regressão reproduzida (HTTP 200 indevido), corrigida e validada; ver [relatório de fechamento](release-1-final-verification.md). Essa revisão não representa auditoria externa de segurança.
 
-**Ainda pendente:** testes manuais Android e iPhone abrindo o link vindo de PDF/WhatsApp, instalação/homologação do proxy HTTPS e revisão independente de segurança. Não declarar produção liberada.
+**Ainda pendente:** domínio real e publicação via proxy HTTPS ou Cloudflare Tunnel, teste manual Android e iPhone abrindo link do PDF recebido via WhatsApp, armazenamento externo e restauração de backup em host real e auditoria externa de segurança. Não declarar produção liberada.
 
 **Regra de porcentagem:** etapas concluídas / 7, arredondadas. Enquanto a última etapa tiver pendências obrigatórias, o total permanece em 86%.
 
