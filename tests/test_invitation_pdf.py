@@ -90,3 +90,19 @@ def test_pdf_not_written_when_live_check_fails(monkeypatch, tmp_path):
     with pytest.raises(SystemExit):
         generate_invitation.main()
     assert not target.exists()
+
+
+def test_cli_checked_pdf_resolves_checker_import_without_pythonpath(tmp_path):
+    import subprocess
+    import sys
+    process = subprocess.run(
+        [sys.executable, "scripts/generate_invitation.py",
+         "--url", "https://localhost", "--check-production",
+         "--output", str(tmp_path / "never.pdf")],
+        capture_output=True, text=True, check=False,
+    )
+    # Invalid local origin is rejected offline; the import itself must succeed.
+    assert process.returncode == 2
+    assert "ModuleNotFoundError" not in process.stderr
+    assert "origem HTTPS" in process.stderr
+    assert not (tmp_path / "never.pdf").exists()

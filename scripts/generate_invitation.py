@@ -172,7 +172,11 @@ def main():
         if args.check_production:
             if args.preview:
                 raise ValueError("--check-production exige --url HTTPS final.")
-            from scripts.check_production import verify
+            # Also works when invoked as: python scripts/generate_invitation.py
+            if __package__:
+                from scripts.check_production import verify
+            else:
+                from check_production import verify
             verify(args.url)
         target = save_invitation(args.output, url=args.url, venue=args.venue,
                                  preview=args.preview)
