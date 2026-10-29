@@ -212,6 +212,18 @@
     $('export-status').textContent = '';
     $('venue-input').value = '';
     $('deadline-input').value = '';
+    $('settings-status').textContent = '';
+    $('admin-password').value = '';
+    $('buffet-alert').hidden = true;
+    $('buffet-alert').textContent = '';
+    ['total-count', 'buffet-count', 'young-count', 'souvenir-count', 'over-count']
+      .forEach((name) => {
+        document.querySelector('[data-testid=' + name + ']').textContent = '0';
+      });
+  }
+  function expireOrganizerSession() {
+    clearPrivateDashboard();
+    setError('Sua sessão expirou. Entre novamente para consultar os convidados.');
   }
   async function refreshDashboard() {
     if (refreshPending || !dashboardData || $('dashboard-panel').hidden) return;
@@ -231,8 +243,7 @@
     } catch (error) {
       if (generation !== sessionGeneration || $('dashboard-panel').hidden) return;
       if (error.status === 401 || error.status === 403) {
-        clearPrivateDashboard();
-        setError('Sua sessão expirou. Entre novamente para consultar os convidados.');
+        expireOrganizerSession();
       } else {
         $('refresh-status').textContent = 'Falha ao atualizar. Os dados exibidos são da última consulta.';
       }
@@ -267,6 +278,7 @@
   }
   async function saveSettings(event) {
     event.preventDefault();
+    const generation = sessionGeneration;
     $('settings-status').textContent = '';
     $('save-settings').disabled = true;
     try {
@@ -280,11 +292,16 @@
         method:'PUT', headers:{'Content-Type':'application/json','X-CSRF-Token':await ensureCsrf()},
         body:JSON.stringify(payload)
       });
+      if (generation !== sessionGeneration) return;
       $('settings-status').textContent = 'Configuração salva com sucesso.';
-    } catch (error) { $('settings-status').textContent = error.message; }
-    finally { $('save-settings').disabled = false; }
+    } catch (error) {
+      if (generation !== sessionGeneration) return;
+      if (error.status === 401 || error.status === 403) expireOrganizerSession();
+      else $('settings-status').textContent = error.message;
+    } finally { $('save-settings').disabled = false; }
   }
   async function exportCsv() {
+    const generation = sessionGeneration;
     const button = $('export-csv-btn');
     button.disabled = true;
     $('export-status').textContent = '';
@@ -292,8 +309,15 @@
       const response = await fetch('/api/admin/export.csv', {
         credentials: 'same-origin', cache: 'no-store'
       });
-      if (!response.ok) throw new Error('Não foi possível exportar. Entre novamente no painel.');
+      if (generation !== sessionGeneration) return;
+      if (!response.ok) {
+        const error = new Error('Não foi possível exportar. Entre novamente no painel.');
+        error.status = response.status;
+        throw error;
+      }
       const csvBlob = await response.blob();
+      // A resposta pode chegar depois de clicar em Sair; nunca baixar dados nessa condição.
+      if (generation !== sessionGeneration || $('dashboard-panel').hidden) return;
       const href = URL.createObjectURL(csvBlob);
       try {
         const download = document.createElement('a');
@@ -305,19 +329,30 @@
       } finally {
         URL.revokeObjectURL(href);
       }
-      $('export-status').textContent = 'Relatório preparado para download. Mantenha o arquivo em local privado.';
+      if (generation === sessionGeneration) {
+        $('export-status').textContent = 'Relatório preparado para download. Mantenha o arquivo em local privado.';
+      }
     } catch (error) {
-      $('export-status').textContent = error.message;
+      if (generation !== sessionGeneration) return;
+      if (error.status === 401 || error.status === 403) expireOrganizerSession();
+      else $('export-status').textContent = error.message;
     } finally {
       button.disabled = false;
     }
   }
   async function logOut() {
+    // Hide and clear names immediately, including if the network or session has failed.
+    const token = csrfToken;
+    clearPrivateDashboard();
+    $('login-btn').disabled = true;
     try {
-      await api('/api/auth/logout', {method:'POST',headers:{'X-CSRF-Token':await ensureCsrf()}});
-      csrfToken = null;
-      clearPrivateDashboard();
-    } catch (error) { $('settings-status').textContent = error.message; }
+      if (!token) throw new Error('Token de saída indisponível.');
+      await api('/api/auth/logout', {method:'POST',headers:{'X-CSRF-Token':token}});
+    } catch (error) {
+      setError('Não foi possível confirmar a saída no servidor. Feche esta aba e entre novamente.');
+    } finally {
+      $('login-btn').disabled = false;
+    }
   }
   $('login-form').addEventListener('submit', logIn);
   $('settings-form').addEventListener('submit', saveSettings);

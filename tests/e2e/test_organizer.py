@@ -278,3 +278,59 @@ def test_inconsistent_success_snapshot_rejected_without_wrong_buffet(page, organ
     expect(page.locator("#refresh-status")).to_contain_text("Falha ao atualizar")
     expect(page.get_by_test_id("buffet-count")).to_have_text("2")
     expect(page.locator("#refresh-dashboard-btn")).to_be_enabled()
+
+
+def test_session_expires_while_saving_settings(page, organizer_server):
+    base, store = organizer_server
+    login(page, base)
+    expect(page.get_by_test_id("total-count")).to_have_text("3")
+    page.context.clear_cookies()
+    page.locator("#venue-input").fill("Alteração não autorizada")
+    page.locator("#save-settings").click()
+    expect(page.locator("#dashboard-panel")).to_be_hidden()
+    expect(page.locator("#login-error")).to_contain_text("sessão expirou")
+    expect(page.locator("#confirmed-list")).to_have_text("")
+    expect(page.get_by_test_id("total-count")).to_have_text("0")
+    expect(page.locator("#venue-input")).to_have_value("")
+    assert store.settings()["venue"] is None
+
+
+def test_session_expires_while_exporting_csv(page, organizer_server):
+    base, _ = organizer_server
+    login(page, base)
+    expect(page.locator("#confirmed-list")).to_contain_text("João")
+    page.context.clear_cookies()
+    page.locator("#export-csv-btn").click()
+    expect(page.locator("#dashboard-panel")).to_be_hidden()
+    expect(page.locator("#login-error")).to_contain_text("sessão expirou")
+    expect(page.locator("#confirmed-list")).to_have_text("")
+    expect(page.get_by_test_id("buffet-count")).to_have_text("0")
+
+
+def test_failed_logout_still_hides_names_and_reports_uncertain_server_state(page, organizer_server):
+    base, _ = organizer_server
+    login(page, base)
+    expect(page.locator("#confirmed-list")).to_contain_text("João")
+    page.route("**/api/auth/logout", lambda route: route.fulfill(
+        status=503, content_type="application/json",
+        body='{"error":{"message":"Indisponível"}}'
+    ))
+    page.locator("#logout-btn").click()
+    expect(page.locator("#dashboard-panel")).to_be_hidden()
+    expect(page.locator("#confirmed-list")).to_have_text("")
+    expect(page.get_by_test_id("souvenir-count")).to_have_text("0")
+    expect(page.locator("#login-error")).to_contain_text("Não foi possível confirmar a saída")
+
+
+def test_successful_logout_clears_private_counters_and_fields(page, organizer_server):
+    base, _ = organizer_server
+    login(page, base)
+    expect(page.get_by_test_id("total-count")).to_have_text("3")
+    page.locator("#venue-input").fill("Rascunho privado")
+    page.locator("#logout-btn").click()
+    expect(page.locator("#dashboard-panel")).to_be_hidden()
+    expect(page.locator("#venue-input")).to_have_value("")
+    expect(page.get_by_test_id("total-count")).to_have_text("0")
+    expect(page.get_by_test_id("buffet-count")).to_have_text("0")
+    expect(page.locator("#confirmed-list")).to_have_text("")
+    expect(page.locator("#souvenir-list")).to_have_text("")
