@@ -36,3 +36,35 @@
 .refresh-controls select{width:100%}
 .refresh-controls #refresh-status{margin:0;flex:1 1 240px;font-size:.88rem;color:#52633d}
 @media(max-width:450px){.refresh-controls .field,.refresh-controls #refresh-status,.refresh-controls button{flex-basis:100%;width:100%}}
+
+
+.admin-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+#activity-card .data-list{margin-top:12px}
+#activity-status,#planning-status{font-size:.9rem;color:#52633d}
+@media(max-width:650px){
+  .admin-toolbar{flex-direction:column;align-items:stretch}
+  .admin-actions{justify-content:stretch}
+  .admin-actions button{flex:1 1 180px}
+}
+@media print{
+  @page{size:A4;margin:13mm}
+  body{background:white!important;color:#111!important}
+  .admin-shell{width:100%;margin:0}
+  #login-panel,.admin-actions,.refresh-controls,#export-status,
+  #planning-status,.guest-search-card,#activity-card,
+  #settings-title,#settings-form,#dashboard-panel>.muted,
+  #dashboard-panel>.admin-card[aria-labelledby="settings-title"],
+  .admin-shell>footer{display:none!important}
+  .admin-header{padding:0 0 10px}
+  .admin-header h1{font-size:26px}
+  .metric-grid{grid-template-columns:repeat(5,1fr);gap:6px}
+  .metric{padding:8px;min-height:unset;break-inside:avoid;border-color:#bbb}
+  .metric span{font-size:10px;color:#222}
+  .metric strong{font-size:22px;margin:0}
+  .list-grid{display:block}
+  .admin-card{border:0;padding:6px 0;margin:8px 0;break-before:auto}
+  .data-list>li{padding:5px 0;break-inside:avoid}
+  .admin-card h3{font-size:17px;margin:8px 0}
+  #buffet-alert{border:1px solid #777!important;padding:5px}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
