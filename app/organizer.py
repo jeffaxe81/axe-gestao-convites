@@ -121,6 +121,12 @@ def dashboard():
     })
 
 
+@organizer.get("/api/admin/activity")
+def activity():
+    # Eventos operacionais não possuem nomes, telefones, tokens nem IDs familiares.
+    return jsonify({"events": store().recent_activity(limit=50)})
+
+
 @organizer.get("/api/admin/export.csv")
 def export_csv():
     # Protegido pelo mesmo login da API administrativa; nunca servir publicamente.
