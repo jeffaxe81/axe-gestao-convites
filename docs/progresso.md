@@ -38,3 +38,7 @@ Referência: 08/11/2026.
 Código implementado: histórico transacional sem PII, migração aditiva 002, CSV quantitativo de buffet, impressão privada com filtro, comparação da quarta tabela no restore, testes de API e navegador. Ver [plano e evidências](antecipacao-2-meses.md).
 
 A última CI **confirmada** antes desta rodada era a execução 40945029136, com **185 testes aprovados**. Não aumentar os 86% enquanto faltarem a homologação real, os dispositivos físicos e o aceite operacional.
+
+## Rodada de 20 melhorias — 08/11/2026
+
+Código e testes das 20 melhorias registrados na branch: [inventário com critérios](entregas-20-melhorias.md). Domínio HTTPS real, Android/iPhone físicos, backup externo e aceite continuam pendentes. A etapa 7 continua aberta e a porcentagem permanece em 86%, mesmo com melhorias de produto aprovadas em CI.
