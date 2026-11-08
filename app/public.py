@@ -128,7 +128,7 @@ def calendar_download():
 
 @public.get("/robots.txt")
 def robots():
-    response = make_response("User-agent: *\\nDisallow: /\\n")
+    response = make_response("User-agent: *\nDisallow: /\n")
     response.headers["Content-Type"] = "text/plain; charset=utf-8"
     response.headers["Cache-Control"] = "public, max-age=3600"
     return response
