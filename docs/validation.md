@@ -1,10 +1,14 @@
 # Validação — Gerenciador de Convites da Isadora
 
+## Antecipação de novembro — execução pendente
+
+O pacote de alterações de 08/11/2026 adicionou trilha de eventos transacional, migração v2, CSV de quantidades para buffet, impressão local e backup de quatro tabelas, além de regressões. **A CI do commit final precisa terminar com sucesso antes de declarar estes itens homologados.**
+
 ## Situação atual — 29/10/2026
 
-**CI totalmente aprovada:** https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/40917656389
+**Última CI integral aprovada antes de 08/11/2026:** https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/40945029136
 
-- **165 testes aprovados** em Python, MySQL e Chromium, incluindo novos testes do convite PDF A5 e de URLs HTTPS, QR Code/link clicável e modo demonstração sem link.
+- **185 testes aprovados** em Python, MySQL e Chromium, incluindo novos testes do convite PDF A5 e de URLs HTTPS, QR Code/link clicável e modo demonstração sem link.
 - Quatro novos testes de interface verificaram sessão expirada ao salvar configurações ou exportar CSV, falha de logout e limpeza de dados após saída. Verificação de cookies Secure/HttpOnly/SameSite/Lax adicionada anteriormente.
 - Docker Compose, persistência de confirmação, idempotência, backup/restauração MySQL e criptografia autenticada aprovados.
 - Domínio definitivo, hospedagem final, teste físico Android/iPhone recebendo PDF via WhatsApp, retenção externa e auditoria de segurança ainda não foram homologados.
