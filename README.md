@@ -161,3 +161,7 @@ A aplicação agora valida a origem HTTPS/loopback na própria inicialização e
 ## Reforço de confiabilidade móvel — navegador e rede instável
 
 Em solicitações que fiquem pendentes por mais de 15 segundos, o formulário do convidado recupera o botão de envio, informa a incerteza e preserva os dados e a chave de idempotência para tentar novamente com segurança. Foram adicionados testes de RSVP/edição/retorno de conexão no Chromium (Android emulado) e WebKit (iPhone emulado). Veja [verificações de robustez móvel](docs/refino-final-mobile.md). Teste emulado não equivale a homologação física.
+
+## Homologação em escala: 1 bilhão de operações simuladas
+
+A suíte de CI contém um verificador nativo C11 que executa **1.000.000.000 de operações de estado sintéticas** (criação, reenvio, conflito, revisão antiga, edição, confirmação e recusa), com reconciliação periódica dos totais de buffet e lembrancinhas. Não são um bilhão de requisições HTTP ou dados de convidados reais. Uma camada separada realiza **443 tentativas reais de gravação** em rotas Flask com banco descartável e verifica os totais contra um oráculo independente. Relatório e método: [homologação de um bilhão de operações](docs/homologacao-bilhao.md). O status oficial deve corresponder à última CI verde da PR.
