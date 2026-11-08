@@ -14,7 +14,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.domain import Counts, InputError, ParticipantInput, RsvpInput, can_edit, count_participants
-from app.models import EventSettings, Family, Participant
+from app.models import AuditEvent, EventSettings, Family, Participant
 
 
 class IdempotencyConflict(Exception):
@@ -92,7 +92,7 @@ class RsvpStore:
         return self._receipt(family, token)
 
     def create(self, data: RsvpInput, submission_key: str, now_utc: datetime) -> RsvpReceipt:
-        _utc_naive(now_utc)
+        recorded_at = _utc_naive(now_utc)
         if not isinstance(data, RsvpInput) or not isinstance(submission_key, str) or not (16 <= len(submission_key) <= 160):
             raise InputError('Envio inválido ou chave de idempotência ausente.')
         key_hash = self._key_hash(submission_key)
@@ -112,6 +112,8 @@ class RsvpStore:
                 family.participants = [Participant(position=pos, name=p.name,
                     kind=p.kind, age_years=p.age_years) for pos, p in enumerate(data.participants)]
                 session.flush()
+                session.add(AuditEvent(event_kind='RSVP_CREATED' if data.attending else 'RSVP_DECLINED',
+                                       occurred_at_utc=recorded_at))
                 receipt = self._receipt(family, token)
             return receipt
         except IntegrityError:
@@ -168,11 +170,13 @@ class RsvpStore:
                 Participant(position=pos, name=p.name, kind=p.kind, age_years=p.age_years)
                 for pos, p in enumerate(data.participants))
             session.flush()
+            session.add(AuditEvent(event_kind='RSVP_UPDATED',
+                                   occurred_at_utc=_utc_naive(decision_time)))
             receipt = self._receipt(family, edit_token)
         return receipt
 
     def configure(self, venue: str | None, deadline_utc: datetime | None, now_utc: datetime) -> None:
-        _utc_naive(now_utc)
+        recorded_at = _utc_naive(now_utc)
         if venue is not None and (not isinstance(venue, str) or len(venue) > 240):
             raise InputError('Local inválido.')
         deadline = _utc_naive(deadline_utc) if deadline_utc is not None else None
@@ -180,8 +184,27 @@ class RsvpStore:
             settings = session.scalar(select(EventSettings).where(EventSettings.id == 1).with_for_update())
             if settings is None:
                 raise RuntimeError('Configuração do evento não inicializada.')
-            settings.venue = venue.strip() if venue else None
+            normalized_venue = venue.strip() if venue else None
+            changed = (settings.venue != normalized_venue or settings.edit_deadline_utc != deadline)
+            settings.venue = normalized_venue
             settings.edit_deadline_utc = deadline
+            if changed:
+                session.add(AuditEvent(event_kind='SETTINGS_CHANGED',
+                                       occurred_at_utc=recorded_at))
+
+    def recent_activity(self, limit: int = 50) -> list[dict]:
+        """Retorna somente tipo e horário, sem nomes, identificadores ou segredos."""
+        if type(limit) is not int or not 1 <= limit <= 100:
+            raise ValueError('O histórico permite de 1 a 100 eventos.')
+        with self.session_factory() as session:
+            entries = session.scalars(
+                select(AuditEvent).order_by(AuditEvent.id.desc()).limit(limit)
+            ).all()
+            return [
+                {'kind': event.event_kind,
+                 'occurred_at_utc': _to_aware(event.occurred_at_utc).isoformat()}
+                for event in entries
+            ]
 
     def settings(self) -> dict:
         with self.session_factory() as session:
