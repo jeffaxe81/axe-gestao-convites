@@ -191,14 +191,29 @@
     $('success').scrollIntoView({behavior:'smooth',block:'start'});
   }
   async function requestJson(url, options) {
-    const response = await fetch(url, options || {});
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      if (response.status === 409) throw new Error('Sua resposta foi atualizada em outra aba. Copie seus dados e recarregue a página.');
-      if (response.status === 403) throw new Error('O prazo para editar esta resposta terminou.');
-      throw new Error((data.error && data.error.message) || 'Não foi possível concluir. Tente novamente.');
+    // Um proxy ou celular com sinal instável pode manter uma requisição pendente
+    // indefinidamente. O aborto libera o botão, sem apagar revisão ou chave
+    // de idempotência. A operação pode ter sido salva pelo servidor; repetir
+    // a MESMA requisição continua seguro.
+    const controller = new AbortController();
+    const deadline = window.setTimeout(() => controller.abort(), 15000);
+    try {
+      const response = await fetch(url, {...(options || {}), signal: controller.signal});
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        if (response.status === 409) throw new Error('Sua resposta foi atualizada em outra aba. Copie seus dados e recarregue a página.');
+        if (response.status === 403) throw new Error('O prazo para editar esta resposta terminou.');
+        throw new Error((data.error && data.error.message) || 'Não foi possível concluir. Tente novamente.');
+      }
+      return data;
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        throw new Error('A conexão demorou a responder. Seus dados foram mantidos. Tente enviar novamente sem alterá-los.');
+      }
+      throw error;
+    } finally {
+      window.clearTimeout(deadline);
     }
-    return data;
   }
   function validateReceipt(result, expected) {
     // HTTP 200 alone is not evidence of a confirmed response. A broken
