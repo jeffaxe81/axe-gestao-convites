@@ -35,6 +35,13 @@ jobs:
           for source in app/static/*.js; do node --check "$source"; done
       - run: python -m pytest -q
 
+      - name: One billion deterministic RSVP state operations (no HTTP traffic)
+        run: |
+          set -euo pipefail
+          cc -std=c11 -O3 -Wall -Wextra -Werror tests/stress/rsvp_billion.c -o "$RUNNER_TEMP/isadora-rsvp-billion"
+          timeout 120s "$RUNNER_TEMP/isadora-rsvp-billion" 1000000000 | tee "$RUNNER_TEMP/isadora-billion-results.txt"
+          grep -F "PASS simulated_state_operations=1000000000 " "$RUNNER_TEMP/isadora-billion-results.txt"
+
       - name: Prepare disposable Compose credentials
         run: python scripts/generate_ci_env.py
       - name: Build and start Compose
