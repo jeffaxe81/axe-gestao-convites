@@ -58,3 +58,7 @@ A etapa operacional tem seis verificações com evidências: DNS/HTTPS, backup e
 ## Robustez da experiência móvel — 08/11/2026
 
 Correção de espera de requisição travada e teste de retentativa segura, com cobertura automatizada para Chromium e WebKit, documentados em [refino final móvel](refino-final-mobile.md). A CI desta rodada deve terminar aprovada para considerar o incremento validado. Sem mudança automática do progresso de liberação operacional: **86%**.
+
+## Homologação de escala — envio e convidados
+
+Incluídos testes de **1 bilhão de operações simuladas em modelo de estados** e **443 tentativas de gravação na API de teste**, além de consultas autenticadas, contadores, auditoria e regressão MySQL. Ver [metodologia e limites](homologacao-bilhao.md). A conclusão depende da CI; 100% operacional exige também ambiente real, celulares físicos e aceite, não substituíveis por volume simulado.
