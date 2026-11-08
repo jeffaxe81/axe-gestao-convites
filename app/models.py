@@ -39,3 +39,14 @@ class Participant(Base):
     age_years: Mapped[int | None] = mapped_column(Integer, nullable=True)
     family: Mapped[Family] = relationship(back_populates='participants')
     __table_args__ = (UniqueConstraint('family_id', 'position', name='uq_family_position'),)
+
+
+class AuditEvent(Base):
+    """Registro mínimo de operação, sem dados pessoais, nomes ou tokens.
+
+    Mantido na mesma transação da ação que originou o evento.
+    """
+    __tablename__ = 'audit_events'
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    event_kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    occurred_at_utc: Mapped[object] = mapped_column(DateTime(timezone=False), nullable=False)
