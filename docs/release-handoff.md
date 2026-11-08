@@ -32,3 +32,7 @@ A execução **verde** da CI do GitHub Actions inclui um artefato **isadora-rele
 - [ ] Revisão de segurança e aceite operacional
 
 **Situação: código candidato à entrega, sem publicação liberada.** Barra de liberação: **86%** (6/7 etapas concluídas). Não tratar CI de código como teste de campo.
+
+## Domínio opcional durante a finalização
+
+O projeto pode ser concluído antes da escolha do DNS. Veja [guia de domínio flexível](dominio-flexivel.md). Para informar o domínio no futuro, execute `scripts/set_public_url.py --domain NOME` no servidor, recrie somente `app` e faça a checagem HTTPS. Não exige recompilar a aplicação nem alterar o MySQL.

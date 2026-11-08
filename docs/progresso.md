@@ -2,7 +2,9 @@
 
 Referência: 08/11/2026.
 
-**Barra de etapas finalizadas:** [██████████████░░] 86% — 6 de 7 etapas integralmente aprovadas.
+**Produto em código: funcionalidades previstas implementadas, com domínio configurável posteriormente.**
+
+**Liberação operacional:** [██████████████░░] 86% — 6 de 7 etapas de implantação homologadas; o domínio não bloqueia a finalização do software.
 
 | Etapa | Situação | Evidência |
 | --- | --- | --- |
@@ -42,3 +44,7 @@ A última CI **confirmada** antes desta rodada era a execução 40945029136, com
 ## Rodada de 20 melhorias — 08/11/2026
 
 Código e testes das 20 melhorias registrados na branch: [inventário com critérios](entregas-20-melhorias.md). Domínio HTTPS real, Android/iPhone físicos, backup externo e aceite continuam pendentes. A etapa 7 continua aberta e a porcentagem permanece em 86%, mesmo com melhorias de produto aprovadas em CI.
+
+## Conclusão independente do domínio (08/11/2026)
+
+O produto possui `scripts/set_public_url.py --local` para trabalhar sem domínio e `--domain` para configurar uma URL HTTPS depois, alterando somente `APP_PUBLIC_URL` no arquivo privado `.env`. `preflight.py --local` não substitui a homologação externa. Documentação: [domínio flexível](dominio-flexivel.md). A instalação de campo, e não a conclusão do código, permanece em 86%.

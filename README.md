@@ -2,7 +2,7 @@
 
 Aniversário de dois anos da Isadora — 13/12/2026, às 15h (America/Sao_Paulo). Local ainda a confirmar.
 
-**Estado: software funcional em candidato de entrega; uso público depende de homologação real. Não divulgar endereço para convidados.**
+**Estado: funcionalidades do produto finalizadas para entrega, com domínio opcional até a implantação. A publicação de convites ainda exige validação operacional.**
 
 ## Barra de avanço verificado
 
@@ -51,6 +51,25 @@ python scripts/generate_invitation.py --url https://convites.seu-dominio.com.br 
 
 O modo `--preview` produz uma demonstração marcada, **sem link** e não deve ser enviada. A geração final exige domínio HTTPS real; nunca usar endereço provisório, link de edição privada ou incluir tokens. Confirmar QR Code e botão em celulares antes de encaminhar o PDF via WhatsApp.
 
+## Domínio opcional agora, configurável depois
+
+O sistema pode operar localmente em `http://127.0.0.1:8080`, mesmo sem domínio escolhido. Após criar e proteger seu `.env` com segredos reais:
+
+```bash
+python scripts/set_public_url.py --local
+python scripts/preflight.py --env-file .env --local
+```
+
+Quando o domínio for escolhido, não é necessário mudar código ou banco:
+
+```bash
+python scripts/set_public_url.py --domain convites.seudominio.com.br
+python scripts/preflight.py --env-file .env
+docker compose up -d --no-deps --force-recreate app
+```
+
+O novo domínio precisa de DNS/HTTPS real antes do envio, e o PDF definitivo deve ser gerado com a URL efetiva. Veja [configuração flexível](docs/dominio-flexivel.md).
+
 ## Execução local com Docker (validada no CI; produção pendente)
 
 ```bash
@@ -82,6 +101,7 @@ Não habilite `TRUSTED_PROXY_HOPS=1` sem configurar um proxy local que SOBRESCRE
 - [Checklist manual pendente](docs/manual-checklist.md)
 - [Seis frentes técnicas e critérios de fechamento](docs/frentes-paralelas.md)
 - [Pacote técnico, implantação e critérios de aceite](docs/release-handoff.md)
+- [Domínio opcional e configuração posterior](docs/dominio-flexivel.md)
 - [Segurança para publicação e riscos](docs/security-deployment.md)
 - [Backup, verificação de restauração e recuperação](docs/backup-restore.md)
 - [Publicação HTTPS e smoke test sem alterar convites](docs/https-deployment.md)
