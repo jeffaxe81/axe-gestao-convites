@@ -157,3 +157,7 @@ Foram adicionadas 20 melhorias no convite e painel: download do evento em calend
 ## Segurança adicional na preparação final
 
 A aplicação agora valida a origem HTTPS/loopback na própria inicialização e restringe cabeçalhos `Host` aceitos, mesmo quando o preflight não foi executado. Em HTTPS configura HSTS. A homologação humana dos seis controles restantes pode ser registrada com o modelo privado `docs/release-evidence-template.json` e verificada quanto à completude por `python scripts/release_readiness.py --evidence-file ARQUIVO_PRIVADO.json`. Essa verificação documental não comprova teste real nem autoriza publicar por si só.
+
+## Reforço de confiabilidade móvel — navegador e rede instável
+
+Em solicitações que fiquem pendentes por mais de 15 segundos, o formulário do convidado recupera o botão de envio, informa a incerteza e preserva os dados e a chave de idempotência para tentar novamente com segurança. Foram adicionados testes de RSVP/edição/retorno de conexão no Chromium (Android emulado) e WebKit (iPhone emulado). Veja [verificações de robustez móvel](docs/refino-final-mobile.md). Teste emulado não equivale a homologação física.
