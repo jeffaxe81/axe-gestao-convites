@@ -153,6 +153,10 @@
     document.querySelector('[data-testid=young-count]').textContent = String(counts.children_0_5);
     document.querySelector('[data-testid=souvenir-count]').textContent = String(counts.children_0_12);
     document.querySelector('[data-testid=over-count]').textContent = String(counts.over_12);
+    document.querySelector('[data-testid=middle-count]').textContent =
+      String(counts.children_0_12 - counts.children_0_5);
+    document.querySelector('[data-testid=confirmed-families]').textContent = String(data.confirmed.length);
+    document.querySelector('[data-testid=declined-families]').textContent = String(data.declined.length);
     $('buffet-alert').hidden = !data.buffet_limit_reached;
     if (data.buffet_limit_reached) {
       $('buffet-alert').textContent = 'Atenção: contagem do buffet alcançou o limite interno de ' + data.buffet_limit + '.';
@@ -220,7 +224,7 @@
     $('admin-password').value = '';
     $('buffet-alert').hidden = true;
     $('buffet-alert').textContent = '';
-    ['total-count', 'buffet-count', 'young-count', 'souvenir-count', 'over-count']
+    ['total-count', 'buffet-count', 'young-count', 'souvenir-count', 'over-count', 'middle-count', 'confirmed-families', 'declined-families']
       .forEach((name) => {
         document.querySelector('[data-testid=' + name + ']').textContent = '0';
       });
