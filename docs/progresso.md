@@ -1,6 +1,6 @@
 # Evolução — gerenciador de convites da Isadora
 
-Referência: 29/10/2026.
+Referência: 08/11/2026.
 
 **Barra de etapas finalizadas:** [██████████████░░] 86% — 6 de 7 etapas integralmente aprovadas.
 
@@ -32,3 +32,9 @@ Referência: 29/10/2026.
 **Regra de porcentagem:** etapas concluídas / 7, arredondadas. Enquanto a última etapa tiver pendências obrigatórias, o total permanece em 86%.
 
 **Evento:** 13/12/2026 às 15h, America/Sao_Paulo, local configurável; contagem de buffet só interna, 40 como alerta, não bloqueio. O gerador offline cria PDF com QR Code e botão HTTPS; o aplicativo não distribui o PDF nem envia WhatsApp.
+
+## Antecipação adicional de dois meses (08/11/2026)
+
+Código implementado: histórico transacional sem PII, migração aditiva 002, CSV quantitativo de buffet, impressão privada com filtro, comparação da quarta tabela no restore, testes de API e navegador. Ver [plano e evidências](antecipacao-2-meses.md).
+
+A última CI **confirmada** antes desta rodada era a execução 40945029136, com **185 testes aprovados**. Não aumentar os 86% enquanto faltarem a homologação real, os dispositivos físicos e o aceite operacional.
