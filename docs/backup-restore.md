@@ -77,3 +77,7 @@ A ferramenta não exclui automaticamente o backup original sem criptografia, poi
 Os testes automatizados de ida-e-volta da cifra e a prova MySQL estão na CI. **Ainda é obrigatório** testar o procedimento em hospedagem real e assegurar backup externo seguro.
 
 Para execução automatizada sem terminal, a variável `ISADORA_BACKUP_PASSPHRASE` é suportada, mas deve vir de um cofre de segredos; não incluí-la em logs, histórico de shell, `.env` versionado ou comandos compartilhados.
+
+## Atualização de novembro — tabela de histórico
+
+A nova migração 002 adiciona audit_events (tipo e horário de movimentações, sem nomes/tokens). O verificador de restauração agora compara **quatro tabelas**: event_settings, families, participants e audit_events. Testar a migração antes de gerar o primeiro backup no novo release.
