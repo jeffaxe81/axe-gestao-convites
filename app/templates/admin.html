@@ -32,7 +32,7 @@
     </section>
 
     <section id="dashboard-panel" hidden aria-label="Painel reservado dos organizadores">
-      <div class="admin-toolbar"><h2>Visão geral</h2><div><button type="button" id="export-csv-btn" class="secondary">Exportar confirmações (CSV)</button> <button type="button" id="logout-btn" class="secondary">Sair</button></div></div>
+      <div class="admin-toolbar"><h2>Visão geral</h2><div class="admin-actions"><button type="button" id="export-csv-btn" class="secondary">Exportar confirmações (CSV)</button> <button type="button" id="export-planning-btn" class="secondary">Resumo buffet/lembrancinhas</button> <button type="button" id="print-list-btn" class="secondary">Imprimir lista</button> <button type="button" id="logout-btn" class="secondary">Sair</button></div></div>
       <div class="refresh-controls" aria-label="Atualização das confirmações">
         <button type="button" id="refresh-dashboard-btn" class="secondary">Atualizar dados</button>
         <div class="field">
@@ -47,6 +47,7 @@
         <p id="refresh-status" role="status" aria-live="polite"></p>
       </div>
       <p id="export-status" role="status" aria-live="polite"></p>
+      <p id="planning-status" role="status" aria-live="polite"></p>
       <p class="muted">Somente pessoas com presença confirmada entram nos contadores.</p>
       <div class="metric-grid">
         <article class="metric"><span>Participantes confirmados</span><strong data-testid="total-count">0</strong></article>
@@ -77,6 +78,14 @@
       </div>
       <section class="admin-card"><h3>Crianças para lembrancinhas</h3><p class="muted">Lista nominal das crianças de zero a doze anos.</p>
         <ul id="souvenir-list" class="data-list"></ul></section>
+
+      <section class="admin-card" id="activity-card" aria-labelledby="activity-title">
+        <h3 id="activity-title">Histórico de movimentações</h3>
+        <p class="muted">Até 50 operações recentes. O histórico não guarda nomes nem links de edição.</p>
+        <button type="button" id="load-activity-btn" class="secondary">Consultar histórico</button>
+        <p id="activity-status" role="status" aria-live="polite"></p>
+        <ul id="activity-list" class="data-list" aria-label="Movimentações recentes"></ul>
+      </section>
 
       <section class="admin-card" aria-labelledby="settings-title">
         <h3 id="settings-title">Configurações da festa</h3>
