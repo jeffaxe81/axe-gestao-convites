@@ -2,9 +2,11 @@
 
 Referência: 08/11/2026.
 
+**CI integrada à main em 08/11/2026:** 230 testes passaram em https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/42478818971. PR #1 mesclada à main. Não é homologação pública.
+
 **Produto em código: funcionalidades previstas implementadas, com domínio configurável posteriormente.**
 
-**Liberação operacional:** [██████████████░░] 86% — 6 de 7 etapas de implantação homologadas; o domínio não bloqueia a finalização do software.
+**Liberação operacional:** [██████████████░░] 86% — 6 de 7 etapas concluídas. O domínio não impede desenvolvimento local, mas impede a liberação pública.
 
 | Etapa | Situação | Evidência |
 | --- | --- | --- |
@@ -48,3 +50,7 @@ Código e testes das 20 melhorias registrados na branch: [inventário com crité
 ## Conclusão independente do domínio (08/11/2026)
 
 O produto possui `scripts/set_public_url.py --local` para trabalhar sem domínio e `--domain` para configurar uma URL HTTPS depois, alterando somente `APP_PUBLIC_URL` no arquivo privado `.env`. `preflight.py --local` não substitui a homologação externa. Documentação: [domínio flexível](dominio-flexivel.md). A instalação de campo, e não a conclusão do código, permanece em 86%.
+
+## Critério do último 14% — fechamento de 08/11/2026
+
+A etapa operacional tem seis verificações com evidências: DNS/HTTPS, backup externo/restauração, Android, iPhone, revisão independente e aceite. Ver [critério de 100%](fechamento-100.md) e modelo `release-evidence-template.json`. O novo verificador de evidências apenas confirma a integridade do checklist; nenhuma resposta sintética pode substituir teste físico.
