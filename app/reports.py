@@ -43,3 +43,24 @@ def export_attendance_csv(summary):
         )])
     # UTF-8 BOM para reconhecimento adequado do Excel/Windows pt-BR.
     return output.getvalue().encode("utf-8-sig")
+
+
+def export_planning_csv(summary):
+    """Resumo para buffet/lembrancinhas sem nomes ou identificadores pessoais."""
+    counts = summary["counts"]
+    quantities = (
+        ("Famílias confirmadas", len(summary["confirmed"])),
+        ("Famílias que recusaram", len(summary["declined"])),
+        ("Participantes confirmados", counts.total),
+        ("Pessoas para buffet", counts.buffet),
+        ("Crianças até 5 anos", counts.children_0_5),
+        ("Crianças até 12 anos / lembrancinhas", counts.children_0_12),
+        ("Pessoas acima de 12 anos", counts.over_12),
+        ("Limite interno de buffet", summary["buffet_limit"]),
+        ("Limite interno atingido", "Sim" if summary["buffet_limit_reached"] else "Não"),
+    )
+    output = io.StringIO(newline="")
+    writer = csv.writer(output, delimiter=";", quoting=csv.QUOTE_ALL, lineterminator="\r\n")
+    writer.writerow(("Indicador", "Quantidade"))
+    writer.writerows(quantities)
+    return output.getvalue().encode("utf-8-sig")
