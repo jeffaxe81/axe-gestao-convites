@@ -2,7 +2,7 @@
 
 Aniversário de dois anos da Isadora — 13/12/2026, às 15h (America/Sao_Paulo). Local ainda a confirmar.
 
-**Estado: funcionalidades do produto finalizadas para entrega, com domínio opcional até a implantação. A publicação de convites ainda exige validação operacional.**
+**Estado: aplicação integrada à `main`, com CI automatizada aprovada. A divulgação de convites reais depende de homologação operacional.**
 
 ## Barra de avanço verificado
 
@@ -38,8 +38,8 @@ O verificador confirma oito endpoints locais: saúde do banco, dados públicos, 
 
 ## Testes
 
-**185 testes aprovados** na última CI integral de 29/10/2026, com MySQL real, API, concorrência, Chromium e proteção HTTP. Docker Compose validado com reinício, persistência, backup e restauração isolada e criptografada. Incluem-se testes de respostas administrativas HTTP 200 inconsistentes, edições concorrentes, prazo após locks MySQL, geração de convite PDF com QR Code e validação de URL HTTPS segura.
-**CI atual aprovada:** https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/40945029136 (185 testes, Docker, MySQL e restauração). A [verificação técnica anterior de 25/10/2026](docs/release-1-final-verification.md) documenta os ensaios de concorrência/locks e continua válida como histórico. Ver execuções em:
+**230 testes aprovados** na CI integral de 08/11/2026, com MySQL real, API, concorrência, Chromium e proteção HTTP. Docker Compose validado com reinício, persistência, backup e restauração isolada e criptografada. Incluem-se testes de respostas administrativas HTTP 200 inconsistentes, edições concorrentes, prazo após locks MySQL, geração de convite PDF com QR Code e validação de URL HTTPS segura.
+**CI atual aprovada:** https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/42478818971 (230 testes, Docker, MySQL e restauração). A [verificação técnica anterior de 25/10/2026](docs/release-1-final-verification.md) documenta os ensaios de concorrência/locks e continua válida como histórico. Ver execuções em:
 https://github.com/jeffaxe81/axe-gestao-convites/actions
 
 Para executar:
@@ -121,6 +121,7 @@ Não habilite `TRUSTED_PROXY_HOPS=1` sem configurar um proxy local que SOBRESCRE
 - [Antecipação de 1 mês, entregas e pendências](docs/antecipacao-1-mes.md)
 - [Antecipação de 2 meses: histórico, buffet, impressão e homologação](docs/antecipacao-2-meses.md)
 - [20 melhorias de usabilidade, calendário, acessibilidade e segurança](docs/entregas-20-melhorias.md)
+- [Fechamento para 100% operacional e registro de evidências](docs/fechamento-100.md)
 
 O PDF do convite agora pode ser gerado **offline** com botão e QR Code clicáveis por `scripts/generate_invitation.py`. O aplicativo não envia mensagens por WhatsApp: a distribuição é manual e fica bloqueada até homologação de domínio, HTTPS e dispositivos físicos.
 
@@ -137,7 +138,7 @@ Exemplos, riscos e procedimentos constam nos documentos operacionais acima. **Um
 - **Pré-checagem de produção:** executar `python scripts/preflight.py --env-file .env` (arquivo privado chmod 600). Este teste não substitui DNS/HTTPS efetivo.
 - **Revisão mensal acelerada:** ver `docs/antecipacao-1-mes.md`.
 
-A PR permanece como rascunho, sem publicar a página para convidados. A prova de publicação em domínio real e os testes em dispositivos físicos ainda são obrigatórios.
+A PR #1 foi mesclada à main em 08/11/2026. Isso não significa publicação. A prova de HTTPS e dispositivos físicos ainda é obrigatória.
 
 ## Entregas adicionais de novembro (em verificação)
 
@@ -147,8 +148,12 @@ A PR permanece como rascunho, sem publicar a página para convidados. A prova de
 - Lista imprimível via navegador, em formato A4, que respeita o filtro de convidados escolhido.
 - Verificação de backup com as quatro tabelas: evento, famílias, participantes e histórico.
 
-A CI do commit final precisa ficar verde antes da homologação técnica dessas mudanças. Sem domínio HTTPS real e testes físicos, a liberação para convidados permanece bloqueada.
+A CI da versão integrada foi aprovada com 230 testes. Sem domínio HTTPS real e testes físicos, a liberação para convidados permanece bloqueada.
 
 ## Melhorias adicionais de 08/11 — verificação em CI
 
-Foram adicionadas 20 melhorias no convite e painel: download do evento em calendário, data e contagem regressiva localizadas, aviso de internet indisponível sem confirmação falsa, contador/limite de acompanhantes, foco em erros, etapas e navegação por teclado, estado de edição e cópia de link, CSS acessível, diretivas de não-indexação, indicadores por família e faixa etária e CSV quantitativo detalhado. Consulte [a relação das 20 entregas](docs/entregas-20-melhorias.md). **A última CI aprovada precisa incluir este conjunto de alterações para serem consideradas homologadas.**
+Foram adicionadas 20 melhorias no convite e painel: download do evento em calendário, data e contagem regressiva localizadas, aviso de internet indisponível sem confirmação falsa, contador/limite de acompanhantes, foco em erros, etapas e navegação por teclado, estado de edição e cópia de link, CSS acessível, diretivas de não-indexação, indicadores por família e faixa etária e CSV quantitativo detalhado. Consulte [a relação das 20 entregas](docs/entregas-20-melhorias.md). **A CI de 08/11/2026 aprovou este conjunto com 230 testes.**
+
+## Segurança adicional na preparação final
+
+A aplicação agora valida a origem HTTPS/loopback na própria inicialização e restringe cabeçalhos `Host` aceitos, mesmo quando o preflight não foi executado. Em HTTPS configura HSTS. A homologação humana dos seis controles restantes pode ser registrada com o modelo privado `docs/release-evidence-template.json` e verificada quanto à completude por `python scripts/release_readiness.py --evidence-file ARQUIVO_PRIVADO.json`. Essa verificação documental não comprova teste real nem autoriza publicar por si só.

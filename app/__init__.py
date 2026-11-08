@@ -3,7 +3,6 @@
 Public responses have explicit whitelists; internal buffet data stays private.
 """
 import os
-from urllib.parse import urlsplit
 from datetime import timedelta
 
 from flask import Flask
@@ -11,6 +10,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.db import new_engine, session_factory
+from app.origin import configured_origin
 from app.rsvp import RsvpStore
 from app.security import RequestRateLimiter
 
@@ -52,16 +52,14 @@ def create_app(test_config=None):
             raise RuntimeError("Configure ORGANIZER_PASSWORD_HASH com hash seguro Werkzeug.")
 
     if not app.config.get("TESTING"):
-        public_url = os.environ.get("APP_PUBLIC_URL", "")
-        parsed = urlsplit(public_url)
-        is_local_http = parsed.scheme == "http" and parsed.hostname in (
-            "localhost", "127.0.0.1", "::1"
-        )
-        if not (parsed.scheme == "https" or is_local_http) or not parsed.hostname:
-            raise RuntimeError("Uma URL pública exige HTTPS; HTTP só é permitido em localhost.")
-        if parsed.username or parsed.password or parsed.query or parsed.fragment or parsed.path not in ("", "/"):
-            raise RuntimeError("APP_PUBLIC_URL deve conter apenas a origem do site.")
-        app.config["SESSION_COOKIE_SECURE"] = parsed.scheme == "https"
+        try:
+            scheme, hostname = configured_origin(os.environ.get("APP_PUBLIC_URL", ""))
+        except ValueError as exc:
+            raise RuntimeError(str(exc)) from None
+        app.config["SESSION_COOKIE_SECURE"] = scheme == "https"
+        # Flask 3.1 rejects arbitrary Host headers, even if upstream proxy
+        # forgets to enforce them. Loopback remains available to health checks.
+        app.config["TRUSTED_HOSTS"] = [hostname, "localhost", "127.0.0.1"]
 
     store = app.config.get("RSVP_STORE")
     if store is None:
@@ -99,6 +97,8 @@ def create_app(test_config=None):
             "frame-ancestors 'none'"
         )
         response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+        if app.config.get("SESSION_COOKIE_SECURE"):
+            response.headers["Strict-Transport-Security"] = "max-age=31536000"
         if response.mimetype in ("application/json", "text/html"):
             response.headers["Cache-Control"] = "no-store"
         return response

@@ -31,8 +31,12 @@ A execução **verde** da CI do GitHub Actions inclui um artefato **isadora-rele
 - [ ] PDF via WhatsApp testado em Android e iPhone físicos
 - [ ] Revisão de segurança e aceite operacional
 
-**Situação: código candidato à entrega, sem publicação liberada.** Barra de liberação: **86%** (6/7 etapas concluídas). Não tratar CI de código como teste de campo.
+**Situação: código da Release 1 mesclado à main com 230 testes aprovados; publicação ainda não liberada.** Barra de liberação: **86%** (6/7 etapas concluídas). Não tratar CI de código como teste de campo.
 
 ## Domínio opcional durante a finalização
 
 O projeto pode ser concluído antes da escolha do DNS. Veja [guia de domínio flexível](dominio-flexivel.md). Para informar o domínio no futuro, execute `scripts/set_public_url.py --domain NOME` no servidor, recrie somente `app` e faça a checagem HTTPS. Não exige recompilar a aplicação nem alterar o MySQL.
+
+## Verificação final do gate de publicação
+
+Consultar [fechamento para 100%](fechamento-100.md). Há um manifesto-modelo para registrar seis evidências operacionais sem PII (`docs/release-evidence-template.json`) e um script `scripts/release_readiness.py` que recusa declarar o checklist completo enquanto faltar qualquer uma. A aplicação também recusa URLs públicas inseguras diretamente na inicialização, sem confiar apenas no pré-check opcional. A comprovação real de Android/iPhone, HTTPS e restauração de produção continua externa.

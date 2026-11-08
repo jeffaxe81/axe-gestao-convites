@@ -1,0 +1,32 @@
+{
+  "dns_https": {
+    "verified": false,
+    "verified_at": null,
+    "evidence_ref": null
+  },
+  "backup_externo": {
+    "verified": false,
+    "verified_at": null,
+    "evidence_ref": null
+  },
+  "android_real": {
+    "verified": false,
+    "verified_at": null,
+    "evidence_ref": null
+  },
+  "iphone_real": {
+    "verified": false,
+    "verified_at": null,
+    "evidence_ref": null
+  },
+  "revisao_seguranca": {
+    "verified": false,
+    "verified_at": null,
+    "evidence_ref": null
+  },
+  "aceite_operacional": {
+    "verified": false,
+    "verified_at": null,
+    "evidence_ref": null
+  }
+}
