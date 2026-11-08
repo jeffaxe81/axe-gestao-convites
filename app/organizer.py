@@ -10,7 +10,7 @@ from werkzeug.exceptions import BadRequest
 from werkzeug.security import check_password_hash
 
 from app.domain import InputError
-from app.reports import export_attendance_csv
+from app.reports import export_attendance_csv, export_planning_csv
 
 organizer = Blueprint("organizer", __name__)
 
@@ -134,6 +134,17 @@ def export_csv():
     response = make_response(content, 200)
     response.headers["Content-Type"] = "text/csv; charset=utf-8"
     response.headers["Content-Disposition"] = 'attachment; filename="isadora-confirmacoes.csv"'
+    response.headers["Cache-Control"] = "no-store, private"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    return response
+
+
+@organizer.get("/api/admin/planning.csv")
+def export_planning():
+    # Planejamento quantitativo, sem nomes nem identificadores familiares.
+    response = make_response(export_planning_csv(store().summary()), 200)
+    response.headers["Content-Type"] = "text/csv; charset=utf-8"
+    response.headers["Content-Disposition"] = 'attachment; filename="isadora-resumo-buffet.csv"'
     response.headers["Cache-Control"] = "no-store, private"
     response.headers["X-Content-Type-Options"] = "nosniff"
     return response
