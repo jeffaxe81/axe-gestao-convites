@@ -29,7 +29,7 @@ def test_calendar_venue_escapes_untrusted_newlines(client, store):
     calendar = client.get("/evento.ics").get_data(as_text=True)
     assert "LOCATION:Salão\\; Flores\\, Rua X\\nBEGIN:VEVENT\\nACCESS:PRIVATE" in calendar
     assert calendar.count("\r\nBEGIN:VEVENT\r\n") == 1
-    assert "ACCESS:PRIVATE\r\n" not in calendar
+    assert "ACCESS:PRIVATE" not in calendar.split("\r\n")
 
 
 def test_robots_policy_and_noindex_headers(client):
