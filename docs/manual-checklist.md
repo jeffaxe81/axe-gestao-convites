@@ -64,3 +64,10 @@ Todas as caixas abaixo permanecem desmarcadas até testes reais. Registrar data,
 - [ ] Testar leitor de tela e modo contraste alto/redução de movimentos.
 - [ ] Verificar o arquivo CSV do buffet com a faixa de 6 a 12 anos e três novos indicadores do painel.
 - [ ] Verificar que o link privado é copiado corretamente sem expô-lo em mensagens ou logs.
+
+## Rede instável e WebKit — homologação física complementar
+
+- [ ] Em Android físico, interromper internet durante envio e confirmar que o botão volta a funcionar sem resposta falsa.
+- [ ] Repetir o envio com a mesma resposta após conexão instável; conferir uma única confirmação no painel.
+- [ ] Em iPhone físico, repetir envio, edição e retentativa no Safari, inclusive pelo PDF recebido no WhatsApp.
+- [ ] Confirmar que a mensagem de espera de 15 segundos é compreensível e não indica que o banco certamente não gravou.
