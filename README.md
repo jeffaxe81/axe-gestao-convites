@@ -2,7 +2,7 @@
 
 Aniversário de dois anos da Isadora — 13/12/2026, às 15h (America/Sao_Paulo). Local ainda a confirmar.
 
-**Estado: desenvolvimento. Não divulgar ainda o endereço para convidados.**
+**Estado: software funcional em candidato de entrega; uso público depende de homologação real. Não divulgar endereço para convidados.**
 
 ## Barra de avanço verificado
 
@@ -81,6 +81,7 @@ Não habilite `TRUSTED_PROXY_HOPS=1` sem configurar um proxy local que SOBRESCRE
 - [Evidências verificadas](docs/validation.md)
 - [Checklist manual pendente](docs/manual-checklist.md)
 - [Seis frentes técnicas e critérios de fechamento](docs/frentes-paralelas.md)
+- [Pacote técnico, implantação e critérios de aceite](docs/release-handoff.md)
 - [Segurança para publicação e riscos](docs/security-deployment.md)
 - [Backup, verificação de restauração e recuperação](docs/backup-restore.md)
 - [Publicação HTTPS e smoke test sem alterar convites](docs/https-deployment.md)
