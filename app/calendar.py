@@ -1,5 +1,5 @@
 """Calendário público do evento, sem dados pessoais de convidados."""
-from datetime import timezone
+from datetime import datetime, timezone
 import re
 
 
@@ -17,7 +17,7 @@ def calendar_ics(name, starts_at, venue):
         "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Isadora//Convites//PT-BR",
         "CALSCALE:GREGORIAN", "BEGIN:VEVENT",
         "UID:isadora-dois-anos-20261213@convites",
-        "DTSTAMP:" + when,
+        "DTSTAMP:" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ"),
         "DTSTART:" + when,
         "SUMMARY:" + ics_text(name),
         "LOCATION:" + ics_text(venue),
