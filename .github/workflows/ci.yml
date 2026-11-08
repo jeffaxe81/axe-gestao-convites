@@ -60,3 +60,18 @@ jobs:
       - name: Stop test containers without deleting data volumes
         if: always()
         run: if [ -f .env ]; then docker compose down; fi
+
+      - name: Assemble auditable source ZIP
+        if: success()
+        run: |
+          git archive --format=zip --output "$RUNNER_TEMP/isadora-release-1-source.zip" HEAD
+          python -c 'import sys, zipfile; files=set(zipfile.ZipFile(sys.argv[1]).namelist()); assert {"README.md","Dockerfile","compose.yaml","app/__init__.py","docs/release-handoff.md"} <= files; assert ".env" not in files; assert not any(p.endswith((".sql.gz",".isadora")) for p in files)' "$RUNNER_TEMP/isadora-release-1-source.zip"
+          sha256sum "$RUNNER_TEMP/isadora-release-1-source.zip"
+      - name: Attach tested source ZIP
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: isadora-release-1-source
+          path: ${{ runner.temp }}/isadora-release-1-source.zip
+          if-no-files-found: error
+          retention-days: 30
