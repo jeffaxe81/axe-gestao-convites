@@ -75,10 +75,12 @@ def test_160_synthetic_families_duplicated_revised_and_counted(client, store):
         assert retry.status_code == 200 and retry.json == first.json
         retried += 1
         if index % 11 == 0:
-            invalid_replay = client.post("/api/rsvps", json={
-                **payload, "contact_name": "Tentativa de chave reutilizada"
-            }, headers=headers)
-            assert invalid_replay.status_code == 409
+            other = {**payload, "contact_name": "Tentativa de chave reutilizada",
+                     "participants": [dict(p) for p in payload["participants"]]}
+            if other["participants"]:
+                other["participants"][0]["name"] = other["contact_name"]
+            invalid_replay = client.post("/api/rsvps", json=other, headers=headers)
+            assert invalid_replay.status_code == 409, (index, invalid_replay.json)
             conflicts += 1
         saved[index] = payload
         replies[index] = first.json
