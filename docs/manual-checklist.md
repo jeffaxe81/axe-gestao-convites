@@ -45,3 +45,14 @@ Todas as caixas abaixo permanecem desmarcadas até testes reais. Registrar data,
 - [ ] Imprimir a lista pelo navegador, tanto completa quanto filtrada, e confirmar que campos privados de configuração ficam ocultos.
 - [ ] Executar migração aditiva no banco de homologação com convites pré-existentes, confirmando preservação.
 - [ ] Fazer backup cifrado e restaurar em instância isolada com quatro tabelas, inclusive histórico.
+
+## Rodada de 20 melhorias — verificação em dispositivos reais
+
+- [ ] Testar link .ics em agenda Android e iPhone: horário de 15h em 13/12/2026, local atualizado.
+- [ ] Conferir data/horário e contagem regressiva no fuso de Brasília.
+- [ ] Desligar dados móveis/Wi-Fi durante uma confirmação; verificar aviso e ausência de sucesso falso.
+- [ ] Reativar a rede e reenviar; confirmar que há apenas um RSVP, sem duplicação.
+- [ ] Validar contador e limite de participantes, foco de erro em nome/idade, etapas e Escape com teclado externo.
+- [ ] Testar leitor de tela e modo contraste alto/redução de movimentos.
+- [ ] Verificar o arquivo CSV do buffet com a faixa de 6 a 12 anos e três novos indicadores do painel.
+- [ ] Verificar que o link privado é copiado corretamente sem expô-lo em mensagens ou logs.
