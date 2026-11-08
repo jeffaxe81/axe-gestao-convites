@@ -2,11 +2,11 @@
 
 Aniversário de dois anos da Isadora — 13/12/2026, às 15h (America/Sao_Paulo). Local ainda a confirmar.
 
-**Estado: software funcional em candidato de entrega; uso público depende de homologação real. Não divulgar endereço para convidados.**
+**Estado: produto funcional finalizado para entrega de código, sem necessidade de domínio agora. Publicação e envio de convites dependem de homologação de campo.**
 
 ## Barra de avanço verificado
 
-`[██████████████░░] 86% — 6 de 7 etapas completas`
+**Funcionalidades previstas: implementadas.** Liberação de produção: `[██████████████░░] 86%` — domínio e testes físicos não interferem na conclusão do código.
 
 Ver [docs/progresso.md](docs/progresso.md). Os testes automatizados de navegador passaram. A liberação para uso real ainda depende da revisão de segurança e do checklist em Android e iPhone reais.
 
@@ -51,6 +51,25 @@ python scripts/generate_invitation.py --url https://convites.seu-dominio.com.br 
 
 O modo `--preview` produz uma demonstração marcada, **sem link** e não deve ser enviada. A geração final exige domínio HTTPS real; nunca usar endereço provisório, link de edição privada ou incluir tokens. Confirmar QR Code e botão em celulares antes de encaminhar o PDF via WhatsApp.
 
+## Domínio definido posteriormente
+
+O produto pode executar sem domínio via `http://127.0.0.1:8080`. Para o modo local:
+
+```bash
+python scripts/set_public_url.py --local
+python scripts/preflight.py --env-file .env --local
+```
+
+Quando decidir o domínio, basta atualizar o arquivo privado `.env` sem editar código:
+
+```bash
+python scripts/set_public_url.py --domain convites.seudominio.com.br
+python scripts/preflight.py --env-file .env
+docker compose up -d --no-deps --force-recreate app
+```
+
+Isso não altera o MySQL nem os dados dos convidados. O domínio definitivo exige HTTPS/proxy e a geração do PDF final deve ocorrer depois. Consulte [domínio flexível](docs/dominio-flexivel.md).
+
 ## Execução local com Docker (validada no CI; produção pendente)
 
 ```bash
@@ -82,6 +101,7 @@ Não habilite `TRUSTED_PROXY_HOPS=1` sem configurar um proxy local que SOBRESCRE
 - [Checklist manual pendente](docs/manual-checklist.md)
 - [Seis frentes técnicas e critérios de fechamento](docs/frentes-paralelas.md)
 - [Pacote técnico, implantação e critérios de aceite](docs/release-handoff.md)
+- [Domínio flexível: configure depois](docs/dominio-flexivel.md)
 - [Segurança para publicação e riscos](docs/security-deployment.md)
 - [Backup, verificação de restauração e recuperação](docs/backup-restore.md)
 - [Publicação HTTPS e smoke test sem alterar convites](docs/https-deployment.md)

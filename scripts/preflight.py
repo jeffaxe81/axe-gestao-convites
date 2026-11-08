@@ -45,7 +45,7 @@ def load_env(path):
     return values
 
 
-def validate(values, *, allow_proxy=False):
+def validate(values, *, allow_proxy=False, allow_local=False):
     errors = []
     for name in REQUIRED:
         if not values.get(name):
@@ -66,12 +66,16 @@ def validate(values, *, allow_proxy=False):
     try:
         url = urlsplit(values.get("APP_PUBLIC_URL", ""))
         hostname = url.hostname
-        if (url.scheme != "https" or not hostname
+        local = (allow_local and url.scheme == "http"
+                 and hostname in ("localhost", "127.0.0.1") and url.port == 8080
+                 and not (url.username or url.password or url.query or url.fragment)
+                 and url.path in ("", "/"))
+        if not local and (url.scheme != "https" or not hostname
             or url.username or url.password or url.query or url.fragment
             or url.path not in ("", "/") or url.port is not None
             or not re.fullmatch(r"(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}", hostname)):
             errors.append("APP_PUBLIC_URL deve ser apenas a origem HTTPS do domínio público.")
-        if hostname:
+        if hostname and not local:
             try:
                 ipaddress.ip_address(hostname)
                 errors.append("APP_PUBLIC_URL deve usar um domínio DNS, não endereço IP.")
@@ -93,10 +97,12 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--env-file", default=".env")
     parser.add_argument("--allow-proxy-hop", action="store_true")
+    parser.add_argument("--local", action="store_true",
+                        help="Valida configuração local sem liberar publicação")
     args = parser.parse_args()
     try:
         values = load_env(args.env_file)
-        errors = validate(values, allow_proxy=args.allow_proxy_hop)
+        errors = validate(values, allow_proxy=args.allow_proxy_hop, allow_local=args.local)
     except (OSError, UnicodeError, ValueError) as exc:
         print("FALHA: {}".format(exc), file=sys.stderr)
         raise SystemExit(1) from None
@@ -104,8 +110,12 @@ def main():
         for error in errors:
             print("FALHA: {}".format(error), file=sys.stderr)
         raise SystemExit(1)
-    print("PASS: configuração básica, segredos, permissões e origem HTTPS.")
-    print("PENDENTE: DNS/TLS reais, controles do proxy/WAF, backup externo e celulares físicos.")
+    if args.local:
+        print("PASS: ambiente local configurado sem domínio.")
+        print("MODO LOCAL: não publicar; DNS/TLS e celulares físicos serão testados depois.")
+    else:
+        print("PASS: configuração básica, segredos, permissões e origem HTTPS.")
+        print("PENDENTE: DNS/TLS reais, controles do proxy/WAF, backup externo e celulares físicos.")
 
 
 if __name__ == "__main__":

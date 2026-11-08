@@ -93,3 +93,21 @@ def test_reject_invalid_dns_hostname_and_custom_ports(url):
     config = configuration()
     config["APP_PUBLIC_URL"] = url
     assert validate(config)
+
+
+def test_local_mode_accepts_loopback_but_default_preflight_rejects_it():
+    settings = configuration()
+    settings["APP_PUBLIC_URL"] = "http://127.0.0.1:8080"
+    assert validate(settings, allow_local=True) == []
+    assert validate(settings)
+
+
+@pytest.mark.parametrize("url", [
+    "http://192.168.1.10:8080", "http://localhost:8081",
+    "http://convites.festa.com.br:8080", "http://localhost:8080/rsvp",
+    "https://localhost:8080", "http://127.0.0.1:8080/?token=secret",
+])
+def test_local_mode_never_allows_external_or_unsafe_origin(url):
+    settings = configuration()
+    settings["APP_PUBLIC_URL"] = url
+    assert validate(settings, allow_local=True)

@@ -2,7 +2,9 @@
 
 Referência: 08/11/2026.
 
-**Barra de etapas finalizadas:** [██████████████░░] 86% — 6 de 7 etapas integralmente aprovadas.
+**Produto em código: funcionalidades acordadas implementadas, com domínio configurável depois.**
+
+**Liberação de produção:** [██████████████░░] 86% — 6 de 7 etapas operacionais homologadas. O domínio não impede a conclusão do software.
 
 | Etapa | Situação | Evidência |
 | --- | --- | --- |
@@ -38,3 +40,7 @@ Referência: 08/11/2026.
 Código implementado: histórico transacional sem PII, migração aditiva 002, CSV quantitativo de buffet, impressão privada com filtro, comparação da quarta tabela no restore, testes de API e navegador. Ver [plano e evidências](antecipacao-2-meses.md).
 
 A última CI **confirmada** antes desta rodada era a execução 40945029136, com **185 testes aprovados**. Não aumentar os 86% enquanto faltarem a homologação real, os dispositivos físicos e o aceite operacional.
+
+## Domínio flexível (08/11/2026)
+
+A aplicação fica funcional sem domínio público e oferece `scripts/set_public_url.py` para trocar o endereço depois preservando as demais configurações. `scripts/preflight.py --local` é exclusivo do modo de desenvolvimento; `--domain` exige HTTPS real. O software pode ser entregue e versionado na `main` com os testes automatizados aprovados, mesmo sem publicação. Os 86% são **apenas da liberação operacional**, não representam funcionalidades inacabadas. Ver [guia](dominio-flexivel.md).
