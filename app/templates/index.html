@@ -20,9 +20,14 @@
         <div><strong>Quando</strong><span id="event-date">Domingo, 13 de dezembro de 2026 às 15h</span></div>
         <div><strong>Onde</strong><span id="event-venue">Local a confirmar</span></div>
       </div>
+      <p id="event-countdown" class="countdown" role="status" hidden></p>
+      <a href="/evento.ics" download="isadora-aniversario.ics" class="calendar-link">Adicionar a festa ao calendário</a>
     </header>
 
     <section class="panel" aria-labelledby="form-title">
+      <div id="connection-status" class="notice connection-status" role="status" aria-live="polite" hidden></div>
+      <p id="stage-indicator" class="stage-indicator" role="status" aria-live="polite">Etapa 1 de 3 — Sua resposta</p>
+      <noscript><p class="notice error">Ative o JavaScript do navegador para confirmar sua presença.</p></noscript>
       <div id="error" class="notice error" role="alert" hidden></div>
       <p id="loading" class="notice" role="status" hidden>Carregando sua confirmação...</p>
 
@@ -49,6 +54,7 @@
             <p class="muted">Inclua você e seus acompanhantes. Crianças têm idade informada em anos completos.</p>
           </div>
           <div id="participants" class="participant-list"></div>
+          <p id="participant-count" class="muted" role="status" aria-live="polite"></p>
           <button type="button" id="add-companion" class="secondary">+ Adicionar acompanhante</button>
         </div>
 
@@ -73,6 +79,7 @@
         <label for="edit-link">Guarde este link privado para alterar sua resposta:</label>
         <input type="text" id="edit-link" readonly spellcheck="false" aria-label="Link privado de edição">
         <button type="button" id="copy-link" class="secondary full">Copiar link de edição</button>
+        <p id="copy-status" role="status" aria-live="polite" class="muted"></p>
       </div>
     </section>
     <footer>Feito com carinho para celebrar a Isadora <span aria-hidden="true">🌼</span></footer>
