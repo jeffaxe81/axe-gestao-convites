@@ -33,6 +33,46 @@
     holder.append(label, input);
     return holder;
   }
+  function setStage(step) {
+    const labels = {1: 'Sua resposta', 2: 'Revisão', 3: 'Confirmação registrada'};
+    $('stage-indicator').textContent = 'Etapa ' + step + ' de 3 — ' + labels[step];
+  }
+  function updateParticipantCount() {
+    const count = $('participants').querySelectorAll('.person-row').length;
+    $('participant-count').textContent = count + (count === 1 ? ' participante informado' : ' participantes informados') + ' (máximo 100).';
+    $('add-companion').disabled = count >= 100;
+  }
+  function updateConnectionStatus() {
+    const offline = !navigator.onLine;
+    $('connection-status').hidden = !offline;
+    $('connection-status').textContent = offline
+      ? 'Você está sem conexão. Não envie a resposta até a internet voltar.'
+      : '';
+  }
+  function setEventDisplay(event) {
+    const date = new Date(event.starts_at);
+    if (!Number.isFinite(date.getTime())) return;
+    const localDate = new Intl.DateTimeFormat('pt-BR', {
+      timeZone: 'America/Sao_Paulo', weekday: 'long', day: 'numeric',
+      month: 'long', year: 'numeric'
+    }).format(date);
+    const localTime = new Intl.DateTimeFormat('pt-BR', {
+      timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit',
+      hourCycle: 'h23'
+    }).format(date);
+    $('event-date').textContent = localDate + ', às ' + localTime;
+    const remaining = date.getTime() - Date.now();
+    if (remaining <= 0) {
+      $('event-countdown').textContent = 'A data da festa já chegou!';
+    } else {
+      const days = Math.ceil(remaining / 86400000);
+      $('event-countdown').textContent = days === 1
+        ? 'Falta até 1 dia para a festa! 🌼'
+        : 'Faltam ' + days + ' dias para a festa! 🌼';
+    }
+    $('event-countdown').hidden = false;
+  }
+
   function addRow(primary, person) {
     const row = item('div', undefined, 'person-row');
     row.dataset.primary = primary ? 'yes' : 'no';
@@ -74,31 +114,42 @@
     if (!primary) {
       const remove = item('button', 'Remover acompanhante', 'remove');
       remove.type = 'button';
-      remove.addEventListener('click', () => row.remove());
+      remove.addEventListener('click', () => { row.remove(); updateParticipantCount(); });
       row.append(remove);
     }
     $('participants').append(row);
+    updateParticipantCount();
   }
   function attending() {
     return form.querySelector('input[name="attendance"]:checked').value === 'yes';
   }
-  function toggleAttendance() { $('attendance-details').hidden = !attending(); }
+  function toggleAttendance() {
+    $('attendance-details').hidden = !attending();
+    updateParticipantCount();
+  }
   function buildPayload() {
     const name = $('contact-name').value.trim().replace(/\s+/g, ' ');
-    if (!name || name.length > 160) throw new Error('Informe seu nome para continuar.');
+    if (!name || name.length > 160) {
+      $('contact-name').focus();
+      throw new Error('Informe seu nome para continuar.');
+    }
     const people = [];
     if (attending()) {
       for (const row of $('participants').querySelectorAll('.person-row')) {
         const primary = row.dataset.primary === 'yes';
         const nameField = row.querySelector('.person-name');
         const personName = primary ? name : (nameField ? nameField.value.trim().replace(/\s+/g, ' ') : '');
-        if (!personName || personName.length > 160) throw new Error('Informe o nome de cada acompanhante.');
+        if (!personName || personName.length > 160) {
+          if (nameField) nameField.focus();
+          throw new Error('Informe o nome de cada acompanhante.');
+        }
         const kind = row.querySelector('.person-kind').value;
         let age = null;
         if (kind === 'CHILD') {
           const raw = row.querySelector('.person-age').value.trim();
           age = Number(raw);
           if (raw === '' || !Number.isInteger(age) || age < 0 || age > 12) {
+            row.querySelector('.person-age').focus();
             throw new Error('Informe uma idade inteira de 0 a 12 anos para cada criança.');
           }
         }
@@ -122,6 +173,7 @@
       $('review-data').textContent = lines.join('\n');
       form.hidden = true;
       $('review').hidden = false;
+      setStage(2);
       $('review').scrollIntoView({behavior: 'smooth', block: 'start'});
     } catch (error) { fail(error.message); }
   }
@@ -130,6 +182,7 @@
     form.hidden = true;
     $('review').hidden = true;
     $('success').hidden = false;
+    setStage(3);
     $('success-message').textContent = result.attending
       ? 'Sua presença foi registrada com carinho. Esperamos você!'
       : 'Recebemos sua resposta. Obrigado por nos avisar!';
@@ -169,6 +222,7 @@
     $('submit-btn').disabled = true;
     $('submit-btn').textContent = 'Enviando...';
     try {
+      if (!navigator.onLine) throw new Error('Sem conexão com a internet. Reconecte e tente enviar novamente.');
       let result;
       if (editing) {
         result = validateReceipt(await requestJson('/api/rsvps/' + encodeURIComponent(familyId), {
@@ -211,9 +265,12 @@
   async function start() {
     addRow(true);
     toggleAttendance();
+    updateConnectionStatus();
+    $('loading').hidden = !editing;
     try {
       const event = await requestJson('/api/event');
       $('event-venue').textContent = event.venue;
+      setEventDisplay(event);
       if (editing) {
         const match = /^#([0-9a-f-]{36})\.([0-9a-f]{64})$/i.exec(window.location.hash);
         if (!match) throw new Error('Link de edição inválido. Abra o link completo que você recebeu.');
@@ -225,6 +282,7 @@
         hydrateFamily(own);
       }
     } catch (error) { fail(error.message); if (editing) $('rsvp-form').hidden = true; }
+    finally { $('loading').hidden = true; }
   }
   form.querySelectorAll('input[name="attendance"]').forEach((radio) =>
     radio.addEventListener('change', toggleAttendance));
@@ -233,12 +291,30 @@
     addRow(false);
   });
   $('review-btn').addEventListener('click', showReview);
-  $('back-btn').addEventListener('click', () => { $('review').hidden = true; form.hidden = false; });
+  function backToForm() {
+    $('review').hidden = true;
+    form.hidden = false;
+    setStage(1);
+    $('review-btn').focus();
+  }
+  $('back-btn').addEventListener('click', backToForm);
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && !$('review').hidden) backToForm();
+  });
   $('submit-btn').addEventListener('click', submit);
+  window.addEventListener('online', updateConnectionStatus);
+  window.addEventListener('offline', updateConnectionStatus);
   $('copy-link').addEventListener('click', async () => {
     const link = $('edit-link').value;
-    try { await navigator.clipboard.writeText(link); $('copy-link').textContent = 'Link copiado!'; }
-    catch (error) { $('edit-link').focus(); $('edit-link').select(); }
+    try {
+      await navigator.clipboard.writeText(link);
+      $('copy-link').textContent = 'Link copiado!';
+      $('copy-status').textContent = 'Link copiado. Guarde-o em local privado.';
+    } catch (error) {
+      $('edit-link').focus();
+      $('edit-link').select();
+      $('copy-status').textContent = 'Selecione e copie o link acima. Não o publique em grupos.';
+    }
   });
   start();
 })();
