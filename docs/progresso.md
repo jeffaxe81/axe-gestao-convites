@@ -12,10 +12,10 @@ Referência: 08/11/2026.
 | 4. Acesso privado | Concluída | Sessões, CSRF e totais |
 | 5. Interface pública | Concluída | Chromium mobile com confirmação, recusa e edição |
 | 6. Interface dos organizadores | Concluída | Chromium com login, listas, configuração e logout |
-| 7. Operação final | Parcialmente validada | 165 testes na CI de 29/10/2026; concorrência com 20 requisições, Compose, persistência, backup com restauração e criptografia verificados; revisão de código independente realizada; aparelhos físicos, HTTPS definitivo e aceite operacional pendentes |
+| 7. Operação final | Parcialmente validada | 185 testes na CI de 29/10/2026; concorrência com 20 requisições, Compose, persistência, backup com restauração e criptografia verificados; revisão de código independente realizada; aparelhos físicos, HTTPS definitivo e aceite operacional pendentes |
 
-**Evidência operacional mais recente:** https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/40917656389
-- 165 testes passaram, incluindo CSP, X-Frame-Options, HTTPS obrigatório fora do localhost, proxy explicitamente confiável, painel pesquisável e atualização manual/automática.
+**Última CI integral aprovada anterior à antecipação de novembro:** https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/40945029136
+- 185 testes passaram, incluindo CSP, X-Frame-Options, HTTPS obrigatório fora do localhost, proxy explicitamente confiável, painel pesquisável e atualização manual/automática.
 - Validação do painel contra respostas inconsistentes, concorrência no fechamento de edições e gerador offline de PDF com botão/QR Code HTTPS aprovados.
 - Sessão expirada durante configurações ou exportação e falha de logout tratadas com limpeza imediata de nomes, métricas e campos, verificadas em quatro novos testes E2E.
 - Docker Compose construiu/subiu os serviços com MySQL em volume.
