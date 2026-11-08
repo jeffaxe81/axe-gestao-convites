@@ -210,6 +210,10 @@
     $('refresh-dashboard-btn').disabled = false;
     $('refresh-dashboard-btn').textContent = 'Atualizar dados';
     $('export-status').textContent = '';
+    $('planning-status').textContent = '';
+    $('activity-status').textContent = '';
+    clearList('activity-list');
+    $('load-activity-btn').disabled = false;
     $('venue-input').value = '';
     $('deadline-input').value = '';
     $('settings-status').textContent = '';
@@ -343,6 +347,94 @@
       button.disabled = false;
     }
   }
+  async function exportPlanning() {
+    const generation = sessionGeneration;
+    const button = $('export-planning-btn');
+    button.disabled = true;
+    $('planning-status').textContent = '';
+    try {
+      const response = await fetch('/api/admin/planning.csv', {
+        credentials: 'same-origin', cache: 'no-store'
+      });
+      if (generation !== sessionGeneration || $('dashboard-panel').hidden) return;
+      if (!response.ok) {
+        const error = new Error('Não foi possível gerar o resumo.');
+        error.status = response.status;
+        throw error;
+      }
+      const content = await response.blob();
+      if (generation !== sessionGeneration || $('dashboard-panel').hidden) return;
+      const href = URL.createObjectURL(content);
+      try {
+        const anchor = document.createElement('a');
+        anchor.href = href;
+        anchor.download = 'isadora-resumo-buffet.csv';
+        document.body.append(anchor);
+        anchor.click();
+        anchor.remove();
+      } finally {
+        URL.revokeObjectURL(href);
+      }
+      $('planning-status').textContent = 'Resumo quantitativo criado, sem nomes de convidados.';
+    } catch (error) {
+      if (generation !== sessionGeneration) return;
+      if (error.status === 401 || error.status === 403) expireOrganizerSession();
+      else $('planning-status').textContent = error.message;
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  async function loadActivity() {
+    if ($('dashboard-panel').hidden) return;
+    const generation = sessionGeneration;
+    const button = $('load-activity-btn');
+    button.disabled = true;
+    $('activity-status').textContent = 'Consultando movimentações...';
+    try {
+      const response = await api('/api/admin/activity');
+      if (generation !== sessionGeneration || $('dashboard-panel').hidden) return;
+      if (!response || !Array.isArray(response.events) || response.events.length > 50 ||
+          response.events.some((item) => !item || typeof item.kind !== 'string' ||
+            typeof item.occurred_at_utc !== 'string')) {
+        throw new Error('Histórico inválido recebido do servidor.');
+      }
+      const labels = {
+        RSVP_CREATED: 'Confirmação recebida',
+        RSVP_DECLINED: 'Recusa recebida',
+        RSVP_UPDATED: 'Confirmação alterada',
+        SETTINGS_CHANGED: 'Configuração da festa alterada'
+      };
+      const entries = [];
+      for (const entry of response.events) {
+        const time = new Date(entry.occurred_at_utc);
+        if (!Object.hasOwn(labels, entry.kind) || Number.isNaN(time.getTime())) {
+          throw new Error('Histórico inválido recebido do servidor.');
+        }
+        const li = document.createElement('li');
+        li.textContent = labels[entry.kind] + ' — ' +
+          new Intl.DateTimeFormat('pt-BR', {
+            timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short'
+          }).format(time);
+        entries.push(li);
+      }
+      $('activity-list').replaceChildren(...entries);
+      if (!entries.length) putEmpty('activity-list');
+      $('activity-status').textContent = 'Histórico atualizado. Não são exibidos dados pessoais.';
+    } catch (error) {
+      if (generation !== sessionGeneration || $('dashboard-panel').hidden) return;
+      if (error.status === 401 || error.status === 403) expireOrganizerSession();
+      else $('activity-status').textContent = error.message;
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  function printGuestList() {
+    if (!dashboardData || $('dashboard-panel').hidden) return;
+    window.print();
+  }
+
   async function logOut() {
     // Hide and clear names immediately, including if the network or session has failed.
     const token = csrfToken;
@@ -361,6 +453,9 @@
   $('settings-form').addEventListener('submit', saveSettings);
   $('logout-btn').addEventListener('click', logOut);
   $('export-csv-btn').addEventListener('click', exportCsv);
+  $('export-planning-btn').addEventListener('click', exportPlanning);
+  $('load-activity-btn').addEventListener('click', loadActivity);
+  $('print-list-btn').addEventListener('click', printGuestList);
   $('refresh-dashboard-btn').addEventListener('click', refreshDashboard);
   $('refresh-interval').addEventListener('change', () => {
     configureRefreshTimer();
