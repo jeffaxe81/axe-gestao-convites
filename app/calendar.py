@@ -5,7 +5,7 @@ import re
 
 def ics_text(value):
     """Escapa dados de campo de texto em iCalendar (RFC 5545)."""
-    clean = re.sub(r"[\x00-\x08\x0b-\x1f\x7f]", "", value)
+    clean = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]", "", value)
     return clean.replace("\\", "\\\\").replace("\r\n", "\n").replace("\r", "\n") \
         .replace(";", "\\;").replace(",", "\\,").replace("\n", "\\n")
 
