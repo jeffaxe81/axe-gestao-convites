@@ -3,8 +3,8 @@ import csv
 from datetime import datetime, timezone
 import io
 
-from tests.integration.test_public_api import client, store
-from tests.integration.test_organizer_api import client as organizer_client, login
+from tests.integration.test_public_api import store
+from tests.integration.test_organizer_api import client, login
 
 
 def test_calendar_event_is_downloadable_and_correct_timezone(client):
@@ -43,11 +43,11 @@ def test_robots_policy_and_noindex_headers(client):
         assert checked.headers["Cross-Origin-Opener-Policy"] == "same-origin"
 
 
-def test_planning_csv_includes_age_six_to_twelve_without_names(organizer_client):
+def test_planning_csv_includes_age_six_to_twelve_without_names(client):
     from tests.integration.test_public_api import invitation, send
-    send(organizer_client, invitation("Ana"))
-    assert login(organizer_client).status_code == 200
-    result = organizer_client.get("/api/admin/planning.csv")
+    send(client, invitation("Ana"))
+    assert login(client).status_code == 200
+    result = client.get("/api/admin/planning.csv")
     rows = list(csv.reader(io.StringIO(result.data.decode("utf-8-sig")), delimiter=";"))
     summary = dict(rows[1:])
     assert summary["Crianças de 6 a 12 anos"] == "1"
