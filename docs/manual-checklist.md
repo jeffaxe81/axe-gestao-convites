@@ -36,3 +36,12 @@ Todas as caixas abaixo permanecem desmarcadas até testes reais. Registrar data,
 - [ ] Configurar autenticação/segredos fortes sem arquivos sensíveis versionados.
 - [ ] Configurar backups, testar restauração e definir retenção/eliminação de dados pessoais.
 - [ ] Registrar aprovador técnico antes de compartilhar o convite.
+
+## Funcionalidades de novembro — validação real
+
+- [ ] Conferir que histórico de movimentos mostra apenas tipo e horário, sem nome, IP ou token.
+- [ ] Verificar se as movimentações de criação, recusa, edição e configuração aparecem uma única vez após salvar.
+- [ ] Exportar resumo buffet/lembrancinhas sem dados identificáveis e conferir com a contagem oficial.
+- [ ] Imprimir a lista pelo navegador, tanto completa quanto filtrada, e confirmar que campos privados de configuração ficam ocultos.
+- [ ] Executar migração aditiva no banco de homologação com convites pré-existentes, confirmando preservação.
+- [ ] Fazer backup cifrado e restaurar em instância isolada com quatro tabelas, inclusive histórico.
