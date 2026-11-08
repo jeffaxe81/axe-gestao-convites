@@ -52,3 +52,21 @@ button:disabled{opacity:.55;cursor:not-allowed}
 .success input{text-align:left;font-size:.85rem}
 footer{text-align:center;font-size:.84rem;color:#797055;margin-top:24px}
 @media(max-width:550px){.shell{width:min(100% - 16px,760px);margin:8px auto 24px}.hero{padding:25px 15px}.details,.choice-row,.person-row .row-fields{grid-template-columns:1fr}.details{gap:7px}.panel{padding:23px 18px}.actions{flex-direction:column-reverse}.actions button{width:100%}.flowers{letter-spacing:.2rem}button{width:100%}}
+
+
+/* 20 refinamentos — foco, orientação e continuidade de RSVP */
+.countdown{color:#495a3a;font-weight:750;margin:17px 0 6px}
+.calendar-link{display:inline-block;margin:6px 0 2px;color:#415832;font-weight:750;text-underline-offset:4px}
+.calendar-link:hover{color:#29391f}
+.calendar-link:focus-visible{outline:3px solid #aa8249;outline-offset:4px;border-radius:4px}
+.stage-indicator{font-size:.78rem;letter-spacing:.065em;text-transform:uppercase;color:#536746;font-weight:800;margin:0 0 16px}
+.connection-status{background:#fff0d5;border:1px solid #b6862c;color:#653a05;font-weight:700}
+#participant-count{margin:12px 0 5px;font-size:.85rem}
+#copy-status{min-height:1.6em;margin:12px 0}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{scroll-behavior:auto!important;transition-duration:0.01ms!important;animation-duration:0.01ms!important}
+}
+@media(forced-colors:active){
+  .choice:has(input:checked){outline:2px solid Highlight;outline-offset:2px}
+  button.primary,.calendar-link{forced-color-adjust:auto}
+}
