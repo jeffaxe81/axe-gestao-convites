@@ -86,6 +86,7 @@ Não habilite `TRUSTED_PROXY_HOPS=1` sem configurar um proxy local que SOBRESCRE
 - [Publicação HTTPS e smoke test sem alterar convites](docs/https-deployment.md)
 - [Implantação opcional via Cloudflare Tunnel](docs/cloudflare-tunnel.md)
 - [Antecipação de 1 mês, entregas e pendências](docs/antecipacao-1-mes.md)
+- [Antecipação de 2 meses: histórico, buffet, impressão e homologação](docs/antecipacao-2-meses.md)
 
 O PDF do convite agora pode ser gerado **offline** com botão e QR Code clicáveis por `scripts/generate_invitation.py`. O aplicativo não envia mensagens por WhatsApp: a distribuição é manual e fica bloqueada até homologação de domínio, HTTPS e dispositivos físicos.
 
@@ -103,3 +104,13 @@ Exemplos, riscos e procedimentos constam nos documentos operacionais acima. **Um
 - **Revisão mensal acelerada:** ver `docs/antecipacao-1-mes.md`.
 
 A PR permanece como rascunho, sem publicar a página para convidados. A prova de publicação em domínio real e os testes em dispositivos físicos ainda são obrigatórios.
+
+## Entregas adicionais de novembro (em verificação)
+
+- Histórico privativo de movimentações, somente tipo e data/hora, sem nomes de famílias ou tokens, com limite de 50 eventos recentes.
+- Migração de banco aditiva 002 (tabela audit_events), sem apagar as confirmações existentes.
+- CSV específico de buffet e lembrancinhas sem dados pessoais, além do relatório nominal já existente.
+- Lista imprimível via navegador, em formato A4, que respeita o filtro de convidados escolhido.
+- Verificação de backup com as quatro tabelas: evento, famílias, participantes e histórico.
+
+A CI do commit final precisa ficar verde antes da homologação técnica dessas mudanças. Sem domínio HTTPS real e testes físicos, a liberação para convidados permanece bloqueada.
