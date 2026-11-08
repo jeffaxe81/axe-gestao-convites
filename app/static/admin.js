@@ -3,6 +3,7 @@
   const $ = (id) => document.getElementById(id);
   if (!$('login-form')) return;
   let csrfToken = null;
+  let csrfPending = null;
   let dashboardData = null;
   let sessionGeneration = 0;
   let refreshPending = false;
@@ -24,8 +25,25 @@
     return data;
   }
   async function ensureCsrf() {
-    if (!csrfToken) csrfToken = (await api('/api/auth/csrf')).csrf_token;
-    return csrfToken;
+    if (csrfToken) return csrfToken;
+    // Share one initial request and reject a response from a previous session.
+    if (!csrfPending) {
+      const generation = sessionGeneration;
+      const pending = api('/api/auth/csrf').then((data) => {
+        if (generation !== sessionGeneration) {
+          throw new Error('A sessão mudou. Entre novamente.');
+        }
+        if (typeof data.csrf_token !== 'string' || !data.csrf_token) {
+          throw new Error('Não foi possível validar a sessão.');
+        }
+        csrfToken = data.csrf_token;
+        return csrfToken;
+      }).finally(() => {
+        if (csrfPending === pending) csrfPending = null;
+      });
+      csrfPending = pending;
+    }
+    return csrfPending;
   }
   function clearList(id) { $(id).replaceChildren(); }
   function putEmpty(id) {
@@ -172,8 +190,12 @@
     return values.replace(' ', 'T').slice(0, 16);
   }
   async function loadDashboard() {
+    const generation = sessionGeneration;
     const data = await fetchDashboardSnapshot();
+    if (generation !== sessionGeneration) return;
     const settings = await api('/api/admin/settings');
+    // A delayed HTTP 200 must never reopen names after logout/expiration.
+    if (generation !== sessionGeneration) return;
     $('login-panel').hidden = true;
     $('dashboard-panel').hidden = false;
     drawDashboard(data);
@@ -200,6 +222,7 @@
     sessionGeneration += 1;
     // Expired Flask sessions no longer have the previous CSRF token.
     csrfToken = null;
+    csrfPending = null;
     stopRefreshTimer();
     dashboardData = null;
     refreshPending = false;

@@ -347,3 +347,39 @@ def test_successful_logout_clears_private_counters_and_fields(page, organizer_se
     expect(page.get_by_test_id("buffet-count")).to_have_text("0")
     expect(page.locator("#confirmed-list")).to_have_text("")
     expect(page.locator("#souvenir-list")).to_have_text("")
+
+
+@pytest.mark.parametrize("held_endpoint", ["/api/admin/dashboard", "/api/admin/settings"])
+def test_delayed_initial_dashboard_response_never_reopens_after_logout(
+        page, organizer_server, held_endpoint):
+    """An already-authorized HTTP 200 arriving late must not re-expose family names."""
+    import json
+    base, _ = organizer_server
+    login(page, base)
+    expect(page.locator("#confirmed-list")).to_contain_text("João")
+    page.add_init_script("""(() => {
+      const actualFetch = window.fetch.bind(window);
+      const heldEndpoint = ENDPOINT;
+      window.fetch = (input, options) => {
+        if (input !== heldEndpoint) return actualFetch(input, options);
+        return actualFetch(input, options).then(response =>
+          new Promise(resolve => {
+            window.releasePrivateResponse = () => resolve(response);
+          })
+        );
+      };
+    })();""".replace("ENDPOINT", json.dumps(held_endpoint)))
+    page.reload()
+    page.wait_for_function("typeof window.releasePrivateResponse === 'function'")
+    # During a slow dashboard boot, trigger the real exit handler.
+    page.evaluate("document.getElementById('logout-btn').click()")
+    expect(page.locator("#login-panel")).to_be_visible()
+    expect(page.locator("#confirmed-list")).to_have_text("")
+    page.evaluate("""async () => {
+      window.releasePrivateResponse();
+      await new Promise(resolve => requestAnimationFrame(() =>
+        requestAnimationFrame(resolve)));
+    }""")
+    expect(page.locator("#dashboard-panel")).to_be_hidden()
+    expect(page.locator("#confirmed-list")).to_have_text("")
+    expect(page.get_by_test_id("total-count")).to_have_text("0")

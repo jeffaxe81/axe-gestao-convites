@@ -24,6 +24,18 @@ Ver [docs/progresso.md](docs/progresso.md). Os testes automatizados de navegador
 
 O painel visual dos organizadores está implementado, com login, listas, indicadores, pesquisa de convidados (inclusive acompanhantes e sem distinção de acentos), atualização manual ou automática a cada 15/30/60 segundos e ajustes do local/prazo. A atualização preserva pesquisas e campos não salvos; sessões expiradas durante atualização, exportação ou gravação ocultam e limpam dados privados, e falha de logout nunca deixa listas visíveis.
 
+## Homologação local segura (sem domínio)
+
+Após criar `.env` privado, configurar senhas e iniciar `docker compose up -d --build --wait`:
+
+```bash
+python scripts/preflight.py --env-file .env --local
+python scripts/check_local.py
+python scripts/check_local.py --json
+```
+
+O verificador confirma oito endpoints locais: saúde do banco, dados públicos, página do convite, calendário, bloqueio das três APIs privadas e CSRF. **Não cria, altera ou remove confirmações; nunca transmite nomes, tokens ou senhas no relatório.** Aceita somente `127.0.0.1` ou `localhost`, bloqueia redirecionamentos e funciona sem domínio. Para testar gravação/edição, use convidados fictícios em ambiente descartável e o [checklist manual](docs/manual-checklist.md).
+
 ## Testes
 
 **185 testes aprovados** na última CI integral de 29/10/2026, com MySQL real, API, concorrência, Chromium e proteção HTTP. Docker Compose validado com reinício, persistência, backup e restauração isolada e criptografada. Incluem-se testes de respostas administrativas HTTP 200 inconsistentes, edições concorrentes, prazo após locks MySQL, geração de convite PDF com QR Code e validação de URL HTTPS segura.
