@@ -1,3 +1,11 @@
+## Pré-homologação local sem domínio (somente leitura)
+- [ ] Iniciar Docker Compose em uma máquina de teste; configurar senhas privadas exclusivas e `APP_PUBLIC_URL` local.
+- [ ] Executar `python scripts/preflight.py --env-file .env --local` e documentar resultado sem publicar segredos.
+- [ ] Executar `python scripts/check_local.py --json`; registrar PASS nas oito verificações HTTP.
+- [ ] Conferir que o smoke test não criou RSVP fictício: são somente requisições GET, sem login de administrador.
+- [ ] Confirmar que respostas atrasadas durante logout não voltam a exibir nomes ou contadores.
+- [ ] Separadamente, realizar os testes funcionais de gravação usando convidados fictícios em ambiente descartável.
+
 # Checklist manual — Isadora Release 1
 
 Todas as caixas abaixo permanecem desmarcadas até testes reais. Registrar data, dispositivo/versão, responsável, passos e evidência sem publicar nomes de convidados.
