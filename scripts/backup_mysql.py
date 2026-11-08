@@ -29,6 +29,7 @@ DATA_COLUMNS = {
         "payload_hash, edit_token_hash"
     ),
     "participants": "id, family_id, position, name, kind, age_years",
+    "audit_events": "id, event_kind, occurred_at_utc",
 }
 
 
@@ -174,7 +175,7 @@ def verify_restore(source):
                 "Falha: dados atuais diferem do arquivo restaurado. "
                 "Não houve alteração no banco original."
             )
-        print("PASS: restore temporário validado; três tabelas idênticas ao original.")
+        print("PASS: restore temporário validado; quatro tabelas idênticas ao original.")
     finally:
         if created:
             run_db(ROOT_SQL, "DROP DATABASE {};".format(temporary))
