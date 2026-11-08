@@ -88,6 +88,7 @@ Não habilite `TRUSTED_PROXY_HOPS=1` sem configurar um proxy local que SOBRESCRE
 - [Implantação opcional via Cloudflare Tunnel](docs/cloudflare-tunnel.md)
 - [Antecipação de 1 mês, entregas e pendências](docs/antecipacao-1-mes.md)
 - [Antecipação de 2 meses: histórico, buffet, impressão e homologação](docs/antecipacao-2-meses.md)
+- [20 melhorias de usabilidade, calendário, acessibilidade e segurança](docs/entregas-20-melhorias.md)
 
 O PDF do convite agora pode ser gerado **offline** com botão e QR Code clicáveis por `scripts/generate_invitation.py`. O aplicativo não envia mensagens por WhatsApp: a distribuição é manual e fica bloqueada até homologação de domínio, HTTPS e dispositivos físicos.
 
@@ -115,3 +116,7 @@ A PR permanece como rascunho, sem publicar a página para convidados. A prova de
 - Verificação de backup com as quatro tabelas: evento, famílias, participantes e histórico.
 
 A CI do commit final precisa ficar verde antes da homologação técnica dessas mudanças. Sem domínio HTTPS real e testes físicos, a liberação para convidados permanece bloqueada.
+
+## Melhorias adicionais de 08/11 — verificação em CI
+
+Foram adicionadas 20 melhorias no convite e painel: download do evento em calendário, data e contagem regressiva localizadas, aviso de internet indisponível sem confirmação falsa, contador/limite de acompanhantes, foco em erros, etapas e navegação por teclado, estado de edição e cópia de link, CSS acessível, diretivas de não-indexação, indicadores por família e faixa etária e CSV quantitativo detalhado. Consulte [a relação das 20 entregas](docs/entregas-20-melhorias.md). **A última CI aprovada precisa incluir este conjunto de alterações para serem consideradas homologadas.**
