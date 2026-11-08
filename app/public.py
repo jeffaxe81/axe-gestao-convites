@@ -3,11 +3,12 @@ from dataclasses import asdict
 from datetime import datetime, timezone
 from uuid import UUID
 
-from flask import Blueprint, current_app, jsonify, request, render_template
+from flask import Blueprint, current_app, jsonify, request, render_template, make_response
 from sqlalchemy.exc import SQLAlchemyError
 from werkzeug.exceptions import BadRequest
 
 from app.config import EVENT_NAME, EVENT_STARTS_AT, EVENT_TIMEZONE
+from app.calendar import calendar_ics
 from app.domain import InputError, validate_rsvp
 from app.rsvp import AccessDenied, EditClosed, IdempotencyConflict, RevisionConflict
 from app.security import bearer_token
@@ -112,6 +113,25 @@ def event():
         "timezone": EVENT_TIMEZONE,
         "venue": settings["venue"] or "Local a confirmar",
     })
+
+
+@public.get("/evento.ics")
+def calendar_download():
+    settings = _store().settings()
+    content = calendar_ics(EVENT_NAME, EVENT_STARTS_AT, settings["venue"] or "Local a confirmar")
+    response = make_response(content)
+    response.headers["Content-Type"] = "text/calendar; charset=utf-8"
+    response.headers["Content-Disposition"] = 'attachment; filename="isadora-aniversario.ics"'
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+@public.get("/robots.txt")
+def robots():
+    response = make_response("User-agent: *\\nDisallow: /\\n")
+    response.headers["Content-Type"] = "text/plain; charset=utf-8"
+    response.headers["Cache-Control"] = "public, max-age=3600"
+    return response
 
 
 @public.post("/api/rsvps")
