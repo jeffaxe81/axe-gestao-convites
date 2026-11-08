@@ -54,6 +54,7 @@ def export_planning_csv(summary):
         ("Participantes confirmados", counts.total),
         ("Pessoas para buffet", counts.buffet),
         ("Crianças até 5 anos", counts.children_0_5),
+        ("Crianças de 6 a 12 anos", counts.children_0_12 - counts.children_0_5),
         ("Crianças até 12 anos / lembrancinhas", counts.children_0_12),
         ("Pessoas acima de 12 anos", counts.over_12),
         ("Limite interno de buffet", summary["buffet_limit"]),
