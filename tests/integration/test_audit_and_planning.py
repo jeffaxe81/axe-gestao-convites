@@ -106,6 +106,6 @@ def test_activity_schema_is_additive_and_migration_idempotent():
         ).scalars().all()
         rows = connection.execute(select(AuditEvent)).all()
     assert venue == "Local anterior"
-    assert versions == [1, 2, 3, 4]
+    assert versions == [1, 2, 3, 4, 5]
     assert rows == []
     engine.dispose()
