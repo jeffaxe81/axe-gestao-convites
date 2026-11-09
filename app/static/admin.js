@@ -236,9 +236,10 @@
     clearList('invite-list');
     $('invite-search').value = '';
     $('invite-status-filter').value = 'TODOS';
+    $('invite-sent-filter').value = 'TODOS';
     $('invite-status').textContent = '';
     $('invite-refresh-btn').disabled = false;
-    for (const name of ['total', 'pending', 'confirmed', 'declined']) {
+    for (const name of ['total', 'pending', 'confirmed', 'declined', 'sent', 'not-sent']) {
       document.querySelector('[data-testid="invite-' + name + '"]').textContent = '0';
     }
     $('dashboard-panel').hidden = true;
@@ -644,17 +645,27 @@
         data.families.length > 10000) return false;
     const allowed = ['PENDENTE', 'CONFIRMADO', 'RECUSADO'];
     const seen = new Set();
-    const counts = {total: data.families.length, pending: 0, confirmed: 0, declined: 0};
+    const counts = {
+      total: data.families.length, pending: 0, confirmed: 0,
+      declined: 0, sent: 0, not_sent: 0
+    };
     for (const family of data.families) {
       if (!family || typeof family.id !== 'string' ||
           !/^[0-9a-f-]{36}$/i.test(family.id) || seen.has(family.id) ||
           typeof family.name !== 'string' || typeof family.key !== 'string' ||
           typeof family.phone !== 'string' || !allowed.includes(family.status) ||
+          typeof family.sent !== 'boolean' ||
+          (family.sent
+            ? typeof family.sent_at_utc !== 'string' ||
+              Number.isNaN(Date.parse(family.sent_at_utc))
+            : family.sent_at_utc !== null) ||
           'token' in family || 'url' in family) return false;
       seen.add(family.id);
       if (family.status === 'PENDENTE') counts.pending += 1;
       if (family.status === 'CONFIRMADO') counts.confirmed += 1;
       if (family.status === 'RECUSADO') counts.declined += 1;
+      if (family.sent) counts.sent += 1;
+      else counts.not_sent += 1;
     }
     return Object.entries(counts).every(([key, value]) => data.counts[key] === value);
   }
@@ -739,13 +750,65 @@
     })();
   }
 
+  async function setManualDispatch(family, host, sent) {
+    if ($('dashboard-panel').hidden || !host.isConnected) return;
+    const generation = sessionGeneration;
+    const button = host.querySelector('button[data-action="dispatch"]');
+    const status = host.querySelector('.invite-action-status');
+    if (!button) return;
+    button.disabled = true;
+    status.textContent = sent
+      ? 'Registrando declaração manual de envio...'
+      : 'Desfazendo registro manual de envio...';
+    try {
+      const data = await api('/api/admin/invitations/' +
+        encodeURIComponent(family.id) + '/sent', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': await ensureCsrf()
+          },
+          body: JSON.stringify({sent})
+        });
+      if (generation !== sessionGeneration || $('dashboard-panel').hidden ||
+          !host.isConnected) return;
+      if (!data || typeof data.sent !== 'boolean' || data.sent !== sent ||
+          (sent ? typeof data.sent_at_utc !== 'string' : data.sent_at_utc !== null)) {
+        throw new Error('Registro de envio não confirmado pelo servidor.');
+      }
+      // Leave RSVP status unchanged and refresh manual sending counters.
+      family.sent = data.sent;
+      family.sent_at_utc = data.sent_at_utc;
+      const sentCount = invitedFamilies.filter((item) => item.sent).length;
+      document.querySelector('[data-testid="invite-sent"]').textContent =
+        String(sentCount);
+      document.querySelector('[data-testid="invite-not-sent"]').textContent =
+        String(invitedFamilies.length - sentCount);
+      renderInvitationRoster();
+      $('invite-status').textContent = sent
+        ? 'Envio registrado manualmente. Isso não comprova entrega ou leitura.'
+        : 'Registro manual de envio desfeito. A confirmação de presença não foi alterada.';
+    } catch (error) {
+      if (generation !== sessionGeneration || $('dashboard-panel').hidden ||
+          !host.isConnected) return;
+      if (error.status === 401 || error.status === 403) expireOrganizerSession();
+      else status.textContent = error.message;
+    } finally {
+      if (generation === sessionGeneration && host.isConnected) button.disabled = false;
+    }
+  }
+
   function renderInvitationRoster() {
     const list = $('invite-list');
     list.replaceChildren();
     const term = fold($('invite-search').value.trim());
     const selected = $('invite-status-filter').value;
+    const sentFilter = $('invite-sent-filter').value;
     const matching = invitedFamilies.filter((f) =>
       (selected === 'TODOS' || f.status === selected) &&
+      (sentFilter === 'TODOS' ||
+       (sentFilter === 'ENVIADO' && f.sent) ||
+       (sentFilter === 'NAO_ENVIADO' && !f.sent)) &&
       (fold(f.name).includes(term) || fold(f.key).includes(term) ||
        f.phone.includes(term)));
     const statusNames = {
@@ -761,7 +824,12 @@
       details.className = 'muted';
       details.textContent = 'Código: ' + family.key +
         ' · ' + statusNames[family.status] +
-        ' · Telefone: ' + (family.phone || 'Não informado');
+        ' · Telefone: ' + (family.phone || 'Não informado') +
+        ' · ' + (family.sent ? 'Envio registrado manualmente em ' +
+          new Intl.DateTimeFormat('pt-BR', {
+            timeZone: 'America/Sao_Paulo',
+            dateStyle: 'short', timeStyle: 'short'
+          }).format(new Date(family.sent_at_utc)) : 'Envio não registrado');
       const controls = document.createElement('div');
       controls.className = 'admin-actions';
       for (const [mode, label] of [['copy', 'Copiar link'], ['whatsapp', 'Preparar WhatsApp']]) {
@@ -773,6 +841,16 @@
         button.addEventListener('click', () => invitationAction(family, li, mode));
         controls.append(button);
       }
+      const manual = document.createElement('button');
+      manual.type = 'button';
+      manual.className = 'secondary';
+      manual.dataset.action = 'dispatch';
+      manual.textContent = family.sent
+        ? 'Desfazer envio registrado'
+        : 'Marcar como enviado manualmente';
+      manual.addEventListener('click', () =>
+        setManualDispatch(family, li, !family.sent));
+      controls.append(manual);
       const actionStatus = document.createElement('p');
       actionStatus.className = 'invite-action-status muted';
       actionStatus.setAttribute('role', 'status');
@@ -798,7 +876,7 @@
       invitedFamilies = data.families;
       for (const name of ['total', 'pending', 'confirmed', 'declined']) {
         document.querySelector('[data-testid="invite-' + name + '"]').textContent =
-          String(data.counts[name]);
+          String(data.counts[name === 'not-sent' ? 'not_sent' : name]);
       }
       renderInvitationRoster();
     } catch (error) {
@@ -880,6 +958,7 @@
   $('invite-refresh-btn').addEventListener('click', loadInvitationRoster);
   $('invite-search').addEventListener('input', renderInvitationRoster);
   $('invite-status-filter').addEventListener('change', renderInvitationRoster);
+  $('invite-sent-filter').addEventListener('change', renderInvitationRoster);
   $('family-template-btn').addEventListener('click', downloadFamilyTemplate);
   $('family-preview-btn').addEventListener('click', validateFamilyFile);
   $('family-import-btn').addEventListener('click', importFamilyFile);
