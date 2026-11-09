@@ -191,6 +191,12 @@ def invitation_details(invitation_id):
     return jsonify(_store().get_invitation(invitation_id, _require_token()))
 
 
+@public.post("/api/invitations/<invitation_id>/interest")
+def invitation_interest(invitation_id):
+    return jsonify(_store().express_invitation_interest(
+        invitation_id, _require_token(), datetime.now(timezone.utc)))
+
+
 @public.post("/api/invitations/<invitation_id>/response")
 def invitation_response(invitation_id):
     token = _require_token()
