@@ -209,7 +209,8 @@ def invitation_details():
     service = current_app.extensions.get("isadora_invitation_store")
     if service is None:
         import os
-        service = InvitationStore(base_store.session_factory, os.environ.get("TOKEN_SECRET", ""))
+        service = InvitationStore(base_store.session_factory,
+                                    os.environ.get("TOKEN_SECRET") or base_store._secret.decode("utf-8"))
         current_app.extensions["isadora_invitation_store"] = service
     invitation = service.resolve_token(token)
     if invitation is None or invitation["status"] in ("CONFIRMED", "DECLINED", "REVOKED"):
