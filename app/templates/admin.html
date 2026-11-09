@@ -72,7 +72,10 @@
           </div>
           <button type="button" class="secondary" id="family-preview-btn">Validar planilha</button>
         </div>
-        <p class="muted">Esta etapa aceita Excel ou CSV e apenas confere os dados. Não importa cadastros, não cria links e não envia convites.</p>
+        <p class="muted">Valide a planilha e revise o resumo antes de gravar. A importação mantém famílias pendentes e não envia convites.</p>
+        <button type="button" id="family-import-btn" class="primary" disabled>Confirmar cadastro prévio</button>
+        <p id="family-import-status" role="status" aria-live="polite"></p>
+        <p id="family-saved-summary" class="muted" role="status"></p>
         <p id="family-preview-status" role="status" aria-live="polite"></p>
         <ul id="family-preview-errors" class="data-list"></ul>
       </section>
