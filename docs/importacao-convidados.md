@@ -23,7 +23,7 @@ Uma linha representa uma família. Não inserir cabeçalhos extras, fórmulas ou
 6. Quantidade prevista é informativa; o RSVP permanece com a regra atual de até 100 participantes, sem bloquear acima/abaixo da previsão.
 7. Estados administrativos: Pendente, Link gerado, Enviado, Confirmado, Recusado.
 8. Não marcar como enviado apenas por abrir WhatsApp; permitir confirmação manual de envio.
-9. Permitir revogar e regenerar link, invalidando o anterior.
+9. Permitir revogar e regenerar link, invalidando o anterior. A regeneração mantém o mesmo cadastro, só pode ocorrer antes do RSVP e devolve o novo token uma única vez; WhatsApp já cadastrado não pode ser importado novamente, mesmo após revogação.
 10. Proteger importação, listagem, exportação e ações com sessão administrativa e CSRF.
 
 ## Segurança e privacidade
