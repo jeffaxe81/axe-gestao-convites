@@ -68,3 +68,17 @@
   #buffet-alert{border:1px solid #777!important;padding:5px}
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
+
+/* Privileged manual invitation distribution */
+#invitation-distribution-card .metric-grid{margin:12px 0 20px}
+#invite-list{margin-top:14px}
+#invite-list>li{padding:15px 2px}
+#invite-list>li .admin-actions{justify-content:flex-start;margin-top:9px}
+#invite-list>li .admin-actions button{min-height:40px}
+#invite-list .invite-action-status{margin:8px 0 4px;max-width:100%;overflow-wrap:anywhere}
+#invite-list .invite-link-area input{width:100%;max-width:760px}
+#invite-list .invite-link-area a{display:inline-block;padding:8px 0;overflow-wrap:anywhere}
+@media print{
+  #invitation-distribution-card,
+  #dashboard-panel>.admin-card[aria-labelledby="family-import-title"]{display:none!important}
+}
