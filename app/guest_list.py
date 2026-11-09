@@ -2,7 +2,7 @@
 import csv
 import io
 import re
-import unicodedata
+from app.guest_xlsx import xlsx_rows
 
 HEADERS = ("familia", "responsavel", "telefone", "adultos", "criancas_0_5", "criancas_6_12")
 EXAMPLE = ("familia-silva", "Maria Silva", "11999999999", "2", "1", "0")
@@ -28,15 +28,24 @@ def preview_csv(contents: bytes):
     if "\x00" in source:
         raise ValueError("Arquivo contém caracteres inválidos.")
     reader = csv.reader(io.StringIO(source, newline=""), delimiter=";", strict=True)
+    return preview_rows(reader)
+
+
+def preview_xlsx(contents: bytes):
+    return preview_rows(xlsx_rows(contents))
+
+
+def preview_rows(reader):
+    iterator = iter(reader)
     try:
-        header = next(reader)
-    except (StopIteration, csv.Error) as exc:
-        raise ValueError("Planilha vazia ou inválida.") from exc
+        header = next(iterator)
+    except StopIteration as exc:
+        raise ValueError("Planilha vazia.") from exc
     if tuple(header) != HEADERS:
-        raise ValueError("Cabeçalho inválido. Baixe o modelo e mantenha as seis colunas.")
+        raise ValueError("Cabeçalho inválido. Use as seis colunas do modelo.")
     rows, seen, errors = [], set(), []
     try:
-        for line, cells in enumerate(reader, start=2):
+        for line, cells in enumerate(iterator, start=2):
             if line > MAX_ROWS + 1:
                 raise ValueError("Máximo de 500 famílias por planilha.")
             if not any(c.strip() for c in cells):
