@@ -11,7 +11,12 @@ def test_family_specific_link_prefills_and_recovers_confirmation(page, server):
     }])
     invited = store.invitation_roster()[0]
     link = base + "/convite#" + invited["id"] + "." + invited["token"]
+    browser_errors = []
+    page.on("pageerror", lambda error: browser_errors.append(str(error)))
     page.goto(link)
+    page.wait_for_timeout(250)
+    assert not browser_errors, browser_errors
+    assert not page.locator("#error").is_visible(), page.locator("#error").inner_text()
     expect(page.locator("#contact-name")).to_have_value("Maria Silva")
     expect(page.locator("#invitation-plan")).to_contain_text("2 acima de 12 anos")
     expect(page.locator("#invitation-plan")).to_contain_text("1 crianças até 5 anos")
