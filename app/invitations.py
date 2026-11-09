@@ -163,6 +163,35 @@ class InvitationStore:
             session.add(AuditEvent(event_kind="INVITATION_MARKED_SENT",
                                    occurred_at_utc=moment.astimezone(timezone.utc).replace(tzinfo=None)))
 
+    def regenerate(self, invitation_id: str, now: datetime | None = None) -> dict:
+        """Emite novo link para convite ainda não utilizado e invalida o token anterior."""
+        moment = datetime.now(timezone.utc) if now is None else now
+        if moment.utcoffset() is None:
+            raise ValueError("Data precisa conter fuso horário.")
+        token = secrets.token_urlsafe(32)
+        with self.session_factory.begin() as session:
+            item = session.get(Invitation, invitation_id, with_for_update=True)
+            if item is None:
+                raise InvitationImportError("Convite não encontrado.")
+            if item.linked_family_id is not None:
+                raise InvitationImportError(
+                    "Convite já utilizado; a resposta deve ser gerida pelo link de edição."
+                )
+            item.token_hash = self._hash_token(token)
+            item.revoked_at_utc = None
+            item.status = "LINK_GENERATED"
+            item.sent_at_utc = None
+            session.add(AuditEvent(
+                event_kind="INVITATION_REGENERATED",
+                occurred_at_utc=moment.astimezone(timezone.utc).replace(tzinfo=None)
+            ))
+            result = {
+                "id": item.id, "family_name": item.family_name,
+                "contact_name": item.contact_name, "whatsapp": item.whatsapp,
+                "expected_guests": item.expected_guests, "token": token,
+            }
+        return result
+
     def revoke(self, invitation_id: str, now: datetime | None = None) -> None:
         moment = datetime.now(timezone.utc) if now is None else now
         if moment.utcoffset() is None:
