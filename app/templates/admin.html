@@ -85,12 +85,14 @@
 
       <section class="admin-card" id="invitation-distribution-card" aria-labelledby="invitation-roster-title">
         <h3 id="invitation-roster-title">Distribuição e acompanhamento dos convites</h3>
-        <p class="muted">Consulte o status de cada família, copie somente seu link ou prepare uma conversa individual no WhatsApp. Abrir a conversa não comprova envio ou entrega.</p>
+        <p class="muted">Consulte o status de cada família, copie somente seu link ou prepare uma conversa individual no WhatsApp. Abrir a conversa não comprova envio ou entrega. Marque manualmente como enviado somente depois de realmente compartilhar a mensagem.</p>
         <div class="metric-grid" aria-label="Situação dos convites cadastrados">
           <article class="metric"><span>Famílias cadastradas</span><strong data-testid="invite-total">0</strong></article>
           <article class="metric"><span>Aguardando resposta</span><strong data-testid="invite-pending">0</strong></article>
           <article class="metric"><span>Confirmaram</span><strong data-testid="invite-confirmed">0</strong></article>
           <article class="metric"><span>Recusaram</span><strong data-testid="invite-declined">0</strong></article>
+          <article class="metric"><span>Enviados (registro manual)</span><strong data-testid="invite-sent">0</strong></article>
+          <article class="metric"><span>Envio não registrado</span><strong data-testid="invite-not-sent">0</strong></article>
         </div>
         <div class="guest-search-row">
           <div class="field">
@@ -104,6 +106,14 @@
               <option value="PENDENTE">Aguardando resposta</option>
               <option value="CONFIRMADO">Confirmadas</option>
               <option value="RECUSADO">Recusadas</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="invite-sent-filter">Registro de envio</label>
+            <select id="invite-sent-filter">
+              <option value="TODOS">Todos</option>
+              <option value="ENVIADO">Marcado como enviado</option>
+              <option value="NAO_ENVIADO">Sem registro de envio</option>
             </select>
           </div>
           <button type="button" class="secondary" id="invite-refresh-btn">Atualizar convites</button>
