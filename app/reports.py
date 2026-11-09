@@ -70,7 +70,7 @@ def export_planning_csv(summary):
 def export_invitation_links_csv(roster: list[dict], public_origin: str) -> bytes:
     """Privileged export: every link is a bearer secret. Never publish or log."""
     output = io.StringIO(newline="")
-    writer = csv.writer(output, delimiter=";", quoting=csv.QUOTE_ALL, lineterminator="\\r\\n")
+    writer = csv.writer(output, delimiter=";", quoting=csv.QUOTE_ALL, lineterminator="\r\n")
     writer.writerow(("Familia", "Responsavel", "Telefone", "Status", "Link individual"))
     for family in roster:
         url = (public_origin.rstrip("/") + "/convite#" +
