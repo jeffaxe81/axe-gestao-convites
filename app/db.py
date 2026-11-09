@@ -47,6 +47,9 @@ def migrate(engine) -> None:
         # V3 adds invited_families without modifying earlier confirmation records.
         if session.execute(select(versions.c.version).where(versions.c.version == 3)).first() is None:
             session.execute(versions.insert().values(version=3))
+        # V4 maps one invitation to one RSVP without altering existing tables.
+        if session.execute(select(versions.c.version).where(versions.c.version == 4)).first() is None:
+            session.execute(versions.insert().values(version=4))
 
 
 def main():
@@ -57,7 +60,7 @@ def main():
     try:
         if args.command == 'migrate':
             migrate(engine)
-            print('Migrações 001/002/003 verificadas. Dados existentes preservados.')
+            print('Migrações 001/002/003/004 verificadas. Dados existentes preservados.')
     finally:
         engine.dispose()
 
