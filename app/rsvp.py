@@ -14,7 +14,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.domain import Counts, InputError, ParticipantInput, RsvpInput, can_edit, count_participants
-from app.models import AuditEvent, EventSettings, Family, Participant
+from app.models import AuditEvent, EventSettings, Family, Participant, InvitedFamily
 
 
 class IdempotencyConflict(Exception):
@@ -123,6 +123,45 @@ class RsvpStore:
                 if existing:
                     return existing
             raise
+
+    def import_invited_families(self, records: list[dict]) -> dict:
+        """Atomic idempotent import; changed existing keys cause rollback."""
+        if not records or len(records) > 500:
+            raise InputError('Quantidade de famílias inválida.')
+        added = 0
+        with self.session_factory.begin() as session:
+            # Serialize imports against this event, avoiding concurrent duplicate races.
+            settings = session.scalar(select(EventSettings).where(EventSettings.id == 1).with_for_update())
+            if settings is None:
+                raise RuntimeError('Configuração da festa não inicializada.')
+            existing = {row.external_key: row for row in session.scalars(select(InvitedFamily)).all()}
+            for row in records:
+                key = row['key']
+                values = (row['name'], row['phone'], row['adults'], row['young'], row['older'])
+                old = existing.get(key)
+                if old is not None:
+                    current = (old.contact_name, old.phone, old.adults,
+                               old.children_0_5, old.children_6_12)
+                    if current != values:
+                        raise InputError('Uma família já cadastrada possui dados diferentes. Corrija o arquivo antes de importar.')
+                    continue
+                session.add(InvitedFamily(
+                    id=str(uuid.uuid4()), external_key=key, contact_name=row['name'],
+                    phone=row['phone'], adults=row['adults'],
+                    children_0_5=row['young'], children_6_12=row['older'], status='PENDING'
+                ))
+                added += 1
+            session.flush()
+        return {'imported': added, 'existing_unchanged': len(records) - added, 'total_in_file': len(records)}
+
+    def invited_family_summary(self) -> dict:
+        with self.session_factory() as session:
+            records = session.scalars(select(InvitedFamily).order_by(InvitedFamily.external_key)).all()
+            return {'families': len(records),
+                    'pending': sum(row.status == 'PENDING' for row in records),
+                    'adults': sum(row.adults for row in records),
+                    'children_0_5': sum(row.children_0_5 for row in records),
+                    'children_6_12': sum(row.children_6_12 for row in records)}
 
     def _authorized(self, session: Session, family_id: str, edit_token: str, lock: bool = False) -> Family:
         if not isinstance(edit_token, str) or len(edit_token) != 64:
