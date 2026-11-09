@@ -237,6 +237,7 @@
     $('invite-search').value = '';
     $('invite-status-filter').value = 'TODOS';
     $('invite-sent-filter').value = 'TODOS';
+    $('invite-sent-filter').value = 'TODOS';
     $('invite-status').textContent = '';
     $('invite-refresh-btn').disabled = false;
     for (const name of ['total', 'pending', 'confirmed', 'declined', 'sent', 'not-sent']) {
@@ -874,7 +875,7 @@
       if (generation !== sessionGeneration || $('dashboard-panel').hidden) return;
       if (!validInvitationRoster(data)) throw new Error('Lista de convites inválida.');
       invitedFamilies = data.families;
-      for (const name of ['total', 'pending', 'confirmed', 'declined']) {
+      for (const name of ['total', 'pending', 'confirmed', 'declined', 'sent', 'not-sent']) {
         document.querySelector('[data-testid="invite-' + name + '"]').textContent =
           String(data.counts[name === 'not-sent' ? 'not_sent' : name]);
       }
@@ -909,7 +910,9 @@
         RSVP_CREATED: 'Confirmação recebida',
         RSVP_DECLINED: 'Recusa recebida',
         RSVP_UPDATED: 'Confirmação alterada',
-        SETTINGS_CHANGED: 'Configuração da festa alterada'
+        SETTINGS_CHANGED: 'Configuração da festa alterada',
+        INVITATION_SENT_MARKED: 'Envio de convite registrado manualmente',
+        INVITATION_SENT_UNMARKED: 'Registro manual de envio desfeito'
       };
       const entries = [];
       for (const entry of response.events) {
