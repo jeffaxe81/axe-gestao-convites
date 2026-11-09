@@ -237,7 +237,6 @@
     $('invite-search').value = '';
     $('invite-status-filter').value = 'TODOS';
     $('invite-sent-filter').value = 'TODOS';
-    $('invite-sent-filter').value = 'TODOS';
     $('invite-status').textContent = '';
     $('invite-refresh-btn').disabled = false;
     for (const name of ['total', 'pending', 'confirmed', 'declined', 'sent', 'not-sent']) {
