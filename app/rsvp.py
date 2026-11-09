@@ -14,7 +14,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.domain import Counts, InputError, ParticipantInput, RsvpInput, can_edit, count_participants
-from app.models import AuditEvent, EventSettings, Family, Participant
+from app.models import AuditEvent, EventSettings, Family, Invitation, Participant
 
 
 class IdempotencyConflict(Exception):
@@ -91,8 +91,16 @@ class RsvpStore:
             raise IdempotencyConflict('Chave de envio reutilizada com dados diferentes.')
         return self._receipt(family, token)
 
-    def create(self, data: RsvpInput, submission_key: str, now_utc: datetime) -> RsvpReceipt:
+    def create(self, data: RsvpInput, submission_key: str, now_utc: datetime,
+               invitation_token: str | None = None) -> RsvpReceipt:
         recorded_at = _utc_naive(now_utc)
+        invitation = None
+        if invitation_token is not None:
+            if not isinstance(invitation_token, str) or not 30 <= len(invitation_token) <= 100:
+                raise InputError("Link individual inválido.")
+            invitation_hash = hmac.new(
+                self._secret, ("invitation:v1:" + invitation_token).encode(), sha256
+            ).hexdigest()
         if not isinstance(data, RsvpInput) or not isinstance(submission_key, str) or not (16 <= len(submission_key) <= 160):
             raise InputError('Envio inválido ou chave de idempotência ausente.')
         key_hash = self._key_hash(submission_key)
@@ -103,6 +111,12 @@ class RsvpStore:
                 existing = self._existing(session, key_hash, digest, token)
                 if existing:
                     return existing
+                if invitation_token is not None:
+                    invitation = session.scalar(
+                        select(Invitation).where(Invitation.token_hash == invitation_hash).with_for_update()
+                    )
+                    if invitation is None or invitation.revoked_at_utc is not None or invitation.linked_family_id is not None:
+                        raise AccessDenied("Este convite é inválido, revogado ou já utilizado.")
                 family = Family(id=str(uuid.uuid4()), contact_name=data.contact_name,
                                 attending=data.attending, revision=1,
                                 submission_key_hash=key_hash, payload_hash=digest,
@@ -112,6 +126,9 @@ class RsvpStore:
                 family.participants = [Participant(position=pos, name=p.name,
                     kind=p.kind, age_years=p.age_years) for pos, p in enumerate(data.participants)]
                 session.flush()
+                if invitation is not None:
+                    invitation.linked_family_id = family.id
+                    invitation.status = "CONFIRMED" if data.attending else "DECLINED"
                 session.add(AuditEvent(event_kind='RSVP_CREATED' if data.attending else 'RSVP_DECLINED',
                                        occurred_at_utc=recorded_at))
                 receipt = self._receipt(family, token)
