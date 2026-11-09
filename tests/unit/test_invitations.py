@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 
 import pytest
 from sqlalchemy import create_engine, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 
 from app.domain import validate_rsvp
@@ -85,6 +86,24 @@ def test_rsvp_consumes_invitation_and_blocks_second_family(stores):
     with pytest.raises(AccessDenied):
         rsvps.create(payload, "submission-key-second-0002",
                       datetime.now(timezone.utc), invitation_token=token)
+
+
+
+def test_database_unique_index_rejects_duplicate_whatsapp(stores):
+    factory, invitations, _rsvps = stores
+    issued = invitations.import_rows([
+        ParsedGuest("Família A", "Pessoa A", "5548999991111", 2)
+    ])
+    with pytest.raises(IntegrityError):
+        with factory.begin() as session:
+            session.add(Invitation(
+                id="00000000-0000-0000-0000-000000000099",
+                family_name="Família B", contact_name="Pessoa B",
+                whatsapp="5548999991111", expected_guests=2,
+                token_hash="f" * 64, status="LINK_GENERATED",
+                created_at_utc=datetime.now(timezone.utc).replace(tzinfo=None)
+            ))
+    assert invitations.list_invitations()[0]["id"] == issued[0]["id"]
 
 
 def test_mark_sent_and_revoke(stores):
