@@ -185,13 +185,20 @@ class RsvpStore:
         with self.session_factory() as session:
             invited = self._invitation(session, invitation_id, token)
             mapping = session.get(InvitationResponse, invited.id)
-            return {
+            result = {
                 'contact_name': invited.contact_name,
                 'adults': invited.adults,
                 'children_0_5': invited.children_0_5,
                 'children_6_12': invited.children_6_12,
                 'responded': mapping is not None,
             }
+            if mapping:
+                family = session.get(Family, mapping.family_id)
+                if family is None:
+                    raise RuntimeError('Resposta da família indisponível.')
+                result['receipt'] = asdict(self._receipt(
+                    family, self._edit_token('invitation:' + invited.id)))
+            return result
 
     def invitation_roster(self) -> list[dict]:
         """Private organizer export source only; bearer tokens never enter public lists."""
