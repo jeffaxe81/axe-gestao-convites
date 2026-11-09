@@ -100,6 +100,42 @@ def test_mark_sent_and_revoke(stores):
 
 
 
+def test_regenerate_invalidates_old_token_and_keeps_same_invitation(stores):
+    _factory, invitations, _rsvps = stores
+    issued = invitations.import_rows([
+        ParsedGuest("Família Souza", "Maria Souza", "5548999992222", 3)
+    ])
+    invitation_id, old_token = issued[0]["id"], issued[0]["token"]
+    invitations.revoke(invitation_id)
+
+    regenerated = invitations.regenerate(invitation_id)
+
+    assert regenerated["id"] == invitation_id
+    assert regenerated["token"] != old_token
+    assert invitations.resolve_token(old_token) is None
+    assert invitations.resolve_token(regenerated["token"])["contact_name"] == "Maria Souza"
+    assert invitations.list_invitations()[0]["status"] == "LINK_GENERATED"
+    with pytest.raises(InvitationImportError, match="WhatsApp repetido"):
+        invitations.import_rows([
+            ParsedGuest("Família Souza", "Maria Souza", "5548999992222", 3)
+        ])
+
+
+def test_regenerate_refuses_invitation_already_linked_to_rsvp(stores):
+    _factory, invitations, rsvps = stores
+    issued = invitations.import_rows([
+        ParsedGuest("Família Lima", "Ana Lima", "5548999994444", 2)
+    ])
+    payload = validate_rsvp({
+        "contact_name": "Ana Lima", "attending": True,
+        "participants": [{"name": "Ana Lima", "kind": "OVER_12", "age_years": None}],
+    })
+    rsvps.create(payload, "submission-key-regenerate-0001",
+                 datetime.now(timezone.utc), invitation_token=issued[0]["token"])
+    with pytest.raises(InvitationImportError, match="já utilizado"):
+        invitations.regenerate(issued[0]["id"])
+
+
 def test_invitation_status_tracks_later_rsvp_edit(stores):
     factory, invitations, rsvps = stores
     issued = invitations.import_rows([
