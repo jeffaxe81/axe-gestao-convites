@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 from typing import Callable
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.models import AuditEvent, Invitation
@@ -99,28 +100,39 @@ class InvitationStore:
         if created.utcoffset() is None:
             raise ValueError("Data de criação precisa conter fuso horário.")
         issued: list[dict] = []
-        with self.session_factory.begin() as session:
-            existing_phones = set(session.scalars(
-                select(Invitation.whatsapp)
-            ).all())
-            incoming = [item.whatsapp for item in rows]
-            if len(set(incoming)) != len(incoming) or any(phone in existing_phones for phone in incoming):
-                raise InvitationImportError("Há WhatsApp repetido nesta planilha ou já cadastrado.")
-            for item in rows:
-                token = secrets.token_urlsafe(32)
-                invitation_id = str(uuid.uuid4())
-                session.add(Invitation(
-                    id=invitation_id, family_name=item.family_name,
-                    contact_name=item.contact_name, whatsapp=item.whatsapp,
-                    expected_guests=item.expected_guests,
-                    token_hash=self._hash_token(token), status="LINK_GENERATED",
-                    created_at_utc=created.astimezone(timezone.utc).replace(tzinfo=None)))
-                # Token puro é devolvido uma única vez; somente o hash fica no banco.
-                issued.append({"id": invitation_id, "family_name": item.family_name,
-                               "contact_name": item.contact_name, "whatsapp": item.whatsapp,
-                               "expected_guests": item.expected_guests, "token": token})
-            session.add(AuditEvent(event_kind="INVITATIONS_IMPORTED",
-                                   occurred_at_utc=created.astimezone(timezone.utc).replace(tzinfo=None)))
+        try:
+                with self.session_factory.begin() as session:
+                existing_phones = set(session.scalars(
+                    select(Invitation.whatsapp)
+                ).all())
+                incoming = [item.whatsapp for item in rows]
+                if len(set(incoming)) != len(incoming) or any(phone in existing_phones for phone in incoming):
+                    raise InvitationImportError("Há WhatsApp repetido nesta planilha ou já cadastrado.")
+                for item in rows:
+                    token = secrets.token_urlsafe(32)
+                    invitation_id = str(uuid.uuid4())
+                    session.add(Invitation(
+                        id=invitation_id, family_name=item.family_name,
+                        contact_name=item.contact_name, whatsapp=item.whatsapp,
+                        expected_guests=item.expected_guests,
+                        token_hash=self._hash_token(token), status="LINK_GENERATED",
+                        created_at_utc=created.astimezone(timezone.utc).replace(tzinfo=None)))
+                    # Token puro é devolvido uma única vez; somente o hash fica no banco.
+                    issued.append({"id": invitation_id, "family_name": item.family_name,
+                                   "contact_name": item.contact_name, "whatsapp": item.whatsapp,
+                                   "expected_guests": item.expected_guests, "token": token})
+                session.add(AuditEvent(event_kind="INVITATIONS_IMPORTED",
+                                       occurred_at_utc=created.astimezone(timezone.utc).replace(tzinfo=None)))
+    
+        except IntegrityError:
+            # A restrição UNIQUE resolve a corrida entre importações concorrentes.
+            with self.session_factory() as session:
+                existing = set(session.scalars(
+                    select(Invitation.whatsapp).where(Invitation.whatsapp.in_([item.whatsapp for item in rows]))
+                ).all())
+            if existing:
+                raise InvitationImportError("Há WhatsApp repetido nesta planilha ou já cadastrado.") from None
+            raise
         return issued
 
     def list_invitations(self, limit: int = 500) -> list[dict]:
