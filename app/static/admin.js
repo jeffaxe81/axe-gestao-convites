@@ -427,6 +427,7 @@
     })[status] || 'Desconhecido';
   }
   async function previewInvitations() {
+    const generation = sessionGeneration;
     const file = $('invitation-csv').files[0];
     if (!file) return $('invitation-import-status').textContent = 'Selecione um CSV.';
     if (file.size > 1000000) return $('invitation-import-status').textContent = 'O arquivo deve ter até 1 MB.';
@@ -442,6 +443,7 @@
       const result = await api('/api/admin/invitations/preview', {
         method: 'POST', headers: {'X-CSRF-Token': await ensureCsrf()}, body
       });
+      if (generation !== sessionGeneration || $('dashboard-panel').hidden) return;
       pendingInvitationFile = file;
       $('invitation-import-status').textContent = result.count + ' famílias validadas. Confira a amostra antes de importar.';
       result.preview.forEach((entry) => {
@@ -452,9 +454,10 @@
       });
       $('import-invitations-btn').hidden = false;
     } catch (error) {
+      if (generation !== sessionGeneration || $('dashboard-panel').hidden) return;
       pendingInvitationFile = null;
       $('invitation-import-status').textContent = error.message;
-    } finally { button.disabled = false; }
+    } finally { if (generation === sessionGeneration) button.disabled = false; }
   }
   function downloadInvitationLinks(entries) {
     const safe = (value) => {
@@ -480,6 +483,7 @@
   }
   async function importInvitations() {
     if (!pendingInvitationFile) return;
+    const generation = sessionGeneration;
     const button = $('import-invitations-btn');
     button.disabled = true;
     $('invitation-import-status').textContent = 'Importando famílias e gerando links...';
@@ -489,6 +493,7 @@
       const result = await api('/api/admin/invitations/import', {
         method: 'POST', headers: {'X-CSRF-Token': await ensureCsrf()}, body
       });
+      if (generation !== sessionGeneration || $('dashboard-panel').hidden) return;
       $('invitation-import-status').textContent = result.created + ' convites criados. Os links são exibidos agora; guarde/exporte antes de fechar esta tela.';
       const list = document.createElement('ul');
       list.className = 'data-list';
@@ -532,13 +537,17 @@
       clearList('invitation-preview');
       await loadInvitationList();
     } catch (error) {
-      $('invitation-import-status').textContent = error.message;
-    } finally { button.disabled = false; }
+      if (generation === sessionGeneration && !$('dashboard-panel').hidden) {
+        $('invitation-import-status').textContent = error.message;
+      }
+    } finally { if (generation === sessionGeneration) button.disabled = false; }
   }
   async function loadInvitationList() {
     if ($('dashboard-panel').hidden) return;
+    const generation = sessionGeneration;
     try {
       const result = await api('/api/admin/invitations');
+      if (generation !== sessionGeneration || $('dashboard-panel').hidden) return;
       clearList('invitation-list');
       result.invitations.forEach((entry) => {
         const li = document.createElement('li');
@@ -570,6 +579,7 @@
       });
       if (!result.invitations.length) putEmpty('invitation-list');
     } catch (error) {
+      if (generation !== sessionGeneration || $('dashboard-panel').hidden) return;
       if (error.status === 401 || error.status === 403) expireOrganizerSession();
       else $('invitation-import-status').textContent = error.message;
     }
