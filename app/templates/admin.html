@@ -61,6 +61,41 @@
       </div>
       <p id="buffet-alert" class="notice" hidden></p>
 
+      <section class="admin-card guest-import-guide" aria-labelledby="guest-import-title">
+        <div class="guest-import-heading">
+          <div>
+            <p class="eyebrow">Próxima etapa do gerador</p>
+            <h3 id="guest-import-title">Preparar lista de convidados</h3>
+            <p class="muted">Use este padrão para organizar a planilha que será importada para criar os convites individuais.</p>
+          </div>
+        </div>
+        <div class="guest-import-columns">
+          <div class="guest-import-instructions">
+            <h4>Como preencher</h4>
+            <ol>
+              <li><strong>grupo:</strong> código único da família ou grupo que receberá um link.</li>
+              <li><strong>responsavel:</strong> nome da pessoa responsável pelo convite.</li>
+              <li><strong>participante:</strong> nome de cada pessoa do grupo, uma por linha.</li>
+              <li><strong>tipo:</strong> use <code>ADULTO</code> ou <code>CRIanca</code> (criança).</li>
+              <li><strong>idade:</strong> idade em anos completos para crianças; deixe vazio para adultos.</li>
+            </ol>
+            <p class="muted">Se uma família tiver três participantes, use três linhas com o mesmo código de grupo. O link será associado ao grupo, não a cada linha.</p>
+          </div>
+          <div class="guest-import-example">
+            <h4>Exemplo de uma linha</h4>
+            <p class="muted">Cabeçalho e uma linha preenchida:</p>
+            <div class="table-scroll">
+              <table aria-label="Exemplo de preenchimento da lista de convidados">
+                <thead><tr><th>grupo</th><th>responsavel</th><th>participante</th><th>tipo</th><th>idade</th></tr></thead>
+                <tbody><tr><td>FAM-001</td><td>Mariana Souza</td><td>Mariana Souza</td><td>ADULTO</td><td>—</td></tr></tbody>
+              </table>
+            </div>
+            <p class="example-note">Atenção: mantenha o mesmo código em todas as linhas da mesma família.</p>
+          </div>
+        </div>
+        <p class="guest-import-status"><strong>Etapa atual:</strong> padrão de preenchimento documentado no painel. A importação da planilha e a geração automática dos links serão habilitadas na próxima entrega; ainda não envie a lista por esta seção.</p>
+      </section>
+
       <section class="admin-card guest-search-card" aria-labelledby="search-title">
         <h3 id="search-title">Localizar convidados</h3>
         <div class="guest-search-row">
