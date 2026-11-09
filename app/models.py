@@ -64,3 +64,12 @@ class InvitedFamily(Base):
     children_6_12: Mapped[int] = mapped_column(Integer, nullable=False)
     # Imported families are invitations only, never counted as attending.
     status: Mapped[str] = mapped_column(String(16), nullable=False, default='PENDING')
+
+
+class InvitationResponse(Base):
+    """One-to-one association: each invitation may record one RSVP."""
+    __tablename__ = 'invitation_responses'
+    invited_family_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey('invited_families.id', ondelete='CASCADE'), primary_key=True)
+    family_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey('families.id', ondelete='CASCADE'), unique=True, nullable=False)
