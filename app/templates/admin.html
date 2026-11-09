@@ -118,8 +118,21 @@
               <option value="NAO_ENVIADO">Sem registro de envio</option>
             </select>
           </div>
+          <div class="field">
+            <label for="invite-interest-filter">Interesse voluntário</label>
+            <select id="invite-interest-filter">
+              <option value="TODOS">Todos</option>
+              <option value="INTERESSADO">Demonstrou interesse</option>
+              <option value="NAO_INTERESSADO">Sem interesse registrado</option>
+            </select>
+          </div>
           <button type="button" class="secondary" id="invite-refresh-btn">Atualizar convites</button>
         </div>
+        <div class="admin-actions">
+          <button type="button" class="secondary" id="invite-followup-export-btn">Exportar acompanhamento (CSV)</button>
+        </div>
+        <p id="invite-followup-export-status" class="muted" role="status" aria-live="polite"></p>
+        <p class="muted">O arquivo contém contatos das famílias, sem links privados. Interesse voluntário não comprova leitura, e envio registrado é uma anotação manual.</p>
         <p id="invite-status" role="status" aria-live="polite"></p>
         <ul id="invite-list" class="data-list" aria-label="Famílias e distribuição de convites"></ul>
       </section>
