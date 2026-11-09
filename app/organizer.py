@@ -203,6 +203,19 @@ def invitation_overview():
     return jsonify(store().invitation_overview())
 
 
+@organizer.put("/api/admin/invitations/<invitation_id>/sent")
+def mark_invitation_sent(invitation_id):
+    body = json_object()
+    if set(body) != {"sent"} or type(body["sent"]) is not bool:
+        raise InputError("Informe sent como verdadeiro ou falso.")
+    # Solely records an organizer's manual statement. No messaging API call.
+    result = store().mark_invitation_sent(
+        invitation_id, body["sent"], datetime.now(timezone.utc))
+    response = jsonify(result)
+    response.headers["Cache-Control"] = "no-store, private"
+    return response
+
+
 @organizer.get("/api/admin/invitations/<invitation_id>/link")
 def invitation_single_link(invitation_id):
     raw_origin = os.environ.get("APP_PUBLIC_URL", "")
