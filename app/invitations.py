@@ -50,13 +50,14 @@ def parse_guest_csv(raw: bytes) -> list[ParsedGuest]:
     reader = csv.DictReader(io.StringIO(content, newline=""), dialect=dialect)
     if tuple((h or "").strip() for h in (reader.fieldnames or ())) != REQUIRED_HEADERS:
         raise InvitationImportError("Cabeçalho inválido. Use: " + ", ".join(REQUIRED_HEADERS))
+    reader.fieldnames = [(header or "").strip() for header in reader.fieldnames or ()]
     rows: list[ParsedGuest] = []
     seen_phones: set[str] = set()
     for line, row in enumerate(reader, start=2):
-        if len(rows) >= MAX_ROWS:
-            raise InvitationImportError("O limite é de 500 famílias por importação.")
         if not row or all(not (v or "").strip() for v in row.values() if isinstance(v, str)):
             continue
+        if len(rows) >= MAX_ROWS:
+            raise InvitationImportError("O limite é de 500 famílias por importação.")
         if None in row or any(row.get(key) is None for key in REQUIRED_HEADERS):
             raise InvitationImportError(f"Linha {line}: quantidade de colunas inválida.")
         family = " ".join((row.get(REQUIRED_HEADERS[0]) or "").split())
