@@ -571,13 +571,17 @@
                 method: 'POST', headers: {'X-CSRF-Token': await ensureCsrf()}
               });
               const link = document.createElement('p');
-              link.textContent = 'Novo link: ' + result.url;
+              link.textContent = result.url;
               const whatsapp = document.createElement('a');
               whatsapp.href = result.whatsapp_url;
               whatsapp.target = '_blank';
               whatsapp.rel = 'noopener noreferrer';
               whatsapp.textContent = 'Abrir WhatsApp com novo link';
-              li.append(link, whatsapp);
+              const issued = document.createElement('section');
+              const title = document.createElement('strong');
+              title.textContent = 'Novo link — ' + entry.family_name;
+              issued.append(title, link, whatsapp);
+              $('invitation-created').replaceChildren(issued);
               $('invitation-import-status').textContent = 'Novo link gerado. O anterior foi invalidado; guarde o novo link agora.';
               await loadInvitationList();
             } catch (error) {
