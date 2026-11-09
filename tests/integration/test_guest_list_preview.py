@@ -74,3 +74,32 @@ def test_organizer_only_and_csrf(client):
     assert response.status_code == 200
     assert response.json["valid"] is True
     assert client.get("/api/admin/guest-list-template.csv").status_code == 200
+
+
+def test_import_atomic_idempotent_and_pending(client):
+    token = login(client).json["csrf_token"]
+    headers = {"X-CSRF-Token": token}
+    endpoint = "/api/admin/guest-list-import"
+    csv_data = template_csv().encode("utf-8")
+    result = client.post(endpoint, data=csv_data, content_type="text/csv", headers=headers)
+    assert result.status_code == 200
+    assert result.json == {"imported": 1, "existing_unchanged": 0, "total_in_file": 1}
+    repeated = client.post(endpoint, data=csv_data, content_type="text/csv", headers=headers)
+    assert repeated.status_code == 200
+    assert repeated.json["imported"] == 0
+    summary = client.get("/api/admin/guest-list-summary")
+    assert summary.json["families"] == 1
+    assert summary.json["pending"] == 1
+    assert client.get("/api/admin/dashboard").json["counts"]["total"] == 0
+    changed = csv_data.decode("utf-8-sig").replace("Maria Silva", "Outra Pessoa").encode()
+    conflict = client.post(endpoint, data=changed, content_type="text/csv", headers=headers)
+    assert conflict.status_code == 422
+    assert client.get("/api/admin/guest-list-summary").json["families"] == 1
+
+
+def test_import_requires_authenticated_csrf(client):
+    payload = template_csv().encode()
+    path = "/api/admin/guest-list-import"
+    assert client.post(path, data=payload, content_type="text/csv").status_code == 401
+    login(client)
+    assert client.post(path, data=payload, content_type="text/csv").status_code == 403
