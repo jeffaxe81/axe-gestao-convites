@@ -4,6 +4,7 @@ from zipfile import ZipFile, ZIP_DEFLATED
 from xml.sax.saxutils import escape
 
 from app.guest_list import template_csv, preview_csv, preview_xlsx
+from app.guest_xlsx_template import template_xlsx
 from tests.integration.test_public_api import store
 from tests.integration.test_organizer_api import client, csrf, login
 
@@ -38,6 +39,17 @@ def test_csv_example_preview_is_read_only():
     assert report["links_created"] == 0
 
 
+def test_downloadable_excel_template_round_trip():
+    content = template_xlsx()
+    assert content.startswith(b"PK")
+    report = preview_xlsx(content)
+    assert report["valid"] is True
+    assert report["families"] == 1
+    assert report["adults"] == 2
+    assert report["children_0_5"] == 1
+    assert report["saved"] is False
+
+
 def test_xlsx_example_preview():
     content = excel([
         ["familia", "responsavel", "telefone", "adultos", "criancas_0_5", "criancas_6_12"],
@@ -66,6 +78,7 @@ def test_duplicate_families_rejected():
 def test_organizer_only_and_csrf(client):
     path = "/api/admin/guest-list-preview"
     assert client.get("/api/admin/guest-list-template.csv").status_code == 401
+    assert client.get("/api/admin/guest-list-template.xlsx").status_code == 401
     assert client.post(path, data=template_csv().encode(), content_type="text/csv").status_code == 401
     credentials = login(client).json
     assert client.post(path, data=template_csv().encode(), content_type="text/csv").status_code == 403
@@ -74,6 +87,17 @@ def test_organizer_only_and_csrf(client):
     assert response.status_code == 200
     assert response.json["valid"] is True
     assert client.get("/api/admin/guest-list-template.csv").status_code == 200
+    excel_response = client.get("/api/admin/guest-list-template.xlsx")
+    assert excel_response.status_code == 200
+    assert excel_response.headers["Content-Type"] == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    assert excel_response.headers["Cache-Control"] == "no-store, private"
+    assert "attachment" in excel_response.headers["Content-Disposition"]
+    assert preview_xlsx(excel_response.data)["valid"] is True
+    excel_preview = client.post(path, data=excel_response.data,
+                                content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                headers={"X-CSRF-Token": credentials["csrf_token"]})
+    assert excel_preview.status_code == 200
+    assert excel_preview.json["families"] == 1
 
 
 def test_import_atomic_idempotent_and_pending(client):
