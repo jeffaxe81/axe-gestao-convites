@@ -4,6 +4,7 @@ from zipfile import ZipFile, ZIP_DEFLATED
 from xml.sax.saxutils import escape
 
 from app.guest_list import template_csv, preview_csv, preview_xlsx
+from tests.integration.test_public_api import store
 from tests.integration.test_organizer_api import client, csrf, login
 
 
