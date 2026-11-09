@@ -13,7 +13,7 @@ from werkzeug.security import check_password_hash
 from app.guest_list import template_csv, preview_csv, preview_xlsx
 from app.guest_xlsx_template import template_xlsx
 from app.domain import InputError
-from app.reports import export_attendance_csv, export_planning_csv, export_invitation_links_csv
+from app.reports import export_attendance_csv, export_planning_csv, export_invitation_links_csv, export_invitation_followup_csv
 from app.origin import configured_origin
 
 organizer = Blueprint("organizer", __name__)
@@ -250,6 +250,17 @@ def invitation_links_export():
         export_invitation_links_csv(store().invitation_roster(), raw_origin), 200)
     response.headers["Content-Type"] = "text/csv; charset=utf-8"
     response.headers["Content-Disposition"] = 'attachment; filename="links-individuais-familias.csv"'
+    response.headers["Cache-Control"] = "no-store, private"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    return response
+
+
+@organizer.get("/api/admin/invitation-followup.csv")
+def invitation_followup_export():
+    # Organizer-only: includes family contacts but never generates or exports bearer links.
+    response = make_response(export_invitation_followup_csv(store().invitation_overview()), 200)
+    response.headers["Content-Type"] = "text/csv; charset=utf-8"
+    response.headers["Content-Disposition"] = 'attachment; filename="acompanhamento-convites.csv"'
     response.headers["Cache-Control"] = "no-store, private"
     response.headers["X-Content-Type-Options"] = "nosniff"
     return response

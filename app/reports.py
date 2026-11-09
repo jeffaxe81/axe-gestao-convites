@@ -79,3 +79,26 @@ def export_invitation_links_csv(roster: list[dict], public_origin: str) -> bytes
                          (family["key"], family["name"], family["phone"],
                           family["status"], url)])
     return output.getvalue().encode("utf-8-sig")
+
+
+def export_invitation_followup_csv(overview: dict) -> bytes:
+    """Authenticated operational export, without invitation or edit bearer secrets.
+
+    Manual dispatch and voluntary interest must never be interpreted as proof
+    of WhatsApp delivery/read, nor as a presence confirmation.
+    """
+    output = io.StringIO(newline="")
+    writer = csv.writer(output, delimiter=";", quoting=csv.QUOTE_ALL, lineterminator="\r\n")
+    writer.writerow((
+        "Codigo da familia", "Responsavel", "Telefone", "Situacao da confirmacao",
+        "Envio registrado manualmente", "Data do registro de envio (UTC)",
+        "Interesse voluntario", "Data do interesse (UTC)"
+    ))
+    for family in overview["families"]:
+        writer.writerow([safe_cell(value) for value in (
+            family["key"], family["name"], family["phone"], family["status"],
+            "Sim" if family["sent"] else "Nao", family["sent_at_utc"] or "",
+            "Sim" if family["interested"] else "Nao",
+            family["interested_at_utc"] or ""
+        )])
+    return output.getvalue().encode("utf-8-sig")

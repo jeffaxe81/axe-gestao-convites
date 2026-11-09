@@ -237,6 +237,8 @@
     $('invite-search').value = '';
     $('invite-status-filter').value = 'TODOS';
     $('invite-sent-filter').value = 'TODOS';
+    $('invite-interest-filter').value = 'TODOS';
+    $('invite-followup-export-status').textContent = '';
     $('invite-status').textContent = '';
     $('invite-refresh-btn').disabled = false;
     for (const name of ['total', 'pending', 'confirmed', 'declined', 'sent', 'not-sent', 'interested']) {
@@ -808,11 +810,15 @@
     const term = fold($('invite-search').value.trim());
     const selected = $('invite-status-filter').value;
     const sentFilter = $('invite-sent-filter').value;
+    const interestFilter = $('invite-interest-filter').value;
     const matching = invitedFamilies.filter((f) =>
       (selected === 'TODOS' || f.status === selected) &&
       (sentFilter === 'TODOS' ||
        (sentFilter === 'ENVIADO' && f.sent) ||
        (sentFilter === 'NAO_ENVIADO' && !f.sent)) &&
+      (interestFilter === 'TODOS' ||
+       (interestFilter === 'INTERESSADO' && f.interested) ||
+       (interestFilter === 'NAO_INTERESSADO' && !f.interested)) &&
       (fold(f.name).includes(term) || fold(f.key).includes(term) ||
        f.phone.includes(term)));
     const statusNames = {
@@ -867,6 +873,46 @@
     if (!matching.length) putEmpty('invite-list');
     $('invite-status').textContent = 'Exibindo ' + matching.length + ' de ' +
       invitedFamilies.length + ' famílias. Somente ações individuais disponibilizam links.';
+  }
+
+  async function exportInvitationFollowup() {
+    if ($('dashboard-panel').hidden) return;
+    const generation = sessionGeneration;
+    const button = $('invite-followup-export-btn');
+    const status = $('invite-followup-export-status');
+    button.disabled = true;
+    status.textContent = '';
+    try {
+      const response = await fetch('/api/admin/invitation-followup.csv', {
+        credentials: 'same-origin', cache: 'no-store'
+      });
+      if (generation !== sessionGeneration || $('dashboard-panel').hidden) return;
+      if (!response.ok || !(response.headers.get('Content-Type') || '').startsWith('text/csv')) {
+        const error = new Error('Não foi possível exportar o acompanhamento.');
+        error.status = response.status;
+        throw error;
+      }
+      const blob = await response.blob();
+      if (generation !== sessionGeneration || $('dashboard-panel').hidden) return;
+      const href = URL.createObjectURL(blob);
+      try {
+        const anchor = document.createElement('a');
+        anchor.href = href;
+        anchor.download = 'acompanhamento-convites.csv';
+        document.body.append(anchor);
+        anchor.click();
+        anchor.remove();
+      } finally {
+        URL.revokeObjectURL(href);
+      }
+      status.textContent = 'Relatório exportado. Guarde o arquivo em local privado.';
+    } catch (error) {
+      if (generation !== sessionGeneration) return;
+      if (error.status === 401 || error.status === 403) expireOrganizerSession();
+      else status.textContent = error.message;
+    } finally {
+      if (generation === sessionGeneration) button.disabled = false;
+    }
   }
 
   async function loadInvitationRoster() {
@@ -967,6 +1013,8 @@
   $('invite-search').addEventListener('input', renderInvitationRoster);
   $('invite-status-filter').addEventListener('change', renderInvitationRoster);
   $('invite-sent-filter').addEventListener('change', renderInvitationRoster);
+  $('invite-interest-filter').addEventListener('change', renderInvitationRoster);
+  $('invite-followup-export-btn').addEventListener('click', exportInvitationFollowup);
   $('family-template-btn').addEventListener('click', () => downloadFamilyTemplate('csv'));
   $('family-template-xlsx-btn').addEventListener('click', () => downloadFamilyTemplate('xlsx'));
   $('family-preview-btn').addEventListener('click', validateFamilyFile);
