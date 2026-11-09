@@ -32,6 +32,7 @@ Uma linha representa uma família. Não inserir cabeçalhos extras, fórmulas ou
 - Validar CSV por tamanho, número de linhas, cabeçalhos e conteúdo.
 - Escapar conteúdo ao exibir nomes no painel.
 - Preservar integralmente confirmações já existentes.
+- A migração V4 cria índice único em `invitations.whatsapp`; se o banco já contiver números duplicados, a migração interrompe a inicialização sem apagar ou alterar registros. Corrigir as duplicidades manualmente após backup e repetir a migração.
 - Nunca apagar ou recriar o volume MySQL para aplicar migrações.
 
 ## Plano de entrega em 20 frentes
@@ -40,7 +41,7 @@ Uma linha representa uma família. Não inserir cabeçalhos extras, fórmulas ou
 3. Serviço de geração e hash de tokens.
 4. Pré-validação CSV.
 5. Importação transacional.
-6. Detecção de duplicidade de telefone/família.
+6. Detecção de duplicidade de telefone/família, reforçada por índice UNIQUE no banco para impedir corridas entre importações simultâneas.
 7. Listagem e pesquisa administrativa.
 8. Página de convite individual.
 9. Contexto de convite no formulário público.
