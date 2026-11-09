@@ -197,6 +197,24 @@ def guest_list_summary():
     return jsonify(store().invited_family_summary())
 
 
+@organizer.get("/api/admin/invitations")
+def invitation_overview():
+    # Names and phone numbers only for authenticated organizers.
+    return jsonify(store().invitation_overview())
+
+
+@organizer.get("/api/admin/invitations/<invitation_id>/link")
+def invitation_single_link(invitation_id):
+    raw_origin = os.environ.get("APP_PUBLIC_URL", "")
+    try:
+        configured_origin(raw_origin)
+    except ValueError:
+        raise InputError("Configure APP_PUBLIC_URL válida antes de gerar links.") from None
+    response = jsonify({"url": store().invitation_share_link(invitation_id, raw_origin)})
+    response.headers["Cache-Control"] = "no-store, private"
+    return response
+
+
 @organizer.get("/api/admin/invitation-links.csv")
 def invitation_links_export():
     raw_origin = os.environ.get("APP_PUBLIC_URL", "")
