@@ -73,3 +73,17 @@ class InvitationResponse(Base):
         String(36), ForeignKey('invited_families.id', ondelete='CASCADE'), primary_key=True)
     family_id: Mapped[str] = mapped_column(
         String(36), ForeignKey('families.id', ondelete='CASCADE'), unique=True, nullable=False)
+
+
+class InvitationDispatch(Base):
+    """Organizer's manual statement that an invitation was sent.
+
+    This is not confirmation that WhatsApp delivered/read the message.
+    A separate table keeps this optional state additive to existing data.
+    """
+    __tablename__ = 'invitation_dispatches'
+    invited_family_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey('invited_families.id', ondelete='CASCADE'),
+        primary_key=True)
+    marked_at_utc: Mapped[object] = mapped_column(
+        DateTime(timezone=False), nullable=False)
