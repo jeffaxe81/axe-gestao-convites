@@ -23,7 +23,8 @@ def test_roster_requires_authentication_and_never_contains_links(client, monkeyp
         "total": 1, "pending": 1, "confirmed": 0, "declined": 0, "sent": 0, "not_sent": 1
     }
     family = result.json["families"][0]
-    assert set(family) == {"id", "key", "name", "phone", "status", "sent", "sent_at_utc"}\n    assert family["sent"] is False and family["sent_at_utc"] is None
+    assert set(family) == {"id", "key", "name", "phone", "status", "sent", "sent_at_utc"}
+    assert family["sent"] is False and family["sent_at_utc"] is None
     assert family["name"] == "Maria Silva"
     assert family["status"] == "PENDENTE"
     assert "token" not in result.get_data(as_text=True)
