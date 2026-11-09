@@ -1,10 +1,10 @@
 """MySQL connection and idempotent initial schema migration."""
 import argparse
 import os
-from sqlalchemy import Column, Integer, MetaData, Table, create_engine, select
+from sqlalchemy import Column, Integer, MetaData, Table, create_engine, inspect, select
 from sqlalchemy.engine import URL
 from sqlalchemy.orm import sessionmaker
-from app.models import Base, EventSettings
+from app.models import Base, EventSettings, Invitation
 
 
 def database_url():
@@ -35,6 +35,11 @@ def migrate(engine) -> None:
                      Column('version', Integer, primary_key=True))
     schema.create_all(engine)
     Base.metadata.create_all(engine)
+    # create_all não altera tabelas existentes: aplica o índice V4 explicitamente.
+    # Se já houver WhatsApps duplicados, a migração falha sem apagar ou alterar linhas.
+    whatsapp_index = next(index for index in Invitation.__table__.indexes
+                          if index.name == "uq_invitations_whatsapp")
+    whatsapp_index.create(engine, checkfirst=True)
     with sessionmaker(engine).begin() as session:
         if session.get(EventSettings, 1) is None:
             session.add(EventSettings(id=1, venue=None, edit_deadline_utc=None, buffet_limit=40))
@@ -42,7 +47,7 @@ def migrate(engine) -> None:
             session.execute(versions.insert().values(version=1))
         # V2 creates audit_events; V3 creates invitations. create_all is additive:
         # existing RSVP tables and rows are never dropped or rewritten.
-        for version in (2, 3):
+        for version in (2, 3, 4):
             if session.execute(select(versions.c.version).where(versions.c.version == version)).first() is None:
                 session.execute(versions.insert().values(version=version))
 
@@ -55,7 +60,7 @@ def main():
     try:
         if args.command == 'migrate':
             migrate(engine)
-            print('Migrações 001/002/003 verificadas. Dados existentes preservados.')
+            print('Migrações 001/002/003/004 verificadas. Dados existentes preservados.')
     finally:
         engine.dispose()
 
