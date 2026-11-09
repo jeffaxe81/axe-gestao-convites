@@ -180,13 +180,14 @@ def guest_list_import():
         return error_response(415, "UNSUPPORTED_MEDIA_TYPE", "Envie CSV ou Excel XLSX.")
     try:
         content = request.get_data(cache=False)
-        report, records = (preview_csv(content, include_records=True)
-                           if request.mimetype == "text/csv"
-                           else preview_xlsx(content, include_records=True))
+        parsed = (preview_csv(content, include_records=True)
+                  if request.mimetype == "text/csv"
+                  else preview_xlsx(content, include_records=True))
     except ValueError as exc:
         raise InputError(str(exc)) from exc
-    if not report["valid"]:
-        raise InputError("Corrija a planilha antes de importar.")
+    if not isinstance(parsed, tuple):
+        raise InputError("Corrija os erros informados na prévia da planilha.")
+    report, records = parsed
     result = store().import_invited_families(records)
     return jsonify(result)
 
