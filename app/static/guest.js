@@ -10,7 +10,10 @@
   let familyId = null;
   let editToken = null;
   let revision = null;
-  let submissionKey = sessionStorage.getItem('isadora_submission_key');
+  const invitationMatch = /^\\/convite\\/([A-Za-z0-9_-]{30,100})$/.exec(window.location.pathname);
+  const invitationToken = invitationMatch ? invitationMatch[1] : null;
+  const submissionStorageKey = 'isadora_submission_key:' + (invitationToken ? invitationToken.slice(-12) : 'public');
+  let submissionKey = sessionStorage.getItem(submissionStorageKey);
   const editing = window.location.pathname === '/editar';
 
   function fail(message) {
@@ -248,14 +251,15 @@
       } else {
         if (!submissionKey) {
           submissionKey = crypto.randomUUID();
-          sessionStorage.setItem('isadora_submission_key', submissionKey);
+          sessionStorage.setItem(submissionStorageKey, submissionKey);
         }
         result = validateReceipt(await requestJson('/api/rsvps', {
           method: 'POST',
-          headers: {'Content-Type': 'application/json', 'Idempotency-Key': submissionKey},
+          headers: Object.assign({'Content-Type': 'application/json', 'Idempotency-Key': submissionKey},
+            invitationToken ? {'X-Invitation-Token': invitationToken} : {}),
           body: JSON.stringify(pendingPayload)
         }), pendingPayload);
-        sessionStorage.removeItem('isadora_submission_key');
+        sessionStorage.removeItem(submissionStorageKey);
       }
       renderSuccess(result);
     } catch (error) { fail(error.message); }
