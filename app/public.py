@@ -198,8 +198,9 @@ def guest_edit_page():
     return render_template("index.html")
 
 
-@public.get("/api/invitations/<token>")
-def invitation_details(token):
+@public.get("/api/invitations/current")
+def invitation_details():
+    token = request.headers.get("X-Invitation-Token", "")
     from app.invitations import InvitationStore
     base_store = _store()
     service = current_app.extensions.get("isadora_invitation_store")
@@ -216,7 +217,3 @@ def invitation_details(token):
         "expected_guests": invitation["expected_guests"]
     })
 
-
-@public.get("/convite/<token>")
-def individual_invitation_page(token):
-    return render_template("index.html")
