@@ -172,6 +172,28 @@ def guest_list_preview():
     return jsonify(result)
 
 
+@organizer.post("/api/admin/guest-list-import")
+def guest_list_import():
+    if request.mimetype not in ("text/csv", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"):
+        return error_response(415, "UNSUPPORTED_MEDIA_TYPE", "Envie CSV ou Excel XLSX.")
+    try:
+        content = request.get_data(cache=False)
+        report, records = (preview_csv(content, include_records=True)
+                           if request.mimetype == "text/csv"
+                           else preview_xlsx(content, include_records=True))
+    except ValueError as exc:
+        raise InputError(str(exc)) from exc
+    if not report["valid"]:
+        raise InputError("Corrija a planilha antes de importar.")
+    result = store().import_invited_families(records)
+    return jsonify(result)
+
+
+@organizer.get("/api/admin/guest-list-summary")
+def guest_list_summary():
+    return jsonify(store().invited_family_summary())
+
+
 @organizer.get("/api/admin/settings")
 def read_settings():
     return jsonify(settings_safe(store().settings()))
