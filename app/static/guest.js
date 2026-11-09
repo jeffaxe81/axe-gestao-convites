@@ -285,11 +285,22 @@
     addRow(true);
     toggleAttendance();
     updateConnectionStatus();
-    $('loading').hidden = !editing;
+    $('loading').hidden = !(editing || invitationToken);
     try {
       const event = await requestJson('/api/event');
       $('event-venue').textContent = event.venue;
       setEventDisplay(event);
+      if (invitationToken) {
+        $('loading').hidden = false;
+        const invitation = await requestJson('/api/invitations/current', {
+          headers: {'X-Invitation-Token': invitationToken}
+        });
+        $('contact-name').value = invitation.contact_name;
+        $('form-title').textContent = 'Convite para ' + invitation.family_name;
+        const note = item('p', 'Este convite foi preparado para aproximadamente ' +
+          invitation.expected_guests + ' pessoas. Você poderá informar a quantidade real na confirmação.', 'muted');
+        $('form-title').insertAdjacentElement('afterend', note);
+      }
       if (editing) {
         const match = /^#([0-9a-f-]{36})\.([0-9a-f]{64})$/i.exec(window.location.hash);
         if (!match) throw new Error('Link de edição inválido. Abra o link completo que você recebeu.');
@@ -300,7 +311,7 @@
         });
         hydrateFamily(own);
       }
-    } catch (error) { fail(error.message); if (editing) $('rsvp-form').hidden = true; }
+    } catch (error) { fail(error.message); if (editing || invitationToken) $('rsvp-form').hidden = true; }
     finally { $('loading').hidden = true; }
   }
   form.querySelectorAll('input[name="attendance"]').forEach((radio) =>
