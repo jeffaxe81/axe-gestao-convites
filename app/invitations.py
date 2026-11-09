@@ -143,7 +143,7 @@ class InvitationStore:
         digest = self._hash_token(token)
         with self.session_factory() as session:
             item = session.scalar(select(Invitation).where(Invitation.token_hash == digest))
-            if item is None or item.revoked_at_utc is not None:
+            if item is None or item.revoked_at_utc is not None or item.linked_family_id is not None:
                 return None
             return {"id": item.id, "family_name": item.family_name,
                     "contact_name": item.contact_name, "expected_guests": item.expected_guests,
