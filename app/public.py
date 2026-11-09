@@ -149,8 +149,11 @@ def create_rsvp():
     with store.session_factory() as session:
         existing = store._existing(session, key_hash, digest, store._edit_token(key))
     invitation_token = request.headers.get("X-Invitation-Token") or None
-    receipt = store.create(payload, key, datetime.now(timezone.utc),
-                           invitation_token=invitation_token)
+    if invitation_token:
+        receipt = store.create(payload, key, datetime.now(timezone.utc),
+                               invitation_token=invitation_token)
+    else:
+        receipt = store.create(payload, key, datetime.now(timezone.utc))
     return jsonify(_public_receipt(receipt)), (200 if existing else 201)
 
 
