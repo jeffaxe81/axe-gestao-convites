@@ -459,7 +459,7 @@
   function downloadInvitationLinks(entries) {
     const safe = (value) => {
       let text = String(value == null ? '' : value);
-      if (/^[=+@\\-\\t\\r]/.test(text)) text = "'" + text;
+      if (/^[=+@\- \t\r]/.test(text)) text = "'" + text;
       return '"' + text.replace(/"/g, '""') + '"';
     };
     const rows = [
@@ -467,7 +467,7 @@
       ...entries.map((entry) => [entry.family_name, entry.contact_name, entry.whatsapp,
         entry.expected_guests, entry.url, entry.whatsapp_url])
     ];
-    const csv = '\\uFEFF' + rows.map((row) => row.map(safe).join(';')).join('\\r\\n');
+    const csv = '\uFEFF' + rows.map((row) => row.map(safe).join(';')).join('\r\n');
     const href = URL.createObjectURL(new Blob([csv], {type: 'text/csv;charset=utf-8'}));
     try {
       const anchor = document.createElement('a');
