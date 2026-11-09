@@ -247,6 +247,7 @@
     familyFileValidated = null;
     $('family-import-btn').disabled = true;
     $('family-import-status').textContent = '';
+    $('invitation-link-status').textContent = '';
     $('family-saved-summary').textContent = '';
     clearList('activity-list');
     $('load-activity-btn').disabled = false;
@@ -582,6 +583,47 @@
     } finally { button.disabled = true; }
   }
 
+  async function downloadInvitationLinks() {
+    const generation = sessionGeneration;
+    const button = $('download-invitation-links-btn');
+    button.disabled = true;
+    $('invitation-link-status').textContent = '';
+    try {
+      const response = await fetch('/api/admin/invitation-links.csv', {
+        credentials: 'same-origin', cache: 'no-store'
+      });
+      if (generation !== sessionGeneration || $('dashboard-panel').hidden) return;
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        const error = new Error((data.error && data.error.message) ||
+          'Não foi possível gerar os links individuais.');
+        error.status = response.status;
+        throw error;
+      }
+      const blob = await response.blob();
+      if (generation !== sessionGeneration || $('dashboard-panel').hidden) return;
+      const href = URL.createObjectURL(blob);
+      try {
+        const link = document.createElement('a');
+        link.href = href;
+        link.download = 'links-individuais-familias.csv';
+        document.body.append(link);
+        link.click();
+        link.remove();
+      } finally {
+        URL.revokeObjectURL(href);
+      }
+      $('invitation-link-status').textContent =
+        'Links exportados. Arquivo confidencial: envie cada endereço somente à família correta.';
+    } catch (error) {
+      if (generation !== sessionGeneration || $('dashboard-panel').hidden) return;
+      if (error.status === 401 || error.status === 403) expireOrganizerSession();
+      else $('invitation-link-status').textContent = error.message;
+    } finally {
+      button.disabled = false;
+    }
+  }
+
   async function loadActivity() {
     if ($('dashboard-panel').hidden) return;
     const generation = sessionGeneration;
@@ -649,6 +691,7 @@
   $('family-template-btn').addEventListener('click', downloadFamilyTemplate);
   $('family-preview-btn').addEventListener('click', validateFamilyFile);
   $('family-import-btn').addEventListener('click', importFamilyFile);
+  $('download-invitation-links-btn').addEventListener('click', downloadInvitationLinks);
   $('family-file').addEventListener('change', () => {
     familyFileValidated = null;
     $('family-import-btn').disabled = true;
