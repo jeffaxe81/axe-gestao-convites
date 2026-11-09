@@ -68,3 +68,22 @@
   #buffet-alert{border:1px solid #777!important;padding:5px}
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
+
+
+/* Orientação de preparação da lista de convidados */
+.guest-import-guide{border-color:#d9cda9}
+.guest-import-guide h3{margin-bottom:8px}
+.guest-import-heading .eyebrow{margin:0 0 5px}
+.guest-import-columns{display:grid;grid-template-columns:1fr 1.15fr;gap:18px;margin-top:18px}
+.guest-import-instructions,.guest-import-example{background:#fffdf6;border:1px solid #eee4c8;border-radius:12px;padding:16px;min-width:0}
+.guest-import-columns h4{margin:0 0 12px;color:#43563d}
+.guest-import-instructions ol{padding-left:22px;margin:0}
+.guest-import-instructions li{margin:0 0 9px;line-height:1.45}
+.guest-import-instructions code{font-size:.9em}
+.table-scroll{overflow-x:auto}
+.guest-import-example table{border-collapse:collapse;width:100%;font-size:.82rem}
+.guest-import-example th,.guest-import-example td{padding:9px 8px;text-align:left;border:1px solid #e6dcc0;white-space:nowrap}
+.guest-import-example th{background:#f4edda;color:#514b3d}
+.example-note{font-size:.85rem;color:#655d4c;margin:12px 0 0}
+.guest-import-status{margin:14px 0 0;padding:12px;background:#f6f1e3;border-radius:10px;font-size:.9rem;line-height:1.5}
+@media(max-width:700px){.guest-import-columns{grid-template-columns:1fr}.guest-import-instructions,.guest-import-example{padding:13px}}
