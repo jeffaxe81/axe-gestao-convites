@@ -3,6 +3,7 @@ from dataclasses import asdict
 from datetime import datetime, timezone
 import hmac
 import secrets
+import os
 
 from flask import Blueprint, current_app, jsonify, request, session, render_template, make_response
 from sqlalchemy.exc import SQLAlchemyError
@@ -11,7 +12,8 @@ from werkzeug.security import check_password_hash
 
 from app.guest_list import template_csv, preview_csv, preview_xlsx
 from app.domain import InputError
-from app.reports import export_attendance_csv, export_planning_csv
+from app.reports import export_attendance_csv, export_planning_csv, export_invitation_links_csv
+from app.origin import configured_origin
 
 organizer = Blueprint("organizer", __name__)
 
@@ -192,6 +194,22 @@ def guest_list_import():
 @organizer.get("/api/admin/guest-list-summary")
 def guest_list_summary():
     return jsonify(store().invited_family_summary())
+
+
+@organizer.get("/api/admin/invitation-links.csv")
+def invitation_links_export():
+    raw_origin = os.environ.get("APP_PUBLIC_URL", "")
+    try:
+        configured_origin(raw_origin)
+    except ValueError:
+        raise InputError("Configure uma APP_PUBLIC_URL válida antes de gerar links.") from None
+    response = make_response(
+        export_invitation_links_csv(store().invitation_roster(), raw_origin), 200)
+    response.headers["Content-Type"] = "text/csv; charset=utf-8"
+    response.headers["Content-Disposition"] = 'attachment; filename="links-individuais-familias.csv"'
+    response.headers["Cache-Control"] = "no-store, private"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    return response
 
 
 @organizer.get("/api/admin/settings")
