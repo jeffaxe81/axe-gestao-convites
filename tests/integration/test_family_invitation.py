@@ -17,7 +17,7 @@ def _import_and_link(client, monkeypatch):
     assert result.status_code == 200
     response = client.get("/api/admin/invitation-links.csv")
     assert response.status_code == 200
-    assert response.data.startswith(b"\\xef\\xbb\\xbf")
+    assert response.data.startswith(b"\xef\xbb\xbf")
     assert "no-store" in response.headers["Cache-Control"]
     rows = list(csv.reader(io.StringIO(response.data.decode("utf-8-sig")), delimiter=";"))
     assert rows[0] == ["Familia", "Responsavel", "Telefone", "Status", "Link individual"]
