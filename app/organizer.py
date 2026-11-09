@@ -190,7 +190,7 @@ def invitation_store():
     if existing is not None:
         return existing
     base_store = current_app.extensions["isadora_store"]
-    secret = os.environ.get("TOKEN_SECRET", "")
+    secret = os.environ.get("TOKEN_SECRET") or base_store._secret.decode("utf-8")
     instance = InvitationStore(base_store.session_factory, secret)
     current_app.extensions["isadora_invitation_store"] = instance
     return instance
