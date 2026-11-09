@@ -239,7 +239,7 @@
     $('invite-sent-filter').value = 'TODOS';
     $('invite-status').textContent = '';
     $('invite-refresh-btn').disabled = false;
-    for (const name of ['total', 'pending', 'confirmed', 'declined', 'sent', 'not-sent']) {
+    for (const name of ['total', 'pending', 'confirmed', 'declined', 'sent', 'not-sent', 'interested']) {
       document.querySelector('[data-testid="invite-' + name + '"]').textContent = '0';
     }
     $('dashboard-panel').hidden = true;
@@ -647,13 +647,16 @@
     const seen = new Set();
     const counts = {
       total: data.families.length, pending: 0, confirmed: 0,
-      declined: 0, sent: 0, not_sent: 0
+      declined: 0, sent: 0, not_sent: 0, interested: 0
     };
     for (const family of data.families) {
       if (!family || typeof family.id !== 'string' ||
           !/^[0-9a-f-]{36}$/i.test(family.id) || seen.has(family.id) ||
           typeof family.name !== 'string' || typeof family.key !== 'string' ||
           typeof family.phone !== 'string' || !allowed.includes(family.status) ||
+          typeof family.interested !== 'boolean' ||
+          (family.interested ? typeof family.interested_at_utc !== 'string' ||
+            Number.isNaN(Date.parse(family.interested_at_utc)) : family.interested_at_utc !== null) ||
           typeof family.sent !== 'boolean' ||
           (family.sent
             ? typeof family.sent_at_utc !== 'string' ||
@@ -664,6 +667,7 @@
       if (family.status === 'PENDENTE') counts.pending += 1;
       if (family.status === 'CONFIRMADO') counts.confirmed += 1;
       if (family.status === 'RECUSADO') counts.declined += 1;
+      if (family.interested) counts.interested += 1;
       if (family.sent) counts.sent += 1;
       else counts.not_sent += 1;
     }
@@ -825,6 +829,7 @@
       details.textContent = 'Código: ' + family.key +
         ' · ' + statusNames[family.status] +
         ' · Telefone: ' + (family.phone || 'Não informado') +
+        ' · ' + (family.interested ? 'Interesse demonstrado' : 'Interesse não registrado') +
         ' · ' + (family.sent ? 'Envio registrado manualmente em ' +
           new Intl.DateTimeFormat('pt-BR', {
             timeZone: 'America/Sao_Paulo',
@@ -874,7 +879,7 @@
       if (generation !== sessionGeneration || $('dashboard-panel').hidden) return;
       if (!validInvitationRoster(data)) throw new Error('Lista de convites inválida.');
       invitedFamilies = data.families;
-      for (const name of ['total', 'pending', 'confirmed', 'declined', 'sent', 'not-sent']) {
+      for (const name of ['total', 'pending', 'confirmed', 'declined', 'sent', 'not-sent', 'interested']) {
         document.querySelector('[data-testid="invite-' + name + '"]').textContent =
           String(data.counts[name === 'not-sent' ? 'not_sent' : name]);
       }
@@ -911,7 +916,8 @@
         RSVP_UPDATED: 'Confirmação alterada',
         SETTINGS_CHANGED: 'Configuração da festa alterada',
         INVITATION_SENT_MARKED: 'Envio de convite registrado manualmente',
-        INVITATION_SENT_UNMARKED: 'Registro manual de envio desfeito'
+        INVITATION_SENT_UNMARKED: 'Registro manual de envio desfeito',
+        INVITATION_INTEREST: 'Interesse voluntário demonstrado no convite'
       };
       const entries = [];
       for (const entry of response.events) {

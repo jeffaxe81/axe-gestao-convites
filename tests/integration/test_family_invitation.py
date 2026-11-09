@@ -40,7 +40,7 @@ def test_invitation_can_be_read_only_by_its_family(client, monkeypatch):
     assert result.status_code == 200
     assert result.json == {
         "contact_name": "Maria Silva", "adults": 2, "children_0_5": 1,
-        "children_6_12": 0, "responded": False
+        "children_6_12": 0, "responded": False, "interested": False
     }
     assert client.get("/convite").status_code == 200
     assert "Maria Silva" not in client.get("/convite").get_data(as_text=True)

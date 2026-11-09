@@ -14,7 +14,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.domain import Counts, InputError, ParticipantInput, RsvpInput, can_edit, count_participants
-from app.models import AuditEvent, EventSettings, Family, Participant, InvitedFamily, InvitationResponse, InvitationDispatch
+from app.models import AuditEvent, EventSettings, Family, Participant, InvitedFamily, InvitationResponse, InvitationDispatch, InvitationInterest
 
 
 class IdempotencyConflict(Exception):
@@ -198,6 +198,7 @@ class RsvpStore:
                 'children_0_5': invited.children_0_5,
                 'children_6_12': invited.children_6_12,
                 'responded': mapping is not None,
+                'interested': session.get(InvitationInterest, invited.id) is not None,
             }
             if mapping:
                 family = session.get(Family, mapping.family_id)
@@ -206,6 +207,21 @@ class RsvpStore:
                 result['receipt'] = asdict(self._receipt(
                     family, self._edit_token(self._invitation_submission_key(invited.id))))
             return result
+
+    def express_invitation_interest(self, invitation_id: str, token: str,
+                                    now_utc: datetime) -> dict:
+        """An explicit visitor action, idempotent; no passive tracking or IP storage."""
+        recorded_at = _utc_naive(now_utc)
+        with self.session_factory.begin() as session:
+            invited = self._invitation(session, invitation_id, token, lock=True)
+            interest = session.get(InvitationInterest, invited.id)
+            if interest is None:
+                interest = InvitationInterest(invited_family_id=invited.id,
+                                              expressed_at_utc=recorded_at)
+                session.add(interest)
+                session.add(AuditEvent(event_kind='INVITATION_INTEREST',
+                                       occurred_at_utc=recorded_at))
+            return {'interested': True}
 
     def invitation_roster(self) -> list[dict]:
         """Private organizer export source only; bearer tokens never enter public lists."""
@@ -235,8 +251,12 @@ class RsvpStore:
         with self.session_factory() as session:
             sent_at = {entry.invited_family_id: entry.marked_at_utc
                        for entry in session.scalars(select(InvitationDispatch)).all()}
+            interest_at = {entry.invited_family_id: entry.expressed_at_utc
+                           for entry in session.scalars(select(InvitationInterest)).all()}
         families = [
             {**{key: row[key] for key in ('id', 'key', 'name', 'phone', 'status')},
+             'interested': row['id'] in interest_at,
+             'interested_at_utc': _to_aware(interest_at[row['id']]).isoformat() if row['id'] in interest_at else None,
              'sent': row['id'] in sent_at,
              'sent_at_utc': _to_aware(sent_at[row['id']]).isoformat()
              if row['id'] in sent_at else None}
@@ -251,6 +271,7 @@ class RsvpStore:
                 'declined': sum(row['status'] == 'RECUSADO' for row in families),
                 'sent': sum(row['sent'] for row in families),
                 'not_sent': sum(not row['sent'] for row in families),
+                'interested': sum(row['interested'] for row in families),
             },
         }
 

@@ -87,3 +87,12 @@ class InvitationDispatch(Base):
         primary_key=True)
     marked_at_utc: Mapped[object] = mapped_column(
         DateTime(timezone=False), nullable=False)
+
+
+class InvitationInterest(Base):
+    """Optional, explicit engagement signal; never an inferred message read receipt."""
+    __tablename__ = 'invitation_interests'
+    invited_family_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey('invited_families.id', ondelete='CASCADE'),
+        primary_key=True)
+    expressed_at_utc: Mapped[object] = mapped_column(DateTime(timezone=False), nullable=False)

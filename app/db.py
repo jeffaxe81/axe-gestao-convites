@@ -50,6 +50,9 @@ def migrate(engine) -> None:
         # V4 maps one invitation to one RSVP without altering existing tables.
         if session.execute(select(versions.c.version).where(versions.c.version == 4)).first() is None:
             session.execute(versions.insert().values(version=4))
+        # V6 tracks explicit opt-in interest independently from RSVP.
+        if session.execute(select(versions.c.version).where(versions.c.version == 6)).first() is None:
+            session.execute(versions.insert().values(version=6))
         # V5 adds the organizer's manual dispatch ledger, without altering
         # invitation response status or any existing table/row.
         if session.execute(select(versions.c.version).where(versions.c.version == 5)).first() is None:
@@ -64,7 +67,7 @@ def main():
     try:
         if args.command == 'migrate':
             migrate(engine)
-            print('Migrações 001/002/003/004/005 verificadas. Dados existentes preservados.')
+            print('Migrações 001/002/003/004/005/006 verificadas. Dados existentes preservados.')
     finally:
         engine.dispose()
 

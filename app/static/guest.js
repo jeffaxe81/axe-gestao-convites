@@ -325,6 +325,12 @@
             typeof own.responded !== 'boolean') {
           throw new Error('Não foi possível verificar os dados do convite.');
         }
+        $('invitation-interest').hidden = false;
+        if (own.interested === true) {
+          $('interest-btn').disabled = true;
+          $('interest-btn').textContent = '💛 Interesse registrado';
+          $('interest-status').textContent = 'Obrigado pelo carinho!';
+        }
         $('form-title').textContent = 'Confirme o convite da sua família';
         $('contact-name').value = own.contact_name;
         $('invitation-plan').textContent = 'Pessoas previstas no convite: ' +
@@ -347,6 +353,24 @@
   $('add-companion').addEventListener('click', () => {
     if ($('participants').children.length >= 100) return fail('O limite é de 100 pessoas por resposta.');
     addRow(false);
+  });
+  $('interest-btn').addEventListener('click', async () => {
+    if (!invited || !invitationId || !invitationToken) return;
+    const button = $('interest-btn');
+    button.disabled = true;
+    try {
+      const result = await requestJson('/api/invitations/' +
+        encodeURIComponent(invitationId) + '/interest', {
+          method: 'POST',
+          headers: {'Authorization': 'Bearer ' + invitationToken}
+        });
+      if (result.interested !== true) throw new Error('Não foi possível confirmar o registro.');
+      button.textContent = '💛 Interesse registrado';
+      $('interest-status').textContent = 'Obrigado! Seu interesse foi registrado, sem confirmar presença.';
+    } catch (error) {
+      $('interest-status').textContent = error.message;
+      button.disabled = false;
+    }
   });
   $('review-btn').addEventListener('click', showReview);
   function backToForm() {

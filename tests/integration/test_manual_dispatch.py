@@ -24,7 +24,7 @@ def test_manual_dispatch_is_reversible_idempotent_and_separate_from_rsvp(client,
     initial = store.invitation_overview()
     assert initial["counts"] == {
         "total": 1, "pending": 1, "confirmed": 0, "declined": 0,
-        "sent": 0, "not_sent": 1
+        "sent": 0, "not_sent": 1, "interested": 0
     }
     first = client.put(url, json={"sent": True}, headers=headers)
     assert first.status_code == 200
@@ -35,7 +35,7 @@ def test_manual_dispatch_is_reversible_idempotent_and_separate_from_rsvp(client,
     current = client.get("/api/admin/invitations").json
     assert current["counts"] == {
         "total": 1, "pending": 1, "confirmed": 0, "declined": 0,
-        "sent": 1, "not_sent": 0
+        "sent": 1, "not_sent": 0, "interested": 0
     }
     assert current["families"][0]["status"] == "PENDENTE"
     assert current["families"][0]["sent_at_utc"] == first.json["sent_at_utc"]
@@ -92,7 +92,7 @@ def test_dispatch_survives_an_independent_decline(client, store):
     overview = store.invitation_overview()
     assert overview["counts"] == {
         "total": 1, "pending": 0, "confirmed": 0, "declined": 1,
-        "sent": 1, "not_sent": 0
+        "sent": 1, "not_sent": 0, "interested": 0
     }
     assert overview["families"][0]["sent"] is True
     assert store.summary()["counts"].total == 0
