@@ -558,22 +558,54 @@
         detail.textContent = entry.whatsapp + ' · ' + entry.expected_guests +
           ' convidados previstos · ' + invitationStatusLabel(entry.status);
         li.append(title, detail);
-        if (!['CONFIRMED', 'DECLINED', 'REVOKED'].includes(entry.status)) {
-          const revoke = document.createElement('button');
-          revoke.type = 'button';
-          revoke.className = 'secondary';
-          revoke.textContent = 'Revogar link';
-          revoke.addEventListener('click', async () => {
-            if (!window.confirm('Revogar o link desta família?')) return;
-            revoke.disabled = true;
+        if (!entry.linked_family_id) {
+          const regenerate = document.createElement('button');
+          regenerate.type = 'button';
+          regenerate.className = 'secondary';
+          regenerate.textContent = 'Gerar novo link';
+          regenerate.addEventListener('click', async () => {
+            if (!window.confirm('Gerar outro link? O link anterior deixará de funcionar.')) return;
+            regenerate.disabled = true;
             try {
-              await api('/api/admin/invitations/' + encodeURIComponent(entry.id), {
-                method: 'DELETE', headers: {'X-CSRF-Token': await ensureCsrf()}
+              const result = await api('/api/admin/invitations/' + encodeURIComponent(entry.id) + '/regenerate', {
+                method: 'POST', headers: {'X-CSRF-Token': await ensureCsrf()}
               });
+              const link = document.createElement('p');
+              link.textContent = 'Novo link: ' + result.url;
+              const whatsapp = document.createElement('a');
+              whatsapp.href = result.whatsapp_url;
+              whatsapp.target = '_blank';
+              whatsapp.rel = 'noopener noreferrer';
+              whatsapp.textContent = 'Abrir WhatsApp com novo link';
+              li.append(link, whatsapp);
+              $('invitation-import-status').textContent = 'Novo link gerado. O anterior foi invalidado; guarde o novo link agora.';
               await loadInvitationList();
-            } catch (error) { revoke.disabled = false; $('invitation-import-status').textContent = error.message; }
+            } catch (error) {
+              regenerate.disabled = false;
+              $('invitation-import-status').textContent = error.message;
+            }
           });
-          li.append(revoke);
+          li.append(regenerate);
+          if (entry.status !== 'REVOKED') {
+            const revoke = document.createElement('button');
+            revoke.type = 'button';
+            revoke.className = 'secondary';
+            revoke.textContent = 'Revogar link';
+            revoke.addEventListener('click', async () => {
+              if (!window.confirm('Revogar o link desta família?')) return;
+              revoke.disabled = true;
+              try {
+                await api('/api/admin/invitations/' + encodeURIComponent(entry.id), {
+                  method: 'DELETE', headers: {'X-CSRF-Token': await ensureCsrf()}
+                });
+                await loadInvitationList();
+              } catch (error) {
+                revoke.disabled = false;
+                $('invitation-import-status').textContent = error.message;
+              }
+            });
+            li.append(revoke);
+          }
         }
         $('invitation-list').append(li);
       });
