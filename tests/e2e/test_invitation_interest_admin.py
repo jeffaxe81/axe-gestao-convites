@@ -30,7 +30,8 @@ def test_organizer_sees_voluntary_interest_without_confirming_attendance(page, o
     expect(page.locator("#interest-btn")).to_be_disabled()
     assert store.invitation_overview()["counts"]["interested"] == 1
 
-    login(page, base)
+    # The organizer session survives navigation to the guest invitation.
+    page.goto(base + "/organizar")
     expect(page.get_by_test_id("invite-interested")).to_have_text("1")
     expect(page.get_by_test_id("invite-pending")).to_have_text("1")
     expect(page.get_by_test_id("invite-sent")).to_have_text("0")
