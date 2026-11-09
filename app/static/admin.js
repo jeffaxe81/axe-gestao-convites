@@ -7,6 +7,7 @@
   let dashboardData = null;
   let sessionGeneration = 0;
   let refreshPending = false;
+  let familyFileValidated = null;
   let refreshTimer = null;
 
   function setError(message) {
@@ -199,6 +200,7 @@
     $('login-panel').hidden = true;
     $('dashboard-panel').hidden = false;
     drawDashboard(data);
+    void updateFamilySummary();
     $('venue-input').value = settings.venue || '';
     $('deadline-input').value = eventTime(settings.edit_deadline_utc);
   }
@@ -242,6 +244,10 @@
     $('family-preview-status').textContent = '';
     $('family-preview-errors').replaceChildren();
     $('family-file').value = '';
+    familyFileValidated = null;
+    $('family-import-btn').disabled = true;
+    $('family-import-status').textContent = '';
+    $('family-saved-summary').textContent = '';
     clearList('activity-list');
     $('load-activity-btn').disabled = false;
     $('venue-input').value = '';
@@ -463,6 +469,8 @@
       status.textContent = 'Use uma planilha .xlsx ou .csv.'; return;
     }
     const generation = sessionGeneration;
+    familyFileValidated = null;
+    $('family-import-btn').disabled = true;
     const button = $('family-preview-btn');
     button.disabled = true;
     status.textContent = 'Validando planilha...';
@@ -488,6 +496,10 @@
           !Number.isInteger(data.families) || data.saved !== false) {
         throw new Error('Resposta de validação inválida.');
       }
+      if (data.valid) {
+        familyFileValidated = file;
+        $('family-import-btn').disabled = false;
+      }
       status.textContent = (data.valid ? 'Planilha válida. ' : 'Corrija os problemas. ') +
         data.families + ' famílias; ' + data.adults + ' adultos; ' +
         data.children_0_5 + ' crianças de 0 a 5 anos; ' +
@@ -508,6 +520,66 @@
       if (error.status === 401 || error.status === 403) expireOrganizerSession();
       else status.textContent = error.message;
     } finally { button.disabled = false; }
+  }
+
+  async function updateFamilySummary() {
+    const generation = sessionGeneration;
+    try {
+      const data = await api('/api/admin/guest-list-summary');
+      if (generation !== sessionGeneration || $('dashboard-panel').hidden) return;
+      if (!Number.isInteger(data.families) || !Number.isInteger(data.pending)) {
+        throw new Error('Resumo inválido.');
+      }
+      $('family-saved-summary').textContent =
+        'Cadastro prévio: ' + data.families + ' famílias, ' + data.pending +
+        ' pendentes de confirmação.';
+    } catch (error) {
+      if (generation !== sessionGeneration) return;
+      if (error.status === 401 || error.status === 403) expireOrganizerSession();
+    }
+  }
+  async function importFamilyFile() {
+    const file = familyFileValidated;
+    if (!file || $('family-file').files[0] !== file) {
+      $('family-import-status').textContent = 'Valide novamente o arquivo antes de importar.';
+      $('family-import-btn').disabled = true;
+      return;
+    }
+    const generation = sessionGeneration;
+    const button = $('family-import-btn');
+    button.disabled = true;
+    $('family-import-status').textContent = 'Gravando cadastro prévio...';
+    try {
+      const response = await fetch('/api/admin/guest-list-import', {
+        method: 'POST', credentials: 'same-origin', cache: 'no-store',
+        headers: {
+          'Content-Type': /\.xlsx$/i.test(file.name)
+            ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            : 'text/csv',
+          'X-CSRF-Token': await ensureCsrf()
+        },
+        body: file
+      });
+      const data = await response.json().catch(() => ({}));
+      if (generation !== sessionGeneration || $('dashboard-panel').hidden) return;
+      if (!response.ok) {
+        const error = new Error((data.error && data.error.message) || 'Não foi possível importar.');
+        error.status = response.status;
+        throw error;
+      }
+      if (!Number.isInteger(data.imported) || !Number.isInteger(data.existing_unchanged)) {
+        throw new Error('Resposta de importação inválida.');
+      }
+      familyFileValidated = null;
+      $('family-import-status').textContent =
+        data.imported + ' famílias cadastradas; ' +
+        data.existing_unchanged + ' já existentes, sem alterações. Nenhum convite enviado.';
+      await updateFamilySummary();
+    } catch (error) {
+      if (generation !== sessionGeneration) return;
+      if (error.status === 401 || error.status === 403) expireOrganizerSession();
+      else $('family-import-status').textContent = error.message;
+    } finally { button.disabled = true; }
   }
 
   async function loadActivity() {
@@ -576,6 +648,12 @@
   }
   $('family-template-btn').addEventListener('click', downloadFamilyTemplate);
   $('family-preview-btn').addEventListener('click', validateFamilyFile);
+  $('family-import-btn').addEventListener('click', importFamilyFile);
+  $('family-file').addEventListener('change', () => {
+    familyFileValidated = null;
+    $('family-import-btn').disabled = true;
+    $('family-preview-status').textContent = 'Arquivo alterado. Valide antes de cadastrar.';
+  });
   $('login-form').addEventListener('submit', logIn);
   $('settings-form').addEventListener('submit', saveSettings);
   $('logout-btn').addEventListener('click', logOut);
