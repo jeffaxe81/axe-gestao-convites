@@ -1,5 +1,6 @@
 """Organizer-only sessions, CSRF, attendance dashboard and event settings."""
 from dataclasses import asdict
+import os
 from datetime import datetime, timezone
 import hmac
 import secrets
@@ -11,6 +12,7 @@ from werkzeug.security import check_password_hash
 
 from app.domain import InputError
 from app.reports import export_attendance_csv, export_planning_csv
+from app.invitations import InvitationImportError, InvitationStore, parse_guest_csv
 
 organizer = Blueprint("organizer", __name__)
 
@@ -181,3 +183,75 @@ def update_settings():
 def organizer_page():
     # No private data in this template. Browser fetches it only after session login.
     return render_template("admin.html")
+
+
+def invitation_store():
+    existing = current_app.extensions.get("isadora_invitation_store")
+    if existing is not None:
+        return existing
+    base_store = current_app.extensions["isadora_store"]
+    secret = os.environ.get("TOKEN_SECRET", "")
+    instance = InvitationStore(base_store.session_factory, secret)
+    current_app.extensions["isadora_invitation_store"] = instance
+    return instance
+
+
+@organizer.errorhandler(InvitationImportError)
+def invitation_input_error(exc):
+    return error_response(422, "INVITATION_INVALID", str(exc))
+
+
+@organizer.post("/api/admin/invitations/preview")
+def invitations_preview():
+    upload = request.files.get("file")
+    if upload is None:
+        raise InputError("Selecione um arquivo CSV.")
+    rows = parse_guest_csv(upload.read(1_000_001))
+    return jsonify({
+        "count": len(rows),
+        "preview": [{
+            "family_name": row.family_name, "contact_name": row.contact_name,
+            "whatsapp": row.whatsapp, "expected_guests": row.expected_guests
+        } for row in rows[:10]]
+    })
+
+
+@organizer.post("/api/admin/invitations/import")
+def invitations_import():
+    upload = request.files.get("file")
+    if upload is None:
+        raise InputError("Selecione um arquivo CSV.")
+    rows = parse_guest_csv(upload.read(1_000_001))
+    issued = invitation_store().import_rows(rows)
+    origin = os.environ.get("APP_PUBLIC_URL", "").rstrip("/")
+    if not origin:
+        raise RuntimeError("APP_PUBLIC_URL não configurada.")
+    return jsonify({
+        "created": len(issued),
+        "invitations": [{
+            **{key: value for key, value in item.items() if key != "token"},
+            "url": origin + "/convite/" + item["token"],
+            "whatsapp_url": "https://wa.me/" + item["whatsapp"] + "?text=" +
+                __import__("urllib.parse", fromlist=["quote"]).quote(
+                    "Olá, " + item["contact_name"] + "! Você está convidado(a) para comemorar os 2 aninhos da Isadora: " +
+                    origin + "/convite/" + item["token"]
+                )
+        } for item in issued]
+    }), 201
+
+
+@organizer.get("/api/admin/invitations")
+def invitations_list():
+    return jsonify({"invitations": invitation_store().list_invitations()})
+
+
+@organizer.post("/api/admin/invitations/<invitation_id>/sent")
+def invitation_mark_sent(invitation_id):
+    invitation_store().mark_sent(invitation_id)
+    return jsonify({"ok": True})
+
+
+@organizer.delete("/api/admin/invitations/<invitation_id>")
+def invitation_revoke(invitation_id):
+    invitation_store().revoke(invitation_id)
+    return jsonify({"ok": True})
