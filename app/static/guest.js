@@ -309,9 +309,12 @@
         });
         hydrateFamily(own);
       } else if (invited) {
-        const match = /^#([0-9a-f-]{36})\\.([0-9a-f]{64})$/i.exec(window.location.hash);
-        if (!match) throw new Error('Link individual inválido. Abra o link completo recebido.');
-        invitationId = match[1]; invitationToken = match[2];
+        const parts = window.location.hash.slice(1).split('.');
+        if (parts.length !== 2 || !/^[0-9a-f-]{36}$/i.test(parts[0]) ||
+            !/^[0-9a-f]{64}$/i.test(parts[1])) {
+          throw new Error('Link individual inválido. Abra o link completo recebido.');
+        }
+        invitationId = parts[0]; invitationToken = parts[1];
         const own = await requestJson('/api/invitations/' +
           encodeURIComponent(invitationId), {
             headers: {'Authorization': 'Bearer ' + invitationToken}
