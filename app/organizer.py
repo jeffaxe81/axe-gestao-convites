@@ -3,14 +3,18 @@ from dataclasses import asdict
 from datetime import datetime, timezone
 import hmac
 import secrets
+import os
 
 from flask import Blueprint, current_app, jsonify, request, session, render_template, make_response
 from sqlalchemy.exc import SQLAlchemyError
 from werkzeug.exceptions import BadRequest
 from werkzeug.security import check_password_hash
 
+from app.guest_list import template_csv, preview_csv, preview_xlsx
+from app.guest_xlsx_template import template_xlsx
 from app.domain import InputError
-from app.reports import export_attendance_csv, export_planning_csv
+from app.reports import export_attendance_csv, export_planning_csv, export_invitation_links_csv
+from app.origin import configured_origin
 
 organizer = Blueprint("organizer", __name__)
 
@@ -145,6 +149,107 @@ def export_planning():
     response = make_response(export_planning_csv(store().summary()), 200)
     response.headers["Content-Type"] = "text/csv; charset=utf-8"
     response.headers["Content-Disposition"] = 'attachment; filename="isadora-resumo-buffet.csv"'
+    response.headers["Cache-Control"] = "no-store, private"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    return response
+
+
+@organizer.get("/api/admin/guest-list-template.csv")
+def guest_list_template():
+    response = make_response(template_csv(), 200)
+    response.headers["Content-Type"] = "text/csv; charset=utf-8"
+    response.headers["Content-Disposition"] = 'attachment; filename="modelo-familias.csv"'
+    response.headers["Cache-Control"] = "no-store, private"
+    return response
+
+
+@organizer.get("/api/admin/guest-list-template.xlsx")
+def guest_list_template_excel():
+    response = make_response(template_xlsx(), 200)
+    response.headers["Content-Type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    response.headers["Content-Disposition"] = 'attachment; filename="modelo-familias.xlsx"'
+    response.headers["Cache-Control"] = "no-store, private"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    return response
+
+
+@organizer.post("/api/admin/guest-list-preview")
+def guest_list_preview():
+    if request.mimetype not in ("text/csv", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"):
+        return error_response(415, "UNSUPPORTED_MEDIA_TYPE", "Envie CSV ou Excel XLSX.")
+    try:
+        data = request.get_data(cache=False)
+        result = preview_csv(data) if request.mimetype == "text/csv" else preview_xlsx(data)
+    except ValueError as exc:
+        raise InputError(str(exc)) from exc
+    return jsonify(result)
+
+
+@organizer.post("/api/admin/guest-list-import")
+def guest_list_import():
+    if request.mimetype not in ("text/csv", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"):
+        return error_response(415, "UNSUPPORTED_MEDIA_TYPE", "Envie CSV ou Excel XLSX.")
+    try:
+        content = request.get_data(cache=False)
+        parsed = (preview_csv(content, include_records=True)
+                  if request.mimetype == "text/csv"
+                  else preview_xlsx(content, include_records=True))
+    except ValueError as exc:
+        raise InputError(str(exc)) from exc
+    if not isinstance(parsed, tuple):
+        raise InputError("Corrija os erros informados na prévia da planilha.")
+    report, records = parsed
+    result = store().import_invited_families(records)
+    return jsonify(result)
+
+
+@organizer.get("/api/admin/guest-list-summary")
+def guest_list_summary():
+    return jsonify(store().invited_family_summary())
+
+
+@organizer.get("/api/admin/invitations")
+def invitation_overview():
+    # Names and phone numbers only for authenticated organizers.
+    return jsonify(store().invitation_overview())
+
+
+@organizer.put("/api/admin/invitations/<invitation_id>/sent")
+def mark_invitation_sent(invitation_id):
+    body = json_object()
+    if set(body) != {"sent"} or type(body["sent"]) is not bool:
+        raise InputError("Informe sent como verdadeiro ou falso.")
+    # Solely records an organizer's manual statement. No messaging API call.
+    result = store().mark_invitation_sent(
+        invitation_id, body["sent"], datetime.now(timezone.utc))
+    response = jsonify(result)
+    response.headers["Cache-Control"] = "no-store, private"
+    return response
+
+
+@organizer.get("/api/admin/invitations/<invitation_id>/link")
+def invitation_single_link(invitation_id):
+    raw_origin = os.environ.get("APP_PUBLIC_URL", "")
+    try:
+        configured_origin(raw_origin)
+    except ValueError:
+        raise InputError("Configure APP_PUBLIC_URL válida antes de gerar links.") from None
+    response = jsonify({"url": store().invitation_share_link(invitation_id, raw_origin)})
+    response.headers["Cache-Control"] = "no-store, private"
+    return response
+
+
+@organizer.get("/api/admin/invitation-links.csv")
+def invitation_links_export():
+    raw_origin = os.environ.get("APP_PUBLIC_URL", "")
+    try:
+        configured_origin(raw_origin)
+    except ValueError:
+        raise InputError("Configure uma APP_PUBLIC_URL válida antes de gerar links.") from None
+    response = make_response(
+        export_invitation_links_csv(store().invitation_roster(), raw_origin), 200)
+    response.headers["Content-Type"] = "text/csv; charset=utf-8"
+    response.headers["Content-Disposition"] = 'attachment; filename="links-individuais-familias.csv"'
     response.headers["Cache-Control"] = "no-store, private"
     response.headers["X-Content-Type-Options"] = "nosniff"
     return response

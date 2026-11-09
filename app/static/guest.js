@@ -12,6 +12,9 @@
   let revision = null;
   let submissionKey = sessionStorage.getItem('isadora_submission_key');
   const editing = window.location.pathname === '/editar';
+  const invited = window.location.pathname === '/convite';
+  let invitationId = null;
+  let invitationToken = null;
 
   function fail(message) {
     $('error').textContent = message;
@@ -245,6 +248,16 @@
           headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + editToken},
           body: JSON.stringify(Object.assign({revision: revision}, pendingPayload))
         }), pendingPayload);
+      } else if (invited) {
+        result = validateReceipt(await requestJson(
+          '/api/invitations/' + encodeURIComponent(invitationId) + '/response', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + invitationToken
+            },
+            body: JSON.stringify(pendingPayload)
+          }), pendingPayload);
       } else {
         if (!submissionKey) {
           submissionKey = crypto.randomUUID();
@@ -281,7 +294,7 @@
     addRow(true);
     toggleAttendance();
     updateConnectionStatus();
-    $('loading').hidden = !editing;
+    $('loading').hidden = !(editing || invited);
     try {
       const event = await requestJson('/api/event');
       $('event-venue').textContent = event.venue;
@@ -295,8 +308,38 @@
           headers: {'Authorization': 'Bearer ' + editToken}
         });
         hydrateFamily(own);
+      } else if (invited) {
+        const parts = window.location.hash.slice(1).split('.');
+        if (parts.length !== 2 || !/^[0-9a-f-]{36}$/i.test(parts[0]) ||
+            !/^[0-9a-f]{64}$/i.test(parts[1])) {
+          throw new Error('Link individual inválido. Abra o link completo recebido.');
+        }
+        invitationId = parts[0]; invitationToken = parts[1];
+        const own = await requestJson('/api/invitations/' +
+          encodeURIComponent(invitationId), {
+            headers: {'Authorization': 'Bearer ' + invitationToken}
+          });
+        if (!own || typeof own.contact_name !== 'string' || !own.contact_name.trim() ||
+            !Number.isInteger(own.adults) || !Number.isInteger(own.children_0_5) ||
+            !Number.isInteger(own.children_6_12) ||
+            typeof own.responded !== 'boolean') {
+          throw new Error('Não foi possível verificar os dados do convite.');
+        }
+        $('form-title').textContent = 'Confirme o convite da sua família';
+        $('contact-name').value = own.contact_name;
+        $('invitation-plan').textContent = 'Pessoas previstas no convite: ' +
+          own.adults + ' acima de 12 anos, ' + own.children_0_5 +
+          ' crianças até 5 anos e ' + own.children_6_12 +
+          ' crianças de 6 a 12 anos. Informe os nomes de quem realmente irá.';
+        $('invitation-plan').hidden = false;
+        if (own.responded) {
+          if (!own.receipt || typeof own.receipt.attending !== 'boolean') {
+            throw new Error('Não foi possível recuperar sua confirmação.');
+          }
+          renderSuccess(own.receipt);
+        }
       }
-    } catch (error) { fail(error.message); if (editing) $('rsvp-form').hidden = true; }
+    } catch (error) { fail(error.message); if (editing || invited) $('rsvp-form').hidden = true; }
     finally { $('loading').hidden = true; }
   }
   form.querySelectorAll('input[name="attendance"]').forEach((radio) =>

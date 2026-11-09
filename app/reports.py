@@ -65,3 +65,17 @@ def export_planning_csv(summary):
     writer.writerow(("Indicador", "Quantidade"))
     writer.writerows(quantities)
     return output.getvalue().encode("utf-8-sig")
+
+
+def export_invitation_links_csv(roster: list[dict], public_origin: str) -> bytes:
+    """Privileged export: every link is a bearer secret. Never publish or log."""
+    output = io.StringIO(newline="")
+    writer = csv.writer(output, delimiter=";", quoting=csv.QUOTE_ALL, lineterminator="\r\n")
+    writer.writerow(("Familia", "Responsavel", "Telefone", "Status", "Link individual"))
+    for family in roster:
+        url = (public_origin.rstrip("/") + "/convite#" +
+               family["id"] + "." + family["token"])
+        writer.writerow([safe_cell(value) for value in
+                         (family["key"], family["name"], family["phone"],
+                          family["status"], url)])
+    return output.getvalue().encode("utf-8-sig")
