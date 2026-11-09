@@ -40,10 +40,11 @@ def migrate(engine) -> None:
             session.add(EventSettings(id=1, venue=None, edit_deadline_utc=None, buffet_limit=40))
         if session.execute(select(versions.c.version).where(versions.c.version == 1)).first() is None:
             session.execute(versions.insert().values(version=1))
-        # V2 creates the new audit_events table via Base.metadata.create_all.
-        # Existing families and event settings are never dropped or rewritten.
-        if session.execute(select(versions.c.version).where(versions.c.version == 2)).first() is None:
-            session.execute(versions.insert().values(version=2))
+        # V2 creates audit_events; V3 creates invitations. create_all is additive:
+        # existing RSVP tables and rows are never dropped or rewritten.
+        for version in (2, 3):
+            if session.execute(select(versions.c.version).where(versions.c.version == version)).first() is None:
+                session.execute(versions.insert().values(version=version))
 
 
 def main():
@@ -54,7 +55,7 @@ def main():
     try:
         if args.command == 'migrate':
             migrate(engine)
-            print('Migrações 001/002 verificadas. Dados existentes preservados.')
+            print('Migrações 001/002/003 verificadas. Dados existentes preservados.')
     finally:
         engine.dispose()
 
