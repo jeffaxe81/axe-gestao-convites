@@ -603,7 +603,10 @@
         RSVP_CREATED: 'Confirmação recebida',
         RSVP_DECLINED: 'Recusa recebida',
         RSVP_UPDATED: 'Confirmação alterada',
-        SETTINGS_CHANGED: 'Configuração da festa alterada'
+        SETTINGS_CHANGED: 'Configuração da festa alterada',
+        INVITATIONS_IMPORTED: 'Lista de convidados importada',
+        INVITATION_MARKED_SENT: 'Convite marcado como enviado',
+        INVITATION_REVOKED: 'Link de convite revogado'
       };
       const entries = [];
       for (const entry of response.events) {
