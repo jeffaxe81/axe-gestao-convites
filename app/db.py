@@ -1,7 +1,7 @@
 """MySQL connection and idempotent initial schema migration."""
 import argparse
 import os
-from sqlalchemy import Column, Integer, MetaData, Table, create_engine, inspect, select
+from sqlalchemy import Column, Integer, MetaData, Table, create_engine, select
 from sqlalchemy.engine import URL
 from sqlalchemy.orm import sessionmaker
 from app.models import Base, EventSettings, Invitation
