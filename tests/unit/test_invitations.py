@@ -12,6 +12,8 @@ from app.invitations import (
 )
 from app.models import Base, EventSettings, Family, Invitation
 from app.rsvp import AccessDenied, RsvpStore
+from app.organizer import public_invitation_origin
+from app.domain import InputError
 
 
 SECRET = "test-secret-with-at-least-32-characters"
@@ -119,3 +121,28 @@ def test_invitation_status_tracks_later_rsvp_edit(stores):
     assert invitations.list_invitations()[0]["status"] == "DECLINED"
     with pytest.raises(InvitationImportError, match="já utilizado"):
         invitations.revoke(issued[0]["id"])
+
+
+
+@pytest.mark.parametrize("raw", [
+    "",
+    "ftp://example.com",
+    "https://",
+    "https://user:pass@example.com",
+    "https://example.com/path?query=1",
+    "https://example.com/#fragment",
+])
+def test_public_invitation_origin_rejects_invalid_configuration(monkeypatch, raw):
+    monkeypatch.setenv("APP_PUBLIC_URL", raw)
+    with pytest.raises(InputError):
+        public_invitation_origin()
+
+
+@pytest.mark.parametrize("raw, expected", [
+    ("https://isadora2anos.org", "https://isadora2anos.org"),
+    ("https://isadora2anos.org/", "https://isadora2anos.org"),
+    ("http://localhost:5000/", "http://localhost:5000"),
+])
+def test_public_invitation_origin_normalizes_valid_configuration(monkeypatch, raw, expected):
+    monkeypatch.setenv("APP_PUBLIC_URL", raw)
+    assert public_invitation_origin() == expected
