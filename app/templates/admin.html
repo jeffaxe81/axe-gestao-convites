@@ -67,12 +67,12 @@
         <div class="admin-actions">
           <button type="button" class="secondary" id="family-template-btn">Baixar modelo com exemplo</button>
           <div class="field">
-            <label for="family-file">Conferir planilha CSV (UTF-8, até 60 KB)</label>
-            <input type="file" id="family-file" accept=".csv,text/csv">
+            <label for="family-file">Conferir Excel (.xlsx) ou CSV (UTF-8, até 60 KB)</label>
+            <input type="file" id="family-file" accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
           </div>
           <button type="button" class="secondary" id="family-preview-btn">Validar planilha</button>
         </div>
-        <p class="muted">Esta etapa apenas confere os dados. Não importa cadastros, não cria links e não envia convites.</p>
+        <p class="muted">Esta etapa aceita Excel ou CSV e apenas confere os dados. Não importa cadastros, não cria links e não envia convites.</p>
         <p id="family-preview-status" role="status" aria-live="polite"></p>
         <ul id="family-preview-errors" class="data-list"></ul>
       </section>
