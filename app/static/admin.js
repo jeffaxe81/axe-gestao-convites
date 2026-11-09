@@ -437,12 +437,12 @@
     }
   }
 
-  async function downloadFamilyTemplate() {
+  async function downloadFamilyTemplate(format = 'csv') {
     const generation = sessionGeneration;
     const status = $('family-preview-status');
     status.textContent = '';
     try {
-      const response = await fetch('/api/admin/guest-list-template.csv', {
+      const response = await fetch('/api/admin/guest-list-template.' + format, {
         credentials: 'same-origin', cache: 'no-store'
       });
       if (!response.ok) {
@@ -456,14 +456,14 @@
       try {
         const link = document.createElement('a');
         link.href = href;
-        link.download = 'modelo-familias.csv';
+        link.download = 'modelo-familias.' + format;
         document.body.append(link);
         link.click();
         link.remove();
       } finally {
         URL.revokeObjectURL(href);
       }
-      status.textContent = 'Modelo baixado com dados fictícios. Preencha em Excel ou CSV.';
+      status.textContent = 'Modelo ' + format.toUpperCase() + ' baixado com dados fictícios. Substitua o exemplo antes de importar.';
     } catch (error) {
       if (generation !== sessionGeneration) return;
       if (error.status === 401 || error.status === 403) expireOrganizerSession();
@@ -961,7 +961,8 @@
   $('invite-search').addEventListener('input', renderInvitationRoster);
   $('invite-status-filter').addEventListener('change', renderInvitationRoster);
   $('invite-sent-filter').addEventListener('change', renderInvitationRoster);
-  $('family-template-btn').addEventListener('click', downloadFamilyTemplate);
+  $('family-template-btn').addEventListener('click', () => downloadFamilyTemplate('csv'));
+  $('family-template-xlsx-btn').addEventListener('click', () => downloadFamilyTemplate('xlsx'));
   $('family-preview-btn').addEventListener('click', validateFamilyFile);
   $('family-import-btn').addEventListener('click', importFamilyFile);
   $('download-invitation-links-btn').addEventListener('click', downloadInvitationLinks);
