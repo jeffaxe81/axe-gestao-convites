@@ -230,11 +230,11 @@ def invitations_import():
         "created": len(issued),
         "invitations": [{
             **{key: value for key, value in item.items() if key != "token"},
-            "url": origin + "/convite/" + item["token"],
+            "url": origin + "/#convite=" + item["token"],
             "whatsapp_url": "https://wa.me/" + item["whatsapp"] + "?text=" +
                 __import__("urllib.parse", fromlist=["quote"]).quote(
                     "Olá, " + item["contact_name"] + "! Você está convidado(a) para comemorar os 2 aninhos da Isadora: " +
-                    origin + "/convite/" + item["token"]
+                    origin + "/#convite=" + item["token"]
                 )
         } for item in issued]
     }), 201
