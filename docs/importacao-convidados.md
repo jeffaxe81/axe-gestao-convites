@@ -17,7 +17,7 @@ Uma linha representa uma família. Não inserir cabeçalhos extras, fórmulas ou
 ## Regras funcionais
 1. Importar em modo de pré-validação e mostrar erros por linha antes de gravar.
 2. Não criar registros na tabela de confirmações (`families`) durante a importação.
-3. Gerar token criptograficamente aleatório por família; persistir somente hash do token.
+3. Gerar token criptograficamente aleatório por família; persistir somente hash do token. O link usa fragmento da URL (/#convite=...) para não enviar o token nos logs HTTP.
 4. Link de convite deve abrir o formulário público com contexto da família.
 5. No envio do RSVP, associar a resposta ao convite e impedir reutilização indevida.
 6. Quantidade prevista é informativa; o RSVP permanece com a regra atual de até 100 participantes, sem bloquear acima/abaixo da previsão.
@@ -57,7 +57,7 @@ Uma linha representa uma família. Não inserir cabeçalhos extras, fórmulas ou
 20. Documentação, build Docker e homologação.
 
 ## Critérios de aceite
-- Importar CSV válido sem gerar RSVP.
+- Importar CSV válido sem gerar RSVP; os links puros são exibidos uma única vez e podem ser baixados imediatamente em CSV.
 - CSV inválido apresenta erros por linha sem importação parcial.
 - Cada família recebe link exclusivo e revogável.
 - RSVP pelo link fica associado à família correta.
