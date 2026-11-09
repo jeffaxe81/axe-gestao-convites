@@ -10,7 +10,7 @@ from app.domain import validate_rsvp
 from app.invitations import (
     InvitationImportError, InvitationStore, ParsedGuest, parse_guest_csv,
 )
-from app.models import Base, Family, Invitation
+from app.models import Base, EventSettings, Family, Invitation
 from app.rsvp import AccessDenied, RsvpStore
 
 
@@ -95,3 +95,27 @@ def test_mark_sent_and_revoke(stores):
     invitations.revoke(invitation_id)
     assert invitations.resolve_token(token) is None
     assert invitations.list_invitations()[0]["status"] == "REVOKED"
+
+
+
+def test_invitation_status_tracks_later_rsvp_edit(stores):
+    factory, invitations, rsvps = stores
+    issued = invitations.import_rows([
+        ParsedGuest("Família Oliveira", "Pedro Oliveira", "5548999993333", 2)
+    ])
+    token = issued[0]["token"]
+    accepted = validate_rsvp({
+        "contact_name": "Pedro Oliveira", "attending": True,
+        "participants": [{"name": "Pedro Oliveira", "kind": "OVER_12", "age_years": None}],
+    })
+    receipt = rsvps.create(accepted, "submission-key-edit-0001",
+                           datetime.now(timezone.utc), invitation_token=token)
+    with factory.begin() as session:
+        session.add(EventSettings(id=1, venue=None, edit_deadline_utc=None, buffet_limit=40))
+    declined = validate_rsvp({
+        "contact_name": "Pedro Oliveira", "attending": False, "participants": [],
+    })
+    rsvps.update(receipt.id, receipt.edit_token, 1, declined, datetime.now(timezone.utc))
+    assert invitations.list_invitations()[0]["status"] == "DECLINED"
+    with pytest.raises(InvitationImportError, match="já utilizado"):
+        invitations.revoke(issued[0]["id"])
