@@ -41,3 +41,21 @@ def test_interest_requires_explicit_click_and_does_not_confirm_attendance(client
         assert [event.event_kind for event in session.scalars(select(AuditEvent)).all()] == [
             "INVITATION_INTEREST"
         ]
+
+
+def test_opening_or_refreshing_invitation_does_not_register_interest(client, store):
+    """Passive page loads and invitation reads cannot masquerade as an opt-in."""
+    invitation_id, token = _invitation(client, store)
+    url = "/api/invitations/" + invitation_id
+    auth = {"Authorization": "Bearer " + token}
+    for _ in range(3):
+        assert client.get("/convite").status_code == 200
+        response = client.get(url, headers=auth)
+        assert response.status_code == 200
+        assert response.json["interested"] is False
+    overview = store.invitation_overview()
+    assert overview["counts"]["interested"] == 0
+    assert overview["families"][0]["interested"] is False
+    with store.session_factory() as session:
+        assert session.scalars(select(InvitationInterest)).all() == []
+        assert session.scalars(select(AuditEvent)).all() == []
