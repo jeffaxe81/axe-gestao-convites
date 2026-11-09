@@ -141,7 +141,7 @@ def test_public_invitation_origin_rejects_invalid_configuration(monkeypatch, raw
 @pytest.mark.parametrize("raw, expected", [
     ("https://isadora2anos.org", "https://isadora2anos.org"),
     ("https://isadora2anos.org/", "https://isadora2anos.org"),
-    ("http://localhost:5000/", "http://localhost:5000"),
+    ("http://127.0.0.1:8080/", "http://127.0.0.1:8080"),
 ])
 def test_public_invitation_origin_normalizes_valid_configuration(monkeypatch, raw, expected):
     monkeypatch.setenv("APP_PUBLIC_URL", raw)
