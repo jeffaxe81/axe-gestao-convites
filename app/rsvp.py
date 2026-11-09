@@ -167,8 +167,15 @@ class RsvpStore:
         """Stable HMAC capability; plaintext links are not stored in the database."""
         return hmac.new(self._secret, ('invitation:v1:' + invitation_id).encode(), sha256).hexdigest()
 
+    def _invitation_submission_key(self, invitation_id: str) -> str:
+        # Cannot be preempted via the public /api/rsvps idempotency namespace.
+        return hmac.new(self._secret,
+                        ('invitation-submission:v1:' + invitation_id).encode(),
+                        sha256).hexdigest()
+
     def _invitation(self, session: Session, invitation_id: str, token: str, lock=False) -> InvitedFamily:
-        if not isinstance(invitation_id, str) or not isinstance(token, str) or len(token) != 64:
+        if (not isinstance(invitation_id, str) or not isinstance(token, str)
+                or len(token) != 64 or any(c not in '0123456789abcdef' for c in token)):
             raise AccessDenied('Convite inválido.')
         expected = self.invitation_token(invitation_id)
         if not hmac.compare_digest(expected, token):
@@ -197,7 +204,7 @@ class RsvpStore:
                 if family is None:
                     raise RuntimeError('Resposta da família indisponível.')
                 result['receipt'] = asdict(self._receipt(
-                    family, self._edit_token('invitation:' + invited.id)))
+                    family, self._edit_token(self._invitation_submission_key(invited.id))))
             return result
 
     def invitation_roster(self) -> list[dict]:
@@ -229,7 +236,7 @@ class RsvpStore:
         recorded_at = _utc_naive(now_utc)
         # Deterministic idempotency: repeat of the same invite/response returns
         # the same editing capability, even after a lost HTTP reply.
-        submission_key = 'invitation:' + invitation_id
+        submission_key = self._invitation_submission_key(invitation_id)
         key_hash = self._key_hash(submission_key)
         edit_token = self._edit_token(submission_key)
         digest = sha256(_input_bytes(data)).hexdigest()
