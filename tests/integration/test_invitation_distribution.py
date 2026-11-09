@@ -20,11 +20,12 @@ def test_roster_requires_authentication_and_never_contains_links(client, monkeyp
     assert result.status_code == 200
     assert "no-store" in result.headers["Cache-Control"]
     assert result.json["counts"] == {
-        "total": 1, "pending": 1, "confirmed": 0, "declined": 0, "sent": 0, "not_sent": 1
+        "total": 1, "pending": 1, "confirmed": 0, "declined": 0, "sent": 0, "not_sent": 1, "interested": 0
     }
     family = result.json["families"][0]
-    assert set(family) == {"id", "key", "name", "phone", "status", "sent", "sent_at_utc"}
+    assert set(family) == {"id", "key", "name", "phone", "status", "sent", "sent_at_utc", "interested", "interested_at_utc"}
     assert family["sent"] is False and family["sent_at_utc"] is None
+    assert family["interested"] is False and family["interested_at_utc"] is None
     assert family["name"] == "Maria Silva"
     assert family["status"] == "PENDENTE"
     assert "token" not in result.get_data(as_text=True)
@@ -51,7 +52,7 @@ def test_roster_reflects_confirmation_and_refusal(client, store):
     assert response.status_code == 200
     updated = client.get("/api/admin/invitations").json
     assert updated["counts"] == {
-        "total": 1, "pending": 0, "confirmed": 0, "declined": 1, "sent": 0, "not_sent": 1}
+        "total": 1, "pending": 0, "confirmed": 0, "declined": 1, "sent": 0, "not_sent": 1, "interested": 0}
     assert updated["families"][0]["status"] == "RECUSADO"
 
 
