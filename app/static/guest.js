@@ -10,7 +10,7 @@
   let familyId = null;
   let editToken = null;
   let revision = null;
-  const invitationMatch = /^\\/convite\\/([A-Za-z0-9_-]{30,100})$/.exec(window.location.pathname);
+  const invitationMatch = /^#convite=([A-Za-z0-9_-]{30,100})$/.exec(window.location.hash);
   const invitationToken = invitationMatch ? invitationMatch[1] : null;
   const submissionStorageKey = 'isadora_submission_key:' + (invitationToken ? invitationToken.slice(-12) : 'public');
   let submissionKey = sessionStorage.getItem(submissionStorageKey);
