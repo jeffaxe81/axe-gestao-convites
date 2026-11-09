@@ -50,3 +50,21 @@ class AuditEvent(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     event_kind: Mapped[str] = mapped_column(String(32), nullable=False)
     occurred_at_utc: Mapped[object] = mapped_column(DateTime(timezone=False), nullable=False)
+
+
+class Invitation(Base):
+    """Pré-convite administrativo; não representa presença nem RSVP."""
+    __tablename__ = "invitations"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    family_name: Mapped[str] = mapped_column(String(160), nullable=False)
+    contact_name: Mapped[str] = mapped_column(String(160), nullable=False)
+    whatsapp: Mapped[str] = mapped_column(String(16), nullable=False)
+    expected_guests: Mapped[int] = mapped_column(Integer, nullable=False)
+    token_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
+    status: Mapped[str] = mapped_column(String(24), nullable=False, default="LINK_GENERATED")
+    created_at_utc: Mapped[object] = mapped_column(DateTime(timezone=False), nullable=False)
+    sent_at_utc: Mapped[object | None] = mapped_column(DateTime(timezone=False), nullable=True)
+    revoked_at_utc: Mapped[object | None] = mapped_column(DateTime(timezone=False), nullable=True)
+    linked_family_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("families.id", ondelete="SET NULL"), nullable=True, unique=True
+    )
