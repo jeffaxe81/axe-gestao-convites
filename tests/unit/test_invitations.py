@@ -34,6 +34,9 @@ def stores():
 def test_migration_v4_is_idempotent_and_preserves_existing_rsvp():
     engine = create_engine("sqlite+pysqlite:///:memory:")
     Base.metadata.create_all(engine)
+    # Simula uma tabela invitations legada, anterior ao índice V4.
+    next(index for index in Invitation.__table__.indexes
+         if index.name == "uq_invitations_whatsapp").drop(engine)
     factory = sessionmaker(engine, expire_on_commit=False)
     with factory.begin() as session:
         session.add(Family(
