@@ -2,6 +2,7 @@
 from dataclasses import asdict
 import os
 from datetime import datetime, timezone
+from urllib.parse import quote, urlsplit
 import hmac
 import secrets
 
@@ -216,23 +217,41 @@ def invitations_preview():
     })
 
 
+def public_invitation_origin() -> str:
+    """Validate the public origin before any invitation is persisted."""
+    raw = os.environ.get("APP_PUBLIC_URL", "").strip()
+    if not raw:
+        raise InputError("APP_PUBLIC_URL não configurada.")
+    parsed = urlsplit(raw)
+    if (
+        parsed.scheme not in ("http", "https")
+        or not parsed.netloc
+        or parsed.username is not None
+        or parsed.password is not None
+        or parsed.query
+        or parsed.fragment
+    ):
+        raise InputError("APP_PUBLIC_URL deve ser uma URL HTTP(S) válida, sem credenciais, consulta ou fragmento.")
+    return raw.rstrip("/")
+
+
 @organizer.post("/api/admin/invitations/import")
 def invitations_import():
     upload = request.files.get("file")
     if upload is None:
         raise InputError("Selecione um arquivo CSV.")
+
+    # Validate all configuration before opening the write transaction.
+    origin = public_invitation_origin()
     rows = parse_guest_csv(upload.read(1_000_001))
     issued = invitation_store().import_rows(rows)
-    origin = os.environ.get("APP_PUBLIC_URL", "").rstrip("/")
-    if not origin:
-        raise RuntimeError("APP_PUBLIC_URL não configurada.")
     return jsonify({
         "created": len(issued),
         "invitations": [{
             **{key: value for key, value in item.items() if key != "token"},
             "url": origin + "/#convite=" + item["token"],
             "whatsapp_url": "https://wa.me/" + item["whatsapp"] + "?text=" +
-                __import__("urllib.parse", fromlist=["quote"]).quote(
+                quote(
                     "Olá, " + item["contact_name"] + "! Você está convidado(a) para comemorar os 2 aninhos da Isadora: " +
                     origin + "/#convite=" + item["token"]
                 )
