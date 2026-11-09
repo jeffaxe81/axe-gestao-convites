@@ -201,6 +201,7 @@
     drawDashboard(data);
     $('venue-input').value = settings.venue || '';
     $('deadline-input').value = eventTime(settings.edit_deadline_utc);
+    await loadInvitationList();
   }
   function stopRefreshTimer() {
     if (refreshTimer !== null) {
@@ -412,6 +413,135 @@
     }
   }
 
+  let pendingInvitationFile = null;
+  function invitationStatusLabel(status) {
+    return ({
+      LINK_GENERATED: 'Link gerado', SENT: 'Enviado',
+      CONFIRMED: 'Confirmado', DECLINED: 'Recusado', REVOKED: 'Revogado'
+    })[status] || 'Desconhecido';
+  }
+  async function previewInvitations() {
+    const file = $('invitation-csv').files[0];
+    if (!file) return $('invitation-import-status').textContent = 'Selecione um CSV.';
+    if (file.size > 1000000) return $('invitation-import-status').textContent = 'O arquivo deve ter até 1 MB.';
+    const button = $('preview-invitations-btn');
+    button.disabled = true;
+    $('invitation-import-status').textContent = 'Validando arquivo...';
+    clearList('invitation-preview');
+    $('invitation-created').replaceChildren();
+    $('import-invitations-btn').hidden = true;
+    try {
+      const body = new FormData();
+      body.append('file', file);
+      const result = await api('/api/admin/invitations/preview', {
+        method: 'POST', headers: {'X-CSRF-Token': await ensureCsrf()}, body
+      });
+      pendingInvitationFile = file;
+      $('invitation-import-status').textContent = result.count + ' famílias validadas. Confira a amostra antes de importar.';
+      result.preview.forEach((entry) => {
+        const li = document.createElement('li');
+        li.textContent = entry.family_name + ' — ' + entry.contact_name +
+          ' — WhatsApp ' + entry.whatsapp + ' — ' + entry.expected_guests + ' convidados previstos';
+        $('invitation-preview').append(li);
+      });
+      $('import-invitations-btn').hidden = false;
+    } catch (error) {
+      pendingInvitationFile = null;
+      $('invitation-import-status').textContent = error.message;
+    } finally { button.disabled = false; }
+  }
+  async function importInvitations() {
+    if (!pendingInvitationFile) return;
+    const button = $('import-invitations-btn');
+    button.disabled = true;
+    $('invitation-import-status').textContent = 'Importando famílias e gerando links...';
+    try {
+      const body = new FormData();
+      body.append('file', pendingInvitationFile);
+      const result = await api('/api/admin/invitations/import', {
+        method: 'POST', headers: {'X-CSRF-Token': await ensureCsrf()}, body
+      });
+      $('invitation-import-status').textContent = result.created + ' convites criados. Os links são exibidos agora; guarde/exporte antes de fechar esta tela.';
+      const list = document.createElement('ul');
+      list.className = 'data-list';
+      result.invitations.forEach((entry) => {
+        const li = document.createElement('li');
+        const title = document.createElement('strong');
+        title.textContent = entry.family_name + ' — ' + entry.contact_name;
+        const link = document.createElement('p');
+        link.textContent = entry.url;
+        const whatsapp = document.createElement('a');
+        whatsapp.href = entry.whatsapp_url;
+        whatsapp.target = '_blank';
+        whatsapp.rel = 'noopener noreferrer';
+        whatsapp.textContent = 'Abrir WhatsApp com mensagem pronta';
+        const sent = document.createElement('button');
+        sent.type = 'button';
+        sent.className = 'secondary';
+        sent.textContent = 'Marcar como enviado';
+        sent.addEventListener('click', async () => {
+          sent.disabled = true;
+          try {
+            await api('/api/admin/invitations/' + encodeURIComponent(entry.id) + '/sent', {
+              method: 'POST', headers: {'X-CSRF-Token': await ensureCsrf()}
+            });
+            sent.textContent = 'Enviado';
+            await loadInvitationList();
+          } catch (error) { sent.disabled = false; $('invitation-import-status').textContent = error.message; }
+        });
+        li.append(title, link, whatsapp, document.createTextNode(' '), sent);
+        list.append(li);
+      });
+      $('invitation-created').replaceChildren(list);
+      $('invitation-csv').value = '';
+      pendingInvitationFile = null;
+      $('import-invitations-btn').hidden = true;
+      clearList('invitation-preview');
+      await loadInvitationList();
+    } catch (error) {
+      $('invitation-import-status').textContent = error.message;
+    } finally { button.disabled = false; }
+  }
+  async function loadInvitationList() {
+    if ($('dashboard-panel').hidden) return;
+    try {
+      const result = await api('/api/admin/invitations');
+      clearList('invitation-list');
+      result.invitations.forEach((entry) => {
+        const li = document.createElement('li');
+        const title = document.createElement('strong');
+        title.textContent = entry.family_name + ' — ' + entry.contact_name;
+        const detail = document.createElement('p');
+        detail.className = 'muted';
+        detail.textContent = entry.whatsapp + ' · ' + entry.expected_guests +
+          ' convidados previstos · ' + invitationStatusLabel(entry.status);
+        li.append(title, detail);
+        if (!['CONFIRMED', 'DECLINED', 'REVOKED'].includes(entry.status)) {
+          const revoke = document.createElement('button');
+          revoke.type = 'button';
+          revoke.className = 'secondary';
+          revoke.textContent = 'Revogar link';
+          revoke.addEventListener('click', async () => {
+            if (!window.confirm('Revogar o link desta família?')) return;
+            revoke.disabled = true;
+            try {
+              await api('/api/admin/invitations/' + encodeURIComponent(entry.id), {
+                method: 'DELETE', headers: {'X-CSRF-Token': await ensureCsrf()}
+              });
+              await loadInvitationList();
+            } catch (error) { revoke.disabled = false; $('invitation-import-status').textContent = error.message; }
+          });
+          li.append(revoke);
+        }
+        $('invitation-list').append(li);
+      });
+      if (!result.invitations.length) putEmpty('invitation-list');
+    } catch (error) {
+      if (error.status === 401 || error.status === 403) expireOrganizerSession();
+      else $('invitation-import-status').textContent = error.message;
+    }
+  }
+
   async function loadActivity() {
     if ($('dashboard-panel').hidden) return;
     const generation = sessionGeneration;
@@ -482,6 +612,9 @@
   $('export-csv-btn').addEventListener('click', exportCsv);
   $('export-planning-btn').addEventListener('click', exportPlanning);
   $('load-activity-btn').addEventListener('click', loadActivity);
+  $('preview-invitations-btn').addEventListener('click', previewInvitations);
+  $('import-invitations-btn').addEventListener('click', importInvitations);
+  $('refresh-invitations-btn').addEventListener('click', loadInvitationList);
   $('print-list-btn').addEventListener('click', printGuestList);
   $('refresh-dashboard-btn').addEventListener('click', refreshDashboard);
   $('refresh-interval').addEventListener('change', () => {
