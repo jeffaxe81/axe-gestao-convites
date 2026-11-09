@@ -456,6 +456,28 @@
       $('invitation-import-status').textContent = error.message;
     } finally { button.disabled = false; }
   }
+  function downloadInvitationLinks(entries) {
+    const safe = (value) => {
+      let text = String(value == null ? '' : value);
+      if (/^[=+@\\-\\t\\r]/.test(text)) text = "'" + text;
+      return '"' + text.replace(/"/g, '""') + '"';
+    };
+    const rows = [
+      ['Nome da família', 'Responsável', 'WhatsApp', 'Convidados previstos', 'Link individual', 'WhatsApp mensagem'],
+      ...entries.map((entry) => [entry.family_name, entry.contact_name, entry.whatsapp,
+        entry.expected_guests, entry.url, entry.whatsapp_url])
+    ];
+    const csv = '\\uFEFF' + rows.map((row) => row.map(safe).join(';')).join('\\r\\n');
+    const href = URL.createObjectURL(new Blob([csv], {type: 'text/csv;charset=utf-8'}));
+    try {
+      const anchor = document.createElement('a');
+      anchor.href = href;
+      anchor.download = 'isadora-links-convites.csv';
+      document.body.append(anchor);
+      anchor.click();
+      anchor.remove();
+    } finally { URL.revokeObjectURL(href); }
+  }
   async function importInvitations() {
     if (!pendingInvitationFile) return;
     const button = $('import-invitations-btn');
@@ -498,7 +520,12 @@
         li.append(title, link, whatsapp, document.createTextNode(' '), sent);
         list.append(li);
       });
-      $('invitation-created').replaceChildren(list);
+      const download = document.createElement('button');
+      download.type = 'button';
+      download.className = 'secondary';
+      download.textContent = 'Baixar CSV com links individuais';
+      download.addEventListener('click', () => downloadInvitationLinks(result.invitations));
+      $('invitation-created').replaceChildren(download, list);
       $('invitation-csv').value = '';
       pendingInvitationFile = null;
       $('import-invitations-btn').hidden = true;
