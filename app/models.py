@@ -50,3 +50,17 @@ class AuditEvent(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     event_kind: Mapped[str] = mapped_column(String(32), nullable=False)
     occurred_at_utc: Mapped[object] = mapped_column(DateTime(timezone=False), nullable=False)
+
+
+class InvitedFamily(Base):
+    """Pre-registered family, independent of confirmed RSVP records."""
+    __tablename__ = 'invited_families'
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    external_key: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    contact_name: Mapped[str] = mapped_column(String(160), nullable=False)
+    phone: Mapped[str] = mapped_column(String(16), nullable=False, default='')
+    adults: Mapped[int] = mapped_column(Integer, nullable=False)
+    children_0_5: Mapped[int] = mapped_column(Integer, nullable=False)
+    children_6_12: Mapped[int] = mapped_column(Integer, nullable=False)
+    # Imported families are invitations only, never counted as attending.
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default='PENDING')
