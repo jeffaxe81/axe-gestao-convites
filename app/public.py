@@ -49,7 +49,7 @@ def _require_token():
 
 @public.before_request
 def restrict_guest_requests():
-    if request.path.startswith("/api/rsvps/") or request.path == "/api/rsvps":
+    if request.path.startswith("/api/rsvps/") or request.path == "/api/rsvps" or request.path.startswith("/api/invitations/"):
         limiter = current_app.extensions["isadora_rate_limiter"]
         if not limiter.allow(request.remote_addr or "unknown"):
             return error_response(429, "TOO_MANY_REQUESTS", "Tente novamente mais tarde.")
@@ -148,7 +148,9 @@ def create_rsvp():
     ).hexdigest()
     with store.session_factory() as session:
         existing = store._existing(session, key_hash, digest, store._edit_token(key))
-    receipt = store.create(payload, key, datetime.now(timezone.utc))
+    invitation_token = request.headers.get("X-Invitation-Token") or None
+    receipt = store.create(payload, key, datetime.now(timezone.utc),
+                           invitation_token=invitation_token)
     return jsonify(_public_receipt(receipt)), (200 if existing else 201)
 
 
@@ -193,4 +195,28 @@ def guest_page():
 @public.get("/editar")
 def guest_edit_page():
     # The secret is passed as a URL fragment, never included in HTTP path or logs.
+    return render_template("index.html")
+
+
+@public.get("/api/invitations/<token>")
+def invitation_details(token):
+    from app.invitations import InvitationStore
+    base_store = _store()
+    service = current_app.extensions.get("isadora_invitation_store")
+    if service is None:
+        import os
+        service = InvitationStore(base_store.session_factory, os.environ.get("TOKEN_SECRET", ""))
+        current_app.extensions["isadora_invitation_store"] = service
+    invitation = service.resolve_token(token)
+    if invitation is None or invitation["status"] in ("CONFIRMED", "DECLINED", "REVOKED"):
+        return error_response(404, "INVITATION_NOT_FOUND", "Este convite não está mais disponível.")
+    return jsonify({
+        "family_name": invitation["family_name"],
+        "contact_name": invitation["contact_name"],
+        "expected_guests": invitation["expected_guests"]
+    })
+
+
+@public.get("/convite/<token>")
+def individual_invitation_page(token):
     return render_template("index.html")
