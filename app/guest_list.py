@@ -17,7 +17,7 @@ def template_csv():
     return "\ufeff" + output.getvalue()
 
 
-def preview_csv(contents: bytes):
+def preview_csv(contents: bytes, include_records=False):
     """Validate only. Never create guests, RSVPs, links or send invitations."""
     if len(contents) > 60 * 1024:
         raise ValueError("Planilha excede o limite de 60 KB.")
@@ -28,14 +28,14 @@ def preview_csv(contents: bytes):
     if "\x00" in source:
         raise ValueError("Arquivo contém caracteres inválidos.")
     reader = csv.reader(io.StringIO(source, newline=""), delimiter=";", strict=True)
-    return preview_rows(reader)
+    return preview_rows(reader, include_records=include_records)
 
 
-def preview_xlsx(contents: bytes):
-    return preview_rows(xlsx_rows(contents))
+def preview_xlsx(contents: bytes, include_records=False):
+    return preview_rows(xlsx_rows(contents), include_records=include_records)
 
 
-def preview_rows(reader):
+def preview_rows(reader, include_records=False):
     iterator = iter(reader)
     try:
         header = next(iterator)
@@ -43,7 +43,7 @@ def preview_rows(reader):
         raise ValueError("Planilha vazia.") from exc
     if tuple(header) != HEADERS:
         raise ValueError("Cabeçalho inválido. Use as seis colunas do modelo.")
-    rows, seen, errors = [], set(), []
+    rows, records, seen, errors = [], [], set(), []
     try:
         for line, cells in enumerate(iterator, start=2):
             if line > MAX_ROWS + 1:
@@ -74,11 +74,13 @@ def preview_rows(reader):
                 errors.append(f"Linha {line}: informe ao menos uma pessoa.")
             # Only quantitative totals leave this function: no names or phone in UI preview.
             rows.append(counts)
+            records.append({'key': key.lower(), 'name': name, 'phone': phone,
+                            'adults': counts[0], 'young': counts[1], 'older': counts[2]})
     except csv.Error as exc:
         raise ValueError("CSV malformado, confira as aspas e os separadores.") from exc
     if not rows:
         errors.append("Informe ao menos uma família.")
-    return {
+    report = {
         "valid": not errors,
         "families": len(rows),
         "adults": sum(row[0] for row in rows),
@@ -89,3 +91,6 @@ def preview_rows(reader):
         "saved": False,
         "links_created": 0,
     }
+    if include_records and not errors:
+        return report, records
+    return report
