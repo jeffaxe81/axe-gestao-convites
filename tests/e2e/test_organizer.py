@@ -370,7 +370,13 @@ def test_delayed_initial_dashboard_response_never_reopens_after_logout(
       };
     })();""".replace("ENDPOINT", json.dumps(held_endpoint)))
     page.reload()
-    page.wait_for_function("typeof window.releasePrivateResponse === 'function'")
+    # Poll through the Playwright protocol rather than eval(), forbidden by CSP.
+    import time
+    deadline = time.monotonic() + 10
+    while not page.evaluate("() => typeof window.releasePrivateResponse === 'function'"):
+        if time.monotonic() >= deadline:
+            raise AssertionError("Resposta privada atrasada não interceptada.")
+        page.wait_for_timeout(100)
     # During a slow dashboard boot, trigger the real exit handler.
     page.evaluate("document.getElementById('logout-btn').click()")
     expect(page.locator("#login-panel")).to_be_visible()
