@@ -230,6 +230,12 @@
     $('dashboard-panel').hidden = true;
     $('login-panel').hidden = false;
     ['confirmed-list', 'declined-list', 'souvenir-list'].forEach(clearList);
+    ['invitation-preview', 'invitation-list'].forEach(clearList);
+    $('invitation-created').replaceChildren();
+    $('invitation-import-status').textContent = '';
+    $('invitation-csv').value = '';
+    $('import-invitations-btn').hidden = true;
+    pendingInvitationFile = null;
     $('guest-search').value = '';
     $('search-summary').textContent = '';
     $('clear-search').hidden = true;
