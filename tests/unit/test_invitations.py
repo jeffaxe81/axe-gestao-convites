@@ -3,7 +3,7 @@ import hashlib
 from datetime import datetime, timezone
 
 import pytest
-from sqlalchemy import create_engine, select
+from sqlalchemy import create_engine, inspect, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 
@@ -12,6 +12,7 @@ from app.invitations import (
     InvitationImportError, InvitationStore, ParsedGuest, parse_guest_csv,
 )
 from app.models import Base, EventSettings, Family, Invitation
+from app.db import migrate
 from app.rsvp import AccessDenied, RsvpStore
 from app.organizer import public_invitation_origin
 from app.domain import InputError
@@ -26,6 +27,28 @@ def stores():
     Base.metadata.create_all(engine)
     factory = sessionmaker(engine, expire_on_commit=False)
     yield factory, InvitationStore(factory, SECRET), RsvpStore(factory, SECRET)
+    engine.dispose()
+
+
+
+def test_migration_v4_is_idempotent_and_preserves_existing_rsvp():
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    factory = sessionmaker(engine, expire_on_commit=False)
+    with factory.begin() as session:
+        session.add(Family(
+            id="00000000-0000-0000-0000-000000000001",
+            contact_name="Família já confirmada", attending=True, revision=1,
+            submission_key_hash="a" * 64, payload_hash="b" * 64,
+            edit_token_hash="c" * 64
+        ))
+    migrate(engine)
+    migrate(engine)
+    with factory() as session:
+        assert session.get(Family, "00000000-0000-0000-0000-000000000001") is not None
+        assert session.get(EventSettings, 1) is not None
+    indexes = inspect(engine).get_indexes("invitations")
+    assert any(index["name"] == "uq_invitations_whatsapp" and index["unique"] for index in indexes)
     engine.dispose()
 
 
