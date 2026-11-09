@@ -82,6 +82,28 @@
       <section class="admin-card"><h3>Crianças para lembrancinhas</h3><p class="muted">Lista nominal das crianças de zero a doze anos.</p>
         <ul id="souvenir-list" class="data-list"></ul></section>
 
+      <section class="admin-card" id="invitation-management" aria-labelledby="invitation-title">
+        <h3 id="invitation-title">Lista de convidados e convites individuais</h3>
+        <p class="muted">Importe um CSV UTF-8. A importação cria pré-convites, não confirma presença nem envia mensagens automaticamente.</p>
+        <p class="muted">Colunas: Nome da família, Responsável, WhatsApp, Convidados.</p>
+        <form id="invitation-import-form">
+          <div class="field">
+            <label for="invitation-csv">Planilha CSV</label>
+            <input id="invitation-csv" type="file" accept=".csv,text/csv" required>
+          </div>
+          <div class="actions">
+            <button type="button" id="preview-invitations-btn" class="secondary">Validar planilha</button>
+            <button type="button" id="import-invitations-btn" class="primary" hidden>Importar e gerar links</button>
+          </div>
+        </form>
+        <p id="invitation-import-status" role="status" aria-live="polite"></p>
+        <ul id="invitation-preview" class="data-list"></ul>
+        <div id="invitation-created" aria-live="polite"></div>
+        <h4>Famílias cadastradas</h4>
+        <button type="button" id="refresh-invitations-btn" class="secondary">Atualizar lista</button>
+        <ul id="invitation-list" class="data-list"></ul>
+      </section>
+
       <section class="admin-card" id="activity-card" aria-labelledby="activity-title">
         <h3 id="activity-title">Histórico de movimentações</h3>
         <p class="muted">Até 50 operações recentes. O histórico não guarda nomes nem links de edição.</p>
