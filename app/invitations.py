@@ -101,7 +101,7 @@ class InvitationStore:
             raise ValueError("Data de criação precisa conter fuso horário.")
         issued: list[dict] = []
         try:
-                with self.session_factory.begin() as session:
+            with self.session_factory.begin() as session:
                 existing_phones = set(session.scalars(
                     select(Invitation.whatsapp)
                 ).all())
@@ -123,12 +123,13 @@ class InvitationStore:
                                    "expected_guests": item.expected_guests, "token": token})
                 session.add(AuditEvent(event_kind="INVITATIONS_IMPORTED",
                                        occurred_at_utc=created.astimezone(timezone.utc).replace(tzinfo=None)))
-    
         except IntegrityError:
             # A restrição UNIQUE resolve a corrida entre importações concorrentes.
             with self.session_factory() as session:
                 existing = set(session.scalars(
-                    select(Invitation.whatsapp).where(Invitation.whatsapp.in_([item.whatsapp for item in rows]))
+                    select(Invitation.whatsapp).where(
+                        Invitation.whatsapp.in_([item.whatsapp for item in rows])
+                    )
                 ).all())
             if existing:
                 raise InvitationImportError("Há WhatsApp repetido nesta planilha ou já cadastrado.") from None
