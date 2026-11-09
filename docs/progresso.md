@@ -87,3 +87,12 @@ Para não inventar um percentual, o avanço técnico deve ser apurado com base e
 ### Fora do cálculo técnico (homologação final)
 
 DNS/HTTPS real do `isadora2anos.org`, Cloudflare Tunnel no `policorp`, restauração no host definitivo, Android/iPhone físicos, revisão independente e aceite do organizador. Todos permanecem obrigatórios **antes de divulgar convites reais ou declarar 100% operacional**, mas não bloqueiam a medição do estágio de implementação e testes automatizados.
+
+
+## Fechamento dos dez gates técnicos — verificação no GitHub em 09/11/2026
+
+**Prontidão técnica para homologação: 100% (10/10 gates comprovados no SHA `bb3e91e` da `main`).** A [CI #42715610262](https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/42715610262) aprovou 315 testes e todas as etapas de sintaxe, MySQL, Playwright, Docker Compose e backup/restauração em ambiente descartável. As PRs #12, #13 e #22 foram integradas à `main`. O [quadro auditável](quadro-10-frentes.md) detalha cada gate e sua evidência.
+
+**Liberação operacional continua em 86% (6/7 etapas).** O domínio público, o Cloudflare Tunnel no servidor definitivo, Android/iPhone físicos, backup externo restaurado no host final, revisão de segurança e aceite não foram demonstrados. O índice de 100% técnico não implica que a implantação esteja disponível ao público.
+
+Incrementos posteriores ao commit auditado, como o relatório de acompanhamento da PR #25, precisam de CI própria antes de serem contabilizados como validados.
