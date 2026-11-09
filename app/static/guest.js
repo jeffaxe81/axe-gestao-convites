@@ -182,6 +182,7 @@
   }
   function renderSuccess(result) {
     confirmation = result;
+    if (invitationToken) window.history.replaceState(null, '', window.location.pathname);
     form.hidden = true;
     $('review').hidden = true;
     $('success').hidden = false;
@@ -286,6 +287,7 @@
     toggleAttendance();
     updateConnectionStatus();
     $('loading').hidden = !(editing || invitationToken);
+    if (invitationToken) form.hidden = true;
     try {
       const event = await requestJson('/api/event');
       $('event-venue').textContent = event.venue;
@@ -300,6 +302,7 @@
         const note = item('p', 'Este convite foi preparado para aproximadamente ' +
           invitation.expected_guests + ' pessoas. Você poderá informar a quantidade real na confirmação.', 'muted');
         $('form-title').insertAdjacentElement('afterend', note);
+        form.hidden = false;
       }
       if (editing) {
         const match = /^#([0-9a-f-]{36})\.([0-9a-f]{64})$/i.exec(window.location.hash);
