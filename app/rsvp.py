@@ -229,6 +229,36 @@ class RsvpStore:
                                'token': self.invitation_token(invited.id)})
             return output
 
+    def invitation_overview(self) -> dict:
+        """Private roster without any invitation capability/token."""
+        rows = self.invitation_roster()
+        families = [
+            {key: row[key] for key in ('id', 'key', 'name', 'phone', 'status')}
+            for row in rows
+        ]
+        return {
+            'families': families,
+            'counts': {
+                'total': len(families),
+                'pending': sum(row['status'] == 'PENDENTE' for row in families),
+                'confirmed': sum(row['status'] == 'CONFIRMADO' for row in families),
+                'declined': sum(row['status'] == 'RECUSADO' for row in families),
+            },
+        }
+
+    def invitation_share_link(self, invitation_id: str, public_origin: str) -> str:
+        """Return one link to an authenticated organizer; never list all tokens."""
+        try:
+            parsed_id = str(uuid.UUID(invitation_id))
+        except (TypeError, ValueError, AttributeError) as exc:
+            raise InputError('Identificador da família inválido.') from exc
+        with self.session_factory() as session:
+            invited = session.get(InvitedFamily, parsed_id)
+            if invited is None:
+                raise InputError('Família não encontrada.')
+        return (public_origin.rstrip('/') + '/convite#' + parsed_id + '.' +
+                self.invitation_token(parsed_id))
+
     def respond_to_invitation(self, invitation_id: str, token: str,
                               data: RsvpInput, now_utc: datetime) -> RsvpReceipt:
         if not isinstance(data, RsvpInput):
