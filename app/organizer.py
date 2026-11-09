@@ -2,7 +2,7 @@
 from dataclasses import asdict
 import os
 from datetime import datetime, timezone
-from urllib.parse import quote, urlsplit
+from urllib.parse import quote
 import hmac
 import secrets
 
@@ -12,6 +12,7 @@ from werkzeug.exceptions import BadRequest
 from werkzeug.security import check_password_hash
 
 from app.domain import InputError
+from app.origin import configured_origin
 from app.reports import export_attendance_csv, export_planning_csv
 from app.invitations import InvitationImportError, InvitationStore, parse_guest_csv
 
@@ -222,16 +223,10 @@ def public_invitation_origin() -> str:
     raw = os.environ.get("APP_PUBLIC_URL", "").strip()
     if not raw:
         raise InputError("APP_PUBLIC_URL não configurada.")
-    parsed = urlsplit(raw)
-    if (
-        parsed.scheme not in ("http", "https")
-        or not parsed.netloc
-        or parsed.username is not None
-        or parsed.password is not None
-        or parsed.query
-        or parsed.fragment
-    ):
-        raise InputError("APP_PUBLIC_URL deve ser uma URL HTTP(S) válida, sem credenciais, consulta ou fragmento.")
+    try:
+        configured_origin(raw)
+    except ValueError as exc:
+        raise InputError(str(exc)) from exc
     return raw.rstrip("/")
 
 
