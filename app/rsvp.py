@@ -14,7 +14,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.domain import Counts, InputError, ParticipantInput, RsvpInput, can_edit, count_participants
-from app.models import AuditEvent, EventSettings, Family, Participant, InvitedFamily
+from app.models import AuditEvent, EventSettings, Family, Participant, InvitedFamily, InvitationResponse
 
 
 class IdempotencyConflict(Exception):
@@ -163,6 +163,92 @@ class RsvpStore:
                     'children_0_5': sum(row.children_0_5 for row in records),
                     'children_6_12': sum(row.children_6_12 for row in records)}
 
+    def invitation_token(self, invitation_id: str) -> str:
+        """Stable HMAC capability; plaintext links are not stored in the database."""
+        return hmac.new(self._secret, ('invitation:v1:' + invitation_id).encode(), sha256).hexdigest()
+
+    def _invitation(self, session: Session, invitation_id: str, token: str, lock=False) -> InvitedFamily:
+        if not isinstance(invitation_id, str) or not isinstance(token, str) or len(token) != 64:
+            raise AccessDenied('Convite inválido.')
+        expected = self.invitation_token(invitation_id)
+        if not hmac.compare_digest(expected, token):
+            raise AccessDenied('Convite inválido.')
+        query = select(InvitedFamily).where(InvitedFamily.id == invitation_id)
+        if lock:
+            query = query.with_for_update()
+        invited = session.scalar(query)
+        if invited is None:
+            raise AccessDenied('Convite inválido.')
+        return invited
+
+    def get_invitation(self, invitation_id: str, token: str) -> dict:
+        with self.session_factory() as session:
+            invited = self._invitation(session, invitation_id, token)
+            mapping = session.get(InvitationResponse, invited.id)
+            return {
+                'contact_name': invited.contact_name,
+                'adults': invited.adults,
+                'children_0_5': invited.children_0_5,
+                'children_6_12': invited.children_6_12,
+                'responded': mapping is not None,
+            }
+
+    def invitation_roster(self) -> list[dict]:
+        """Private organizer export source only; bearer tokens never enter public lists."""
+        with self.session_factory() as session:
+            invited_rows = session.scalars(select(InvitedFamily).order_by(InvitedFamily.external_key)).all()
+            response_rows = {x.invited_family_id: x.family_id
+                             for x in session.scalars(select(InvitationResponse)).all()}
+            response_families = {x.id: x.attending for x in
+                session.scalars(select(Family).where(Family.id.in_(response_rows.values()))).all()
+            } if response_rows else {}
+            output = []
+            for invited in invited_rows:
+                family_id = response_rows.get(invited.id)
+                status = ('PENDENTE' if not family_id else
+                          'CONFIRMADO' if response_families.get(family_id) else 'RECUSADO')
+                output.append({'key': invited.external_key,
+                               'name': invited.contact_name,
+                               'phone': invited.phone,
+                               'status': status,
+                               'id': invited.id,
+                               'token': self.invitation_token(invited.id)})
+            return output
+
+    def respond_to_invitation(self, invitation_id: str, token: str,
+                              data: RsvpInput, now_utc: datetime) -> RsvpReceipt:
+        if not isinstance(data, RsvpInput):
+            raise InputError('Dados de confirmação inválidos.')
+        recorded_at = _utc_naive(now_utc)
+        # Deterministic idempotency: repeat of the same invite/response returns
+        # the same editing capability, even after a lost HTTP reply.
+        submission_key = 'invitation:' + invitation_id
+        key_hash = self._key_hash(submission_key)
+        edit_token = self._edit_token(submission_key)
+        digest = sha256(_input_bytes(data)).hexdigest()
+        with self.session_factory.begin() as session:
+            invited = self._invitation(session, invitation_id, token, lock=True)
+            existing = session.get(InvitationResponse, invited.id)
+            if existing:
+                family = session.get(Family, existing.family_id)
+                if family is None or family.revision != 1 or not hmac.compare_digest(family.payload_hash, digest):
+                    raise RevisionConflict('Esta família já respondeu. Use o link de edição.')
+                return self._receipt(family, edit_token)
+            family = Family(id=str(uuid.uuid4()), contact_name=data.contact_name,
+                            attending=data.attending, revision=1,
+                            submission_key_hash=key_hash, payload_hash=digest,
+                            edit_token_hash=sha256(edit_token.encode()).hexdigest())
+            session.add(family)
+            session.flush()
+            family.participants = [Participant(position=pos, name=p.name,
+                kind=p.kind, age_years=p.age_years) for pos, p in enumerate(data.participants)]
+            session.add(InvitationResponse(invited_family_id=invited.id, family_id=family.id))
+            invited.status = 'CONFIRMED' if data.attending else 'DECLINED'
+            session.add(AuditEvent(event_kind='RSVP_CREATED' if data.attending else 'RSVP_DECLINED',
+                                   occurred_at_utc=recorded_at))
+            session.flush()
+            return self._receipt(family, edit_token)
+
     def _authorized(self, session: Session, family_id: str, edit_token: str, lock: bool = False) -> Family:
         if not isinstance(edit_token, str) or len(edit_token) != 64:
             raise AccessDenied('Acesso não autorizado.')
@@ -202,6 +288,12 @@ class RsvpStore:
                 raise RevisionConflict('Os dados foram alterados em outra aba.')
             family.contact_name = data.contact_name
             family.attending = data.attending
+            linked_invitation = session.scalar(
+                select(InvitationResponse).where(InvitationResponse.family_id == family.id))
+            if linked_invitation:
+                invited = session.get(InvitedFamily, linked_invitation.invited_family_id)
+                if invited:
+                    invited.status = 'CONFIRMED' if data.attending else 'DECLINED'
             family.revision += 1
             family.participants.clear()
             session.flush()
