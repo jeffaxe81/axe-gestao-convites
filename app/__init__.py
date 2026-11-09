@@ -18,7 +18,7 @@ from app.security import RequestRateLimiter
 def create_app(test_config=None):
     app = Flask(__name__)
     app.config.update(
-        MAX_CONTENT_LENGTH=64 * 1024,
+        MAX_CONTENT_LENGTH=1_100_000,
         JSON_AS_ASCII=False,
         API_RATE_LIMIT=30,  # requests / minute / IP, per worker (not a global DDoS solution)
         AUTH_RATE_LIMIT=5,
