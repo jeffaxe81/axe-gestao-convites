@@ -61,6 +61,22 @@
       </div>
       <p id="buffet-alert" class="notice" hidden></p>
 
+      <section class="admin-card" aria-labelledby="family-import-title">
+        <h3 id="family-import-title">Lista de famílias — preparar planilha</h3>
+        <p class="muted">Baixe o modelo CSV com uma linha fictícia de exemplo. Preencha uma linha por família, com identificador único, responsável, telefone opcional e quantidade de adultos e crianças por faixa etária.</p>
+        <div class="admin-actions">
+          <button type="button" class="secondary" id="family-template-btn">Baixar modelo com exemplo</button>
+          <div class="field">
+            <label for="family-file">Conferir planilha CSV (UTF-8, até 60 KB)</label>
+            <input type="file" id="family-file" accept=".csv,text/csv">
+          </div>
+          <button type="button" class="secondary" id="family-preview-btn">Validar planilha</button>
+        </div>
+        <p class="muted">Esta etapa apenas confere os dados. Não importa cadastros, não cria links e não envia convites.</p>
+        <p id="family-preview-status" role="status" aria-live="polite"></p>
+        <ul id="family-preview-errors" class="data-list"></ul>
+      </section>
+
       <section class="admin-card guest-search-card" aria-labelledby="search-title">
         <h3 id="search-title">Localizar convidados</h3>
         <div class="guest-search-row">
