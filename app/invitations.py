@@ -101,7 +101,7 @@ class InvitationStore:
         issued: list[dict] = []
         with self.session_factory.begin() as session:
             existing_phones = set(session.scalars(
-                select(Invitation.whatsapp).where(Invitation.revoked_at_utc.is_(None))
+                select(Invitation.whatsapp)
             ).all())
             incoming = [item.whatsapp for item in rows]
             if len(set(incoming)) != len(incoming) or any(phone in existing_phones for phone in incoming):
