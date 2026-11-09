@@ -638,7 +638,8 @@
         SETTINGS_CHANGED: 'Configuração da festa alterada',
         INVITATIONS_IMPORTED: 'Lista de convidados importada',
         INVITATION_MARKED_SENT: 'Convite marcado como enviado',
-        INVITATION_REVOKED: 'Link de convite revogado'
+        INVITATION_REVOKED: 'Link de convite revogado',
+        INVITATION_REGENERATED: 'Link de convite regenerado'
       };
       const entries = [];
       for (const entry of response.events) {
