@@ -14,7 +14,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.domain import Counts, InputError, ParticipantInput, RsvpInput, can_edit, count_participants
-from app.models import AuditEvent, EventSettings, Family, Participant, InvitedFamily, InvitationResponse
+from app.models import AuditEvent, EventSettings, Family, Participant, InvitedFamily, InvitationResponse, InvitationDispatch
 
 
 class IdempotencyConflict(Exception):
@@ -230,10 +230,16 @@ class RsvpStore:
             return output
 
     def invitation_overview(self) -> dict:
-        """Private roster without any invitation capability/token."""
+        """Authenticated roster: RSVP state and manually asserted sending are distinct."""
         rows = self.invitation_roster()
+        with self.session_factory() as session:
+            sent_at = {entry.invited_family_id: entry.marked_at_utc
+                       for entry in session.scalars(select(InvitationDispatch)).all()}
         families = [
-            {key: row[key] for key in ('id', 'key', 'name', 'phone', 'status')}
+            {**{key: row[key] for key in ('id', 'key', 'name', 'phone', 'status')},
+             'sent': row['id'] in sent_at,
+             'sent_at_utc': _to_aware(sent_at[row['id']]).isoformat()
+             if row['id'] in sent_at else None}
             for row in rows
         ]
         return {
@@ -243,8 +249,48 @@ class RsvpStore:
                 'pending': sum(row['status'] == 'PENDENTE' for row in families),
                 'confirmed': sum(row['status'] == 'CONFIRMADO' for row in families),
                 'declined': sum(row['status'] == 'RECUSADO' for row in families),
+                'sent': sum(row['sent'] for row in families),
+                'not_sent': sum(not row['sent'] for row in families),
             },
         }
+
+    def mark_invitation_sent(self, invitation_id: str, sent: bool,
+                             now_utc: datetime) -> dict:
+        """Log an operator's manual assertion, never an inferred delivery status.
+
+        Idempotent and reversible; the RSVP and invitation tokens are unaffected.
+        """
+        if type(sent) is not bool:
+            raise InputError('Informe sent como verdadeiro ou falso.')
+        try:
+            parsed_id = str(uuid.UUID(invitation_id))
+        except (TypeError, ValueError, AttributeError) as exc:
+            raise InputError('Identificador da família inválido.') from exc
+        marked_at = _utc_naive(now_utc)
+        with self.session_factory.begin() as session:
+            settings = session.scalar(
+                select(EventSettings).where(EventSettings.id == 1).with_for_update())
+            if settings is None:
+                raise RuntimeError('Configuração da festa não inicializada.')
+            if session.get(InvitedFamily, parsed_id) is None:
+                raise InputError('Família não encontrada.')
+            previous = session.get(InvitationDispatch, parsed_id)
+            if sent and previous is None:
+                previous = InvitationDispatch(
+                    invited_family_id=parsed_id, marked_at_utc=marked_at)
+                session.add(previous)
+                session.add(AuditEvent(event_kind='INVITATION_SENT_MARKED',
+                                       occurred_at_utc=marked_at))
+                session.flush()
+            elif not sent and previous is not None:
+                session.delete(previous)
+                session.add(AuditEvent(event_kind='INVITATION_SENT_UNMARKED',
+                                       occurred_at_utc=marked_at))
+                session.flush()
+                previous = None
+            return {'sent': previous is not None,
+                    'sent_at_utc': (_to_aware(previous.marked_at_utc).isoformat()
+                                    if previous else None)}
 
     def invitation_share_link(self, invitation_id: str, public_origin: str) -> str:
         """Return one link to an authenticated organizer; never list all tokens."""
