@@ -49,7 +49,8 @@ def _require_token():
 
 @public.before_request
 def restrict_guest_requests():
-    if request.path.startswith("/api/rsvps/") or request.path == "/api/rsvps":
+    if (request.path.startswith("/api/rsvps/") or request.path == "/api/rsvps"
+            or request.path.startswith("/api/invitations/")):
         limiter = current_app.extensions["isadora_rate_limiter"]
         if not limiter.allow(request.remote_addr or "unknown"):
             return error_response(429, "TOO_MANY_REQUESTS", "Tente novamente mais tarde.")
@@ -183,6 +184,26 @@ def update_rsvp(family_id):
     payload = validate_rsvp({key: body[key] for key in ("contact_name", "attending", "participants")})
     receipt = _store().update(family_id, token, revision, payload, lambda: datetime.now(timezone.utc))
     return jsonify(_public_receipt(receipt))
+
+
+@public.get("/api/invitations/<invitation_id>")
+def invitation_details(invitation_id):
+    return jsonify(_store().get_invitation(invitation_id, _require_token()))
+
+
+@public.post("/api/invitations/<invitation_id>/response")
+def invitation_response(invitation_id):
+    token = _require_token()
+    payload = validate_rsvp(_json_object())
+    receipt = _store().respond_to_invitation(
+        invitation_id, token, payload, datetime.now(timezone.utc))
+    return jsonify(_public_receipt(receipt))
+
+
+@public.get("/convite")
+def invitation_page():
+    # Capability is in URL fragment; not sent to the web server or logs.
+    return render_template("index.html")
 
 
 @public.get("/")
