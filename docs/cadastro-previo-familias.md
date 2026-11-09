@@ -31,3 +31,18 @@ A resposta é criada transacionalmente, associada ao cadastro importado e regist
 **Confidencialidade:** o arquivo `links-individuais-familias.csv` contém credenciais de acesso à confirmação. Trate como secreto, não carregue em serviços públicos nem distribua o arquivo inteiro para convidados. Somente o organizador autenticado pode exportá-lo. A posse do link de família permite consultar seu cadastro e enviar ou recuperar sua resposta.
 
 **Limitações atuais:** não há edição/exclusão administrativa de famílias importadas nem disparo automatizado por WhatsApp. Os campos de adultos e crianças da planilha são quantidades planejadas, não nomes e idades individuais; a confirmação solicita os nomes reais. A disponibilidade do domínio e o recebimento em celulares reais ainda precisam ser homologados antes de envio aos convidados.
+
+## Distribuição manual e acompanhamento pelo painel
+
+Na área `/organizar`, seção **Distribuição e acompanhamento dos convites**:
+
+- Os indicadores mostram famílias **cadastradas**, **aguardando resposta**, **confirmadas** e **recusadas**. O estado é atualizado a partir dos registros de RSVP, inclusive após a edição da resposta.
+- Pesquise por nome, código da família ou telefone. O filtro de situação não altera a base.
+- **Copiar link** solicita somente o endereço daquela família após o clique. Se o navegador bloquear a área de transferência, o link aparece selecionado para cópia manual.
+- **Preparar WhatsApp** exige telefone válido e origem pública HTTPS. O painel monta uma conversa individual com mensagem pré-preenchida e só depois mostra **Abrir conversa no WhatsApp**. Essa ação não envia mensagens, não comprova entrega e não altera status.
+- Números brasileiros de 10 ou 11 dígitos são tratados como Brasil (+55); números internacionais exigem sinal `+` e código do país. Confira manualmente o destinatário antes de enviar.
+- Dados pessoais e links são limpos da tela ao sair. A lista de acompanhamento não contém tokens; cada link secreto é recuperado separadamente sob autenticação.
+
+**Operação segura:** somente usar os botões com famílias fictícias durante homologação. O botão WhatsApp pode revelar à plataforma de mensagens o texto e o link individual escolhido. Não acessar links privados em navegadores públicos, não salvar planilhas de distribuição em locais compartilhados, e nunca interpretar abrir uma conversa como envio concluído.
+
+A exportação geral CSV continua disponível, mas reúne todas as credenciais de convite num único arquivo. Para rotina diária, prefira compartilhar pelo botão individual.
