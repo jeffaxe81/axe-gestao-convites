@@ -83,6 +83,35 @@
         <ul id="family-preview-errors" class="data-list"></ul>
       </section>
 
+      <section class="admin-card" aria-labelledby="invitation-roster-title">
+        <h3 id="invitation-roster-title">Distribuição e acompanhamento dos convites</h3>
+        <p class="muted">Consulte o status de cada família, copie somente seu link ou prepare uma conversa individual no WhatsApp. Abrir a conversa não comprova envio ou entrega.</p>
+        <div class="metric-grid" aria-label="Situação dos convites cadastrados">
+          <article class="metric"><span>Famílias cadastradas</span><strong data-testid="invite-total">0</strong></article>
+          <article class="metric"><span>Aguardando resposta</span><strong data-testid="invite-pending">0</strong></article>
+          <article class="metric"><span>Confirmaram</span><strong data-testid="invite-confirmed">0</strong></article>
+          <article class="metric"><span>Recusaram</span><strong data-testid="invite-declined">0</strong></article>
+        </div>
+        <div class="guest-search-row">
+          <div class="field">
+            <label for="invite-search">Localizar família ou telefone</label>
+            <input id="invite-search" type="search" autocomplete="off" maxlength="160" placeholder="Nome ou código da família">
+          </div>
+          <div class="field">
+            <label for="invite-status-filter">Situação</label>
+            <select id="invite-status-filter">
+              <option value="TODOS">Todas as famílias</option>
+              <option value="PENDENTE">Aguardando resposta</option>
+              <option value="CONFIRMADO">Confirmadas</option>
+              <option value="RECUSADO">Recusadas</option>
+            </select>
+          </div>
+          <button type="button" class="secondary" id="invite-refresh-btn">Atualizar convites</button>
+        </div>
+        <p id="invite-status" role="status" aria-live="polite"></p>
+        <ul id="invite-list" class="data-list" aria-label="Famílias e distribuição de convites"></ul>
+      </section>
+
       <section class="admin-card guest-search-card" aria-labelledby="search-title">
         <h3 id="search-title">Localizar convidados</h3>
         <div class="guest-search-row">
