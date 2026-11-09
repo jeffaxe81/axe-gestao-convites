@@ -8,6 +8,8 @@
   let sessionGeneration = 0;
   let refreshPending = false;
   let familyFileValidated = null;
+  let invitedFamilies = [];
+  let inviteLoadPending = false;
   let refreshTimer = null;
 
   function setError(message) {
@@ -201,6 +203,7 @@
     $('dashboard-panel').hidden = false;
     drawDashboard(data);
     void updateFamilySummary();
+    void loadInvitationRoster();
     $('venue-input').value = settings.venue || '';
     $('deadline-input').value = eventTime(settings.edit_deadline_utc);
   }
@@ -228,6 +231,16 @@
     stopRefreshTimer();
     dashboardData = null;
     refreshPending = false;
+    invitedFamilies = [];
+    inviteLoadPending = false;
+    clearList('invite-list');
+    $('invite-search').value = '';
+    $('invite-status-filter').value = 'TODOS';
+    $('invite-status').textContent = '';
+    $('invite-refresh-btn').disabled = false;
+    for (const name of ['total', 'pending', 'confirmed', 'declined']) {
+      document.querySelector('[data-testid="invite-' + name + '"]').textContent = '0';
+    }
     $('dashboard-panel').hidden = true;
     $('login-panel').hidden = false;
     ['confirmed-list', 'declined-list', 'souvenir-list'].forEach(clearList);
@@ -278,6 +291,7 @@
       if (generation !== sessionGeneration || $('dashboard-panel').hidden) return;
       // Keep the search term and any unsaved venue/deadline edits unchanged.
       drawDashboard(data);
+      void loadInvitationRoster();
       $('refresh-status').textContent = 'Dados atualizados às ' +
         new Intl.DateTimeFormat('pt-BR', {hour: '2-digit', minute: '2-digit',
           second: '2-digit'}).format(new Date()) + '.';
@@ -576,6 +590,7 @@
         data.imported + ' famílias cadastradas; ' +
         data.existing_unchanged + ' já existentes, sem alterações. Nenhum convite enviado.';
       await updateFamilySummary();
+      void loadInvitationRoster();
     } catch (error) {
       if (generation !== sessionGeneration) return;
       if (error.status === 401 || error.status === 403) expireOrganizerSession();
@@ -621,6 +636,180 @@
       else $('invitation-link-status').textContent = error.message;
     } finally {
       button.disabled = false;
+    }
+  }
+
+  function validInvitationRoster(data) {
+    if (!data || !Array.isArray(data.families) || !data.counts ||
+        data.families.length > 500) return false;
+    const allowed = ['PENDENTE', 'CONFIRMADO', 'RECUSADO'];
+    const seen = new Set();
+    const counts = {total: data.families.length, pending: 0, confirmed: 0, declined: 0};
+    for (const family of data.families) {
+      if (!family || typeof family.id !== 'string' ||
+          !/^[0-9a-f-]{36}$/i.test(family.id) || seen.has(family.id) ||
+          typeof family.name !== 'string' || typeof family.key !== 'string' ||
+          typeof family.phone !== 'string' || !allowed.includes(family.status) ||
+          'token' in family || 'url' in family) return false;
+      seen.add(family.id);
+      if (family.status === 'PENDENTE') counts.pending += 1;
+      if (family.status === 'CONFIRMADO') counts.confirmed += 1;
+      if (family.status === 'RECUSADO') counts.declined += 1;
+    }
+    return Object.entries(counts).every(([key, value]) => data.counts[key] === value);
+  }
+
+  function whatsappNumber(raw) {
+    // Brazilian national numbers (10/11 digits) receive country code +55.
+    // International numbers must carry an explicit '+' to avoid a wrong recipient.
+    if (!raw) return null;
+    if (/^\+[1-9][0-9]{9,14}$/.test(raw)) return raw.slice(1);
+    if (/^[1-9][0-9]{9,10}$/.test(raw)) return '55' + raw;
+    if (/^55[1-9][0-9]{9,10}$/.test(raw)) return raw;
+    return null;
+  }
+
+  function invitationUrlValid(value) {
+    try {
+      const parsed = new URL(value);
+      return (['http:', 'https:'].includes(parsed.protocol) &&
+              parsed.username === '' && parsed.password === '' &&
+              parsed.pathname === '/convite' && parsed.search === '' &&
+              /^#[0-9a-f-]{36}\.[0-9a-f]{64}$/i.test(parsed.hash));
+    } catch (error) { return false; }
+  }
+
+  function invitationAction(family, host, mode) {
+    const generation = sessionGeneration;
+    const button = host.querySelector('button[data-action="' + mode + '"]');
+    const status = host.querySelector('.invite-action-status');
+    const linkArea = host.querySelector('.invite-link-area');
+    button.disabled = true;
+    status.textContent = 'Preparando link privado...';
+    linkArea.replaceChildren();
+    void (async () => {
+      try {
+        const data = await api('/api/admin/invitations/' +
+          encodeURIComponent(family.id) + '/link');
+        if (generation !== sessionGeneration || $('dashboard-panel').hidden ||
+            !host.isConnected) return;
+        if (!data || typeof data.url !== 'string' ||
+            !invitationUrlValid(data.url)) {
+          throw new Error('O servidor retornou um link inválido.');
+        }
+        if (mode === 'copy') {
+          try {
+            await navigator.clipboard.writeText(data.url);
+            if (generation !== sessionGeneration || !host.isConnected) return;
+            status.textContent = 'Link individual copiado. Compartilhe somente com esta família.';
+          } catch (error) {
+            if (generation !== sessionGeneration || !host.isConnected) return;
+            const input = document.createElement('input');
+            input.readOnly = true;
+            input.value = data.url;
+            input.setAttribute('aria-label', 'Link privado para cópia manual');
+            linkArea.append(input);
+            input.focus();
+            input.select();
+            status.textContent = 'Copie o link selecionado manualmente. Mantenha-o privado.';
+          }
+        } else {
+          const phone = whatsappNumber(family.phone);
+          if (!phone) throw new Error('Telefone ausente ou sem formato seguro. Copie o link e confira o contato.');
+          if (!data.url.startsWith('https://')) {
+            throw new Error('WhatsApp exige URL pública HTTPS homologada. Use cópia local apenas para testes.');
+          }
+          const message = 'Olá, ' + family.name + '! 🌼 Temos um convite especial para a festa da Isadora. ' +
+            'Confirme a presença da sua família neste link individual: ' + data.url;
+          const anchor = document.createElement('a');
+          anchor.href = 'https://wa.me/' + phone + '?text=' + encodeURIComponent(message);
+          anchor.target = '_blank';
+          anchor.rel = 'noopener noreferrer';
+          anchor.textContent = 'Abrir conversa no WhatsApp';
+          linkArea.append(anchor);
+          status.textContent = 'Confira o destinatário e clique no link para abrir a conversa. Nenhuma mensagem foi enviada.';
+        }
+      } catch (error) {
+        if (generation !== sessionGeneration || !host.isConnected) return;
+        if (error.status === 401 || error.status === 403) expireOrganizerSession();
+        else status.textContent = error.message;
+      } finally {
+        if (generation === sessionGeneration && host.isConnected) button.disabled = false;
+      }
+    })();
+  }
+
+  function renderInvitationRoster() {
+    const list = $('invite-list');
+    list.replaceChildren();
+    const term = fold($('invite-search').value.trim());
+    const selected = $('invite-status-filter').value;
+    const matching = invitedFamilies.filter((f) =>
+      (selected === 'TODOS' || f.status === selected) &&
+      (fold(f.name).includes(term) || fold(f.key).includes(term) ||
+       f.phone.includes(term)));
+    const statusNames = {
+      PENDENTE: 'Aguardando resposta',
+      CONFIRMADO: 'Confirmado',
+      RECUSADO: 'Recusado'
+    };
+    for (const family of matching) {
+      const li = document.createElement('li');
+      const title = document.createElement('strong');
+      title.textContent = family.name;
+      const details = document.createElement('p');
+      details.className = 'muted';
+      details.textContent = 'Código: ' + family.key +
+        ' · ' + statusNames[family.status] +
+        ' · Telefone: ' + (family.phone || 'Não informado');
+      const controls = document.createElement('div');
+      controls.className = 'admin-actions';
+      for (const [mode, label] of [['copy', 'Copiar link'], ['whatsapp', 'Preparar WhatsApp']]) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'secondary';
+        button.dataset.action = mode;
+        button.textContent = label;
+        button.addEventListener('click', () => invitationAction(family, li, mode));
+        controls.append(button);
+      }
+      const actionStatus = document.createElement('p');
+      actionStatus.className = 'invite-action-status muted';
+      actionStatus.setAttribute('role', 'status');
+      const links = document.createElement('div');
+      links.className = 'invite-link-area';
+      li.append(title, details, controls, actionStatus, links);
+      list.append(li);
+    }
+    if (!matching.length) putEmpty('invite-list');
+    $('invite-status').textContent = 'Exibindo ' + matching.length + ' de ' +
+      invitedFamilies.length + ' famílias. Somente ações individuais disponibilizam links.';
+  }
+
+  async function loadInvitationRoster() {
+    if ($('dashboard-panel').hidden || inviteLoadPending) return;
+    const generation = sessionGeneration;
+    inviteLoadPending = true;
+    $('invite-refresh-btn').disabled = true;
+    try {
+      const data = await api('/api/admin/invitations');
+      if (generation !== sessionGeneration || $('dashboard-panel').hidden) return;
+      if (!validInvitationRoster(data)) throw new Error('Lista de convites inválida.');
+      invitedFamilies = data.families;
+      for (const name of ['total', 'pending', 'confirmed', 'declined']) {
+        document.querySelector('[data-testid="invite-' + name + '"]').textContent =
+          String(data.counts[name]);
+      }
+      renderInvitationRoster();
+    } catch (error) {
+      if (generation !== sessionGeneration || $('dashboard-panel').hidden) return;
+      if (error.status === 401 || error.status === 403) expireOrganizerSession();
+      else $('invite-status').textContent = error.message;
+    } finally {
+      if (generation === sessionGeneration) {
+        inviteLoadPending = false;
+        $('invite-refresh-btn').disabled = false;
+      }
     }
   }
 
@@ -688,6 +877,9 @@
       $('login-btn').disabled = false;
     }
   }
+  $('invite-refresh-btn').addEventListener('click', loadInvitationRoster);
+  $('invite-search').addEventListener('input', renderInvitationRoster);
+  $('invite-status-filter').addEventListener('change', renderInvitationRoster);
   $('family-template-btn').addEventListener('click', downloadFamilyTemplate);
   $('family-preview-btn').addEventListener('click', validateFamilyFile);
   $('family-import-btn').addEventListener('click', importFamilyFile);
