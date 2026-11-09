@@ -228,3 +228,11 @@ def test_public_invitation_origin_rejects_invalid_configuration(monkeypatch, raw
 def test_public_invitation_origin_normalizes_valid_configuration(monkeypatch, raw, expected):
     monkeypatch.setenv("APP_PUBLIC_URL", raw)
     assert public_invitation_origin() == expected
+
+
+def test_parse_csv_with_padded_headers_and_blank_trailing_row():
+    raw = (" Nome da família ; Responsável ; WhatsApp ; Convidados \n"
+           "Família Costa;Ana Costa;5548999991234;2\n\n").encode("utf-8")
+    assert parse_guest_csv(raw) == [
+        ParsedGuest("Família Costa", "Ana Costa", "5548999991234", 2)
+    ]
