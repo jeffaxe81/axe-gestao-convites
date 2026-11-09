@@ -171,6 +171,8 @@ class InvitationStore:
             item = session.get(Invitation, invitation_id, with_for_update=True)
             if item is None:
                 raise InvitationImportError("Convite não encontrado.")
+            if item.linked_family_id is not None:
+                raise InvitationImportError("Convite já utilizado; a resposta deve ser gerida pelo link de edição.")
             item.revoked_at_utc = moment.astimezone(timezone.utc).replace(tzinfo=None)
             item.status = "REVOKED"
             session.add(AuditEvent(event_kind="INVITATION_REVOKED",
