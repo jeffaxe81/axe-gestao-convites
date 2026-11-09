@@ -1,5 +1,5 @@
 """SQLAlchemy models; no guest-facing serializers in this module."""
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, String, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -68,3 +68,4 @@ class Invitation(Base):
     linked_family_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("families.id", ondelete="SET NULL"), nullable=True, unique=True
     )
+    __table_args__ = (Index("uq_invitations_whatsapp", "whatsapp", unique=True),)
