@@ -56,9 +56,14 @@ def parse_guest_csv(raw: bytes) -> list[ParsedGuest]:
             raise InvitationImportError("O limite é de 500 famílias por importação.")
         if not row or all(not (v or "").strip() for v in row.values() if isinstance(v, str)):
             continue
+        if None in row or any(row.get(key) is None for key in REQUIRED_HEADERS):
+            raise InvitationImportError(f"Linha {line}: quantidade de colunas inválida.")
         family = " ".join((row.get(REQUIRED_HEADERS[0]) or "").split())
         contact = " ".join((row.get(REQUIRED_HEADERS[1]) or "").split())
-        phone = "".join(ch for ch in (row.get(REQUIRED_HEADERS[2]) or "") if ch.isdigit())
+        raw_phone = (row.get(REQUIRED_HEADERS[2]) or "").strip()
+        if any(not (ch.isdigit() or ch in "+ ().-") for ch in raw_phone):
+            raise InvitationImportError(f"Linha {line}: WhatsApp contém caracteres inválidos.")
+        phone = "".join(ch for ch in raw_phone if ch.isdigit())
         guests_raw = (row.get(REQUIRED_HEADERS[3]) or "").strip()
         if not family or len(family) > 160:
             raise InvitationImportError(f"Linha {line}: nome da família inválido.")
