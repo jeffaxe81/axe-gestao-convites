@@ -11,6 +11,7 @@ def test_operator_manual_send_is_distinct_from_reply_and_reversible(page, organi
         {"key": "familia-silva", "name": "Maria Silva", "phone": "11999999999",
          "adults": 2, "young": 1, "older": 0}
     ])
+    confirmed_before = store.summary()["counts"].total
     login(page, base)
     expect(page.get_by_test_id("invite-total")).to_have_text("1")
     expect(page.get_by_test_id("invite-pending")).to_have_text("1")
@@ -23,7 +24,7 @@ def test_operator_manual_send_is_distinct_from_reply_and_reversible(page, organi
     expect(page.get_by_test_id("invite-not-sent")).to_have_text("0")
     expect(page.get_by_test_id("invite-pending")).to_have_text("1")
     expect(page.locator("#invite-list")).to_contain_text("Envio registrado manualmente")
-    assert store.summary()["counts"].total == 0
+    assert store.summary()["counts"].total == confirmed_before
     page.locator("#invite-sent-filter").select_option("NAO_ENVIADO")
     expect(page.locator("#invite-list")).to_contain_text("Nenhum registro")
     page.locator("#invite-sent-filter").select_option("ENVIADO")
