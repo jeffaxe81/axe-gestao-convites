@@ -71,3 +71,20 @@ Todas as caixas abaixo permanecem desmarcadas até testes reais. Registrar data,
 - [ ] Repetir o envio com a mesma resposta após conexão instável; conferir uma única confirmação no painel.
 - [ ] Em iPhone físico, repetir envio, edição e retentativa no Safari, inclusive pelo PDF recebido no WhatsApp.
 - [ ] Confirmar que a mensagem de espera de 15 segundos é compreensível e não indica que o banco certamente não gravou.
+
+## Famílias cadastradas, links individuais e interesse voluntário — aceite final
+
+- [ ] Baixar no painel os modelos CSV e Excel, confirmar a linha fictícia de exemplo e importar apenas dados fictícios de homologação.
+- [ ] Tentar reimportar a mesma planilha; confirmar que não duplica famílias, respostas nem links.
+- [ ] Testar planilha inválida e conflito de uma família já cadastrada; nenhum cadastro parcial deve persistir.
+- [ ] Validar que cada família possui link exclusivo e que o token de uma família não acessa dados de outra.
+- [ ] Abrir o link privado no Android e no iPhone sem clicar em nada: o indicador de interesse deve continuar zerado.
+- [ ] Acionar voluntariamente “💛 Gostei do convite”; verificar um único registro no painel, inclusive após atualizar o navegador e repetir a interação.
+- [ ] Confirmar que interesse não registra envio manual, presença confirmada ou recusa.
+- [ ] Testar interesse seguido de recusa, verificando que os dois indicadores permanecem independentes.
+- [ ] Preparar a conversa individual pelo WhatsApp e confirmar que isso **não** marca entrega/leitura nem envio automático.
+- [ ] Registrar e desfazer manualmente o envio; verificar histórico, totais e reversibilidade sem alterar RSVP.
+- [ ] Com conta do organizador, conferir busca, filtros, atualização dos contadores e limpeza de dados após logout/sessão expirada.
+- [ ] Conferir que nenhuma planilha, token, CSV de links privados ou captura com dados pessoais foi disponibilizada em repositório, relatório de CI ou logs públicos.
+
+**Evidências:** registrar dispositivo, navegador, horário, commit implantado, captura sem dados pessoais, resultado e responsável. Não marcar os itens como realizados sem testes reais.

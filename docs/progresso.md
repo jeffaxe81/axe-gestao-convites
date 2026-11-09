@@ -62,3 +62,28 @@ Correção de espera de requisição travada e teste de retentativa segura, com 
 ## Homologação de escala — envio e convidados
 
 Incluídos testes de **1 bilhão de operações simuladas em modelo de estados** e **443 tentativas de gravação na API de teste**, além de consultas autenticadas, contadores, auditoria e regressão MySQL. Ver [metodologia e limites](homologacao-bilhao.md). A conclusão depende da CI; 100% operacional exige também ambiente real, celulares físicos e aceite, não substituíveis por volume simulado.
+
+## Meta técnica ≥90% — sem exigir ensaios físicos nesta fase (09/11/2026)
+
+Esta meta de **prontidão técnica para homologação** é separada da métrica oficial de **liberação operacional**, que permanece em **86% (6/7)** até a apresentação das seis evidências reais.
+
+Para não inventar um percentual, o avanço técnico deve ser apurado com base em dez gates verificáveis, cada um com peso de 10 pontos. Gate só é marcado concluído quando a evidência do repositório e da CI do **SHA final** está disponível:
+
+| Gate técnico | Evidência / critério de fechamento |
+| --- | --- |
+| 1. RSVP, edição e prazos | Testes unitários e integração aprovados |
+| 2. Persistência, idempotência e migrações | Testes MySQL e versões de esquema aprovados |
+| 3. Login, sessão e CSRF | Testes de APIs administrativas e logout aprovados |
+| 4. Cadastro Excel/CSV | PR #12 integrada, importação e validação aprovadas |
+| 5. Links individualizados | PR #12 integrada e isolamento de token testado |
+| 6. Fluxo manual WhatsApp/envio | PR #12 integrada, sem alegar entrega automática |
+| 7. Interesse voluntário | PR #13 integrada e testes de idempotência e privacidade aprovados |
+| 8. Dashboard e testes E2E | PR #13 integrada, contadores independentes e CI verde |
+| 9. Backup/restore e Compose | CI final aprovada em banco descartável |
+| 10. Publicação preparada | Procedimentos Cloudflare, checklist/rollback revisados e integrados |
+
+**Fórmula:** progresso técnico = número de gates com evidência concluída × 10%. A meta mínima de 90% corresponde a pelo menos **9 de 10 gates concluídos**. Enquanto houver CI pendente ou PR aberta, não pontuar os respectivos gates como concluídos.
+
+### Fora do cálculo técnico (homologação final)
+
+DNS/HTTPS real do `isadora2anos.org`, Cloudflare Tunnel no `policorp`, restauração no host definitivo, Android/iPhone físicos, revisão independente e aceite do organizador. Todos permanecem obrigatórios **antes de divulgar convites reais ou declarar 100% operacional**, mas não bloqueiam a medição do estágio de implementação e testes automatizados.
