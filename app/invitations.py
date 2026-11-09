@@ -61,15 +61,15 @@ def parse_guest_csv(raw: bytes) -> list[ParsedGuest]:
         family = " ".join((row.get(REQUIRED_HEADERS[0]) or "").split())
         contact = " ".join((row.get(REQUIRED_HEADERS[1]) or "").split())
         raw_phone = (row.get(REQUIRED_HEADERS[2]) or "").strip()
-        if any(not (ch.isdigit() or ch in "+ ().-") for ch in raw_phone):
+        if any(not (ch in "0123456789" or ch in "+ ().-") for ch in raw_phone):
             raise InvitationImportError(f"Linha {line}: WhatsApp contém caracteres inválidos.")
-        phone = "".join(ch for ch in raw_phone if ch.isdigit())
+        phone = "".join(ch for ch in raw_phone if ch in "0123456789")
         guests_raw = (row.get(REQUIRED_HEADERS[3]) or "").strip()
         if not family or len(family) > 160:
             raise InvitationImportError(f"Linha {line}: nome da família inválido.")
         if not contact or len(contact) > 160:
             raise InvitationImportError(f"Linha {line}: responsável inválido.")
-        if not 10 <= len(phone) <= 13:
+        if not (len(phone) in (12, 13) and phone.startswith("55")):
             raise InvitationImportError(f"Linha {line}: WhatsApp deve conter país, DDD e número.")
         if phone in seen_phones:
             raise InvitationImportError(f"Linha {line}: WhatsApp duplicado no arquivo.")
@@ -92,7 +92,7 @@ class InvitationStore:
     def _hash_token(self, token: str) -> str:
         return hmac.new(self._secret, ("invitation:v1:" + token).encode(), hashlib.sha256).hexdigest()
 
-    def import_rows(self, rows: list[ParsedGuest], now: datetime | None = None) -> int:
+    def import_rows(self, rows: list[ParsedGuest], now: datetime | None = None) -> list[dict]:
         if not rows or len(rows) > MAX_ROWS:
             raise InvitationImportError("Lote de importação inválido.")
         created = datetime.now(timezone.utc) if now is None else now
