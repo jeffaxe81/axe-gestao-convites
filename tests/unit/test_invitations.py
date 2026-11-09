@@ -81,6 +81,7 @@ def test_rsvp_consumes_invitation_and_blocks_second_family(stores):
         record = session.scalar(select(Invitation))
         assert record.linked_family_id == receipt.id
         assert record.status == "CONFIRMED"
+    assert invitations.resolve_token(token) is None
     with pytest.raises(AccessDenied):
         rsvps.create(payload, "submission-key-second-0002",
                       datetime.now(timezone.utc), invitation_token=token)
