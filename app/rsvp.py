@@ -187,6 +187,11 @@ class RsvpStore:
                 Participant(position=pos, name=p.name, kind=p.kind, age_years=p.age_years)
                 for pos, p in enumerate(data.participants))
             session.flush()
+            invitation = session.scalar(
+                select(Invitation).where(Invitation.linked_family_id == family.id).with_for_update()
+            )
+            if invitation is not None:
+                invitation.status = "CONFIRMED" if data.attending else "DECLINED"
             session.add(AuditEvent(event_kind='RSVP_UPDATED',
                                    occurred_at_utc=_utc_naive(decision_time)))
             receipt = self._receipt(family, edit_token)
