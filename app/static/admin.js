@@ -239,6 +239,9 @@
     $('export-status').textContent = '';
     $('planning-status').textContent = '';
     $('activity-status').textContent = '';
+    $('family-preview-status').textContent = '';
+    $('family-preview-errors').replaceChildren();
+    $('family-file').value = '';
     clearList('activity-list');
     $('load-activity-btn').disabled = false;
     $('venue-input').value = '';
@@ -412,6 +415,101 @@
     }
   }
 
+  async function downloadFamilyTemplate() {
+    const generation = sessionGeneration;
+    const status = $('family-preview-status');
+    status.textContent = '';
+    try {
+      const response = await fetch('/api/admin/guest-list-template.csv', {
+        credentials: 'same-origin', cache: 'no-store'
+      });
+      if (!response.ok) {
+        const error = new Error('Não foi possível obter o modelo.');
+        error.status = response.status;
+        throw error;
+      }
+      const blob = await response.blob();
+      if (generation !== sessionGeneration || $('dashboard-panel').hidden) return;
+      const href = URL.createObjectURL(blob);
+      try {
+        const link = document.createElement('a');
+        link.href = href;
+        link.download = 'modelo-familias.csv';
+        document.body.append(link);
+        link.click();
+        link.remove();
+      } finally {
+        URL.revokeObjectURL(href);
+      }
+      status.textContent = 'Modelo baixado com dados fictícios. Preencha em Excel ou CSV.';
+    } catch (error) {
+      if (generation !== sessionGeneration) return;
+      if (error.status === 401 || error.status === 403) expireOrganizerSession();
+      else status.textContent = error.message;
+    }
+  }
+  async function validateFamilyFile() {
+    const file = $('family-file').files[0];
+    const status = $('family-preview-status');
+    const errors = $('family-preview-errors');
+    errors.replaceChildren();
+    if (!file) { status.textContent = 'Selecione uma planilha CSV ou XLSX.'; return; }
+    if (file.size > 60 * 1024) {
+      status.textContent = 'Arquivo maior que 60 KB.'; return;
+    }
+    const isExcel = /\.xlsx$/i.test(file.name);
+    const isCsv = /\.csv$/i.test(file.name);
+    if (!isExcel && !isCsv) {
+      status.textContent = 'Use uma planilha .xlsx ou .csv.'; return;
+    }
+    const generation = sessionGeneration;
+    const button = $('family-preview-btn');
+    button.disabled = true;
+    status.textContent = 'Validando planilha...';
+    try {
+      const response = await fetch('/api/admin/guest-list-preview', {
+        method: 'POST', credentials: 'same-origin', cache: 'no-store',
+        headers: {
+          'Content-Type': isExcel
+            ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            : 'text/csv',
+          'X-CSRF-Token': await ensureCsrf()
+        },
+        body: file
+      });
+      const data = await response.json().catch(() => ({}));
+      if (generation !== sessionGeneration || $('dashboard-panel').hidden) return;
+      if (!response.ok) {
+        const error = new Error((data.error && data.error.message) || 'Falha ao validar.');
+        error.status = response.status;
+        throw error;
+      }
+      if (!Array.isArray(data.errors) || typeof data.valid !== 'boolean' ||
+          !Number.isInteger(data.families) || data.saved !== false) {
+        throw new Error('Resposta de validação inválida.');
+      }
+      status.textContent = (data.valid ? 'Planilha válida. ' : 'Corrija os problemas. ') +
+        data.families + ' famílias; ' + data.adults + ' adultos; ' +
+        data.children_0_5 + ' crianças de 0 a 5 anos; ' +
+        data.children_6_12 + ' crianças de 6 a 12 anos. ' +
+        'Somente prévia: nenhum cadastro ou link criado.';
+      for (const message of data.errors) {
+        const li = document.createElement('li');
+        li.textContent = message;
+        errors.append(li);
+      }
+      if (data.truncated_errors) {
+        const li = document.createElement('li');
+        li.textContent = 'Existem mais erros além dos exibidos.';
+        errors.append(li);
+      }
+    } catch (error) {
+      if (generation !== sessionGeneration) return;
+      if (error.status === 401 || error.status === 403) expireOrganizerSession();
+      else status.textContent = error.message;
+    } finally { button.disabled = false; }
+  }
+
   async function loadActivity() {
     if ($('dashboard-panel').hidden) return;
     const generation = sessionGeneration;
@@ -476,6 +574,8 @@
       $('login-btn').disabled = false;
     }
   }
+  $('family-template-btn').addEventListener('click', downloadFamilyTemplate);
+  $('family-preview-btn').addEventListener('click', validateFamilyFile);
   $('login-form').addEventListener('submit', logIn);
   $('settings-form').addEventListener('submit', saveSettings);
   $('logout-btn').addEventListener('click', logOut);
