@@ -10,7 +10,7 @@ from app.domain import validate_rsvp
 from app.invitations import (
     InvitationImportError, InvitationStore, ParsedGuest, parse_guest_csv,
 )
-from app.models import Base, Invitation
+from app.models import Base, Family, Invitation
 from app.rsvp import AccessDenied, RsvpStore
 
 
@@ -52,6 +52,8 @@ def test_import_stores_only_hash_and_resolves_token(stores):
     rows = [ParsedGuest("Família Silva", "João Silva", "5548999991111", 4)]
     issued = invitations.import_rows(rows)
     assert len(issued) == 1
+    with invitations.session_factory() as session:
+        assert session.scalar(select(Family)) is None
     token = issued[0]["token"]
     assert invitations.resolve_token(token)["contact_name"] == "João Silva"
     with invitations.session_factory() as session:
