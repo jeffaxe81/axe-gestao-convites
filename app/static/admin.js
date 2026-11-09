@@ -641,7 +641,7 @@
 
   function validInvitationRoster(data) {
     if (!data || !Array.isArray(data.families) || !data.counts ||
-        data.families.length > 500) return false;
+        data.families.length > 10000) return false;
     const allowed = ['PENDENTE', 'CONFIRMADO', 'RECUSADO'];
     const seen = new Set();
     const counts = {total: data.families.length, pending: 0, confirmed: 0, declined: 0};
