@@ -2,8 +2,8 @@
 
 Acesse `/organizar`, faça login e procure **Lista de famílias — preparar planilha**.
 
-1. Baixe o modelo CSV e abra no Excel ou em um editor de planilhas.
-2. Preencha uma linha para cada família. Os nomes das colunas devem permanecer iguais e na ordem especificada.
+1. Baixe o modelo **CSV ou Excel (.xlsx)** diretamente no painel. Ambos incluem uma linha fictícia de exemplo.
+2. Substitua a linha fictícia por seus próprios dados e preencha uma linha para cada família. Os nomes das colunas devem permanecer iguais e na ordem especificada.
 3. Salve como CSV UTF-8 separado por ponto e vírgula ou arquivo Excel .xlsx; apenas a primeira aba é considerada.
 4. Envie o arquivo e clique em **Validar planilha**. O servidor não grava cadastros nesta etapa.
 5. Depois de revisar os totais, clique em **Confirmar cadastro prévio** para gravar os registros no MySQL.
