@@ -9,6 +9,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from werkzeug.exceptions import BadRequest
 from werkzeug.security import check_password_hash
 
+from app.guest_list import template_csv, preview_csv
 from app.domain import InputError
 from app.reports import export_attendance_csv, export_planning_csv
 
@@ -148,6 +149,26 @@ def export_planning():
     response.headers["Cache-Control"] = "no-store, private"
     response.headers["X-Content-Type-Options"] = "nosniff"
     return response
+
+
+@organizer.get("/api/admin/guest-list-template.csv")
+def guest_list_template():
+    response = make_response(template_csv(), 200)
+    response.headers["Content-Type"] = "text/csv; charset=utf-8"
+    response.headers["Content-Disposition"] = 'attachment; filename="modelo-familias.csv"'
+    response.headers["Cache-Control"] = "no-store, private"
+    return response
+
+
+@organizer.post("/api/admin/guest-list-preview")
+def guest_list_preview():
+    if request.mimetype != "text/csv":
+        return error_response(415, "UNSUPPORTED_MEDIA_TYPE", "Envie um arquivo CSV.")
+    try:
+        result = preview_csv(request.get_data(cache=False))
+    except ValueError as exc:
+        raise InputError(str(exc)) from exc
+    return jsonify(result)
 
 
 @organizer.get("/api/admin/settings")
