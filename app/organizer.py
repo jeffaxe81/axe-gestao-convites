@@ -9,7 +9,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from werkzeug.exceptions import BadRequest
 from werkzeug.security import check_password_hash
 
-from app.guest_list import template_csv, preview_csv
+from app.guest_list import template_csv, preview_csv, preview_xlsx
 from app.domain import InputError
 from app.reports import export_attendance_csv, export_planning_csv
 
@@ -162,10 +162,11 @@ def guest_list_template():
 
 @organizer.post("/api/admin/guest-list-preview")
 def guest_list_preview():
-    if request.mimetype != "text/csv":
-        return error_response(415, "UNSUPPORTED_MEDIA_TYPE", "Envie um arquivo CSV.")
+    if request.mimetype not in ("text/csv", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"):
+        return error_response(415, "UNSUPPORTED_MEDIA_TYPE", "Envie CSV ou Excel XLSX.")
     try:
-        result = preview_csv(request.get_data(cache=False))
+        data = request.get_data(cache=False)
+        result = preview_csv(data) if request.mimetype == "text/csv" else preview_xlsx(data)
     except ValueError as exc:
         raise InputError(str(exc)) from exc
     return jsonify(result)
