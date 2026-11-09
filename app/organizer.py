@@ -265,6 +265,21 @@ def invitation_mark_sent(invitation_id):
     return jsonify({"ok": True})
 
 
+@organizer.post("/api/admin/invitations/<invitation_id>/regenerate")
+def invitation_regenerate(invitation_id):
+    origin = public_invitation_origin()
+    item = invitation_store().regenerate(invitation_id)
+    url = origin + "/#convite=" + item["token"]
+    return jsonify({
+        "invitation": {key: value for key, value in item.items() if key != "token"},
+        "url": url,
+        "whatsapp_url": "https://wa.me/" + item["whatsapp"] + "?text=" + quote(
+            "Olá, " + item["contact_name"] +
+            "! Você está convidado(a) para comemorar os 2 aninhos da Isadora: " + url
+        )
+    })
+
+
 @organizer.delete("/api/admin/invitations/<invitation_id>")
 def invitation_revoke(invitation_id):
     invitation_store().revoke(invitation_id)
