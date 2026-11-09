@@ -20,24 +20,21 @@ def test_organizer_sees_voluntary_interest_without_confirming_attendance(page, o
     expect(page.get_by_test_id("invite-pending")).to_have_text("1")
     expect(page.get_by_test_id("invite-sent")).to_have_text("0")
 
-    # Opening a private invitation is not an interest event.
-    guest = page.context.new_page()
-    try:
-        guest.goto(link)
-        expect(guest.locator("#interest-btn")).to_be_visible()
-        expect(guest.locator("#interest-btn")).to_be_enabled()
-        page.locator("#invite-refresh-btn").click()
-        expect(page.get_by_test_id("invite-interested")).to_have_text("0")
+    # Use the same browser tab: this project's fixture owns a browser.new_page()
+    # context that intentionally does not allow context.new_page().
+    page.goto(link)
+    expect(page.locator("#interest-btn")).to_be_visible()
+    expect(page.locator("#interest-btn")).to_be_enabled()
+    assert store.invitation_overview()["counts"]["interested"] == 0
+    page.locator("#interest-btn").click()
+    expect(page.locator("#interest-btn")).to_be_disabled()
+    assert store.invitation_overview()["counts"]["interested"] == 1
 
-        guest.locator("#interest-btn").click()
-        expect(guest.locator("#interest-btn")).to_be_disabled()
-        page.locator("#invite-refresh-btn").click()
-        expect(page.get_by_test_id("invite-interested")).to_have_text("1")
-        expect(page.get_by_test_id("invite-pending")).to_have_text("1")
-        expect(page.get_by_test_id("invite-sent")).to_have_text("0")
-        expect(page.get_by_test_id("invite-confirmed")).to_have_text("0")
-    finally:
-        guest.close()
+    login(page, base)
+    expect(page.get_by_test_id("invite-interested")).to_have_text("1")
+    expect(page.get_by_test_id("invite-pending")).to_have_text("1")
+    expect(page.get_by_test_id("invite-sent")).to_have_text("0")
+    expect(page.get_by_test_id("invite-confirmed")).to_have_text("0")
 
     page.locator("#logout-btn").click()
     expect(page.locator("#dashboard-panel")).to_be_hidden()
