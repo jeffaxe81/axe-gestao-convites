@@ -46,3 +46,18 @@ Na área `/organizar`, seção **Distribuição e acompanhamento dos convites**:
 **Operação segura:** somente usar os botões com famílias fictícias durante homologação. O botão WhatsApp pode revelar à plataforma de mensagens o texto e o link individual escolhido. Não acessar links privados em navegadores públicos, não salvar planilhas de distribuição em locais compartilhados, e nunca interpretar abrir uma conversa como envio concluído.
 
 A exportação geral CSV continua disponível, mas reúne todas as credenciais de convite num único arquivo. Para rotina diária, prefira compartilhar pelo botão individual.
+
+## Controle manual de envio — migração 005
+
+O aplicativo armazena **dois estados independentes** para cada família:
+
+- **Confirmação:** `PENDENTE`, `CONFIRMADO` ou `RECUSADO`, atualizado apenas pela resposta da família.
+- **Envio manual:** `não registrado` ou `registrado como enviado`, com data e hora da declaração feita pelo organizador.
+
+Na seção **Distribuição e acompanhamento**, pressione **Marcar como enviado manualmente** *somente após realmente compartilhar a mensagem com a família*. O ato de copiar link, preparar uma conversa ou abrir o WhatsApp não altera o registro.
+
+Caso a marcação tenha sido feita por engano, pressione **Desfazer envio registrado**. Ambas as ações são auditadas sem guardar nomes, telefone nem link secreto. Repetir a mesma marcação não cria histórico duplicado nem modifica a data anterior.
+
+Os indicadores de envio registrado / não registrado e o filtro correspondente não alteram contagem de convidados, buffet ou situação do RSVP. Uma recusa pode permanecer marcada como envio registrado, pois são fatos diferentes.
+
+**Atenção:** o registro manual não é recibo de entrega, leitura ou envio automatizado pela API do WhatsApp. Não há integração com WhatsApp Business API ou confirmação técnica de entrega nesta versão. Para homologação, usar famílias e telefones fictícios no navegador e testar em dispositivos Android/iOS reais antes de liberar em produção.
