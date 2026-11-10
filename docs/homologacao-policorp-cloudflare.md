@@ -42,7 +42,7 @@ O script de produção deve executar fora do servidor ou em rede externa para co
 4. Verificar cache desabilitado para páginas e APIs com sessões ou tokens; segredos do convite são sensíveis.
 5. Confirmar backup MySQL cifrado em armazenamento externo e restauração em banco isolado; registrar versão de esquema 006.
 6. Testar Android e iPhone físicos: convite individual, clique opcional de interesse, recusa, confirmação, link de edição, internet instável e WhatsApp. Usar apenas famílias fictícias.
-7. Validar toda a CI do commit escolhido e o ciclo de rollback antes de mesclar PRs #12 e #13 ou fazer deploy.
+7. Confirmar CI verde no commit **exato** escolhido e ensaiar rollback antes de publicar. As PRs #12 e #13 já foram mescladas; exigir também [comparação de arquivos públicos](verificacao-versao-publicada.md) para identificar interface desatualizada, sem inferir a versão do backend.
 8. Após aprovação, registrar data, versão/commit e evidências no checklist privado de liberação; somente então enviar convites reais.
 
 ## Registro de evidências (preencher com resultados reais)
@@ -58,4 +58,4 @@ O script de produção deve executar fora do servidor ou em rede externa para co
 | iPhone físico | Pendente | Checklist |
 | Aceite para envio real | Pendente | Aprovação explícita |
 
-Relacionados: issues #14–#21, PR #12 e PR #13.
+Relacionados: issues #14–#21, PRs #12 e #13 (já integradas), [CI #328 da main](https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/42787828624).
