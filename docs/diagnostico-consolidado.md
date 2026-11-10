@@ -45,10 +45,11 @@ não solicitadas aparecem explicitamente como `NOT_TESTED`.
 
 **No host `policorp`, use `--require-local-gates`.** O modo estrito exige
 ambos `--env-file` e `--local-url`; a ausência de qualquer um bloqueia
-o resultado **antes de consultar a rede**. O campo `local_gate_coverage`
-indica `NOT_TESTED`, `PARTIAL` ou `COMPLETE`; `host_checks_ready` só é
-`true` quando os dois gates locais e todos os demais checks automáticos
-passaram. Sem o modo estrito, uma execução externa pode retornar
+o resultado **antes de consultar a rede**. O campo `local_input_coverage`
+indica se nenhuma, uma ou ambas as entradas locais foram fornecidas
+(`NOT_TESTED`, `PARTIAL`, `COMPLETE`). **Cobertura não equivale a aprovação:**
+`host_checks_ready` só é `true` quando ambas as verificações locais e os
+demais checks automáticos passaram. Sem o modo estrito, uma execução externa pode retornar
 `AUTOMATED_PASS` com cobertura local incompleta — isso **não** valida o host.
 Nenhum desses campos autoriza convites reais.
 
