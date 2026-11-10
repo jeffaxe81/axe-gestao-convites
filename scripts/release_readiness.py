@@ -5,7 +5,7 @@ IMPORTANTE: este script confere COMPLETUDE de evidências declaradas,
 não verifica pessoalmente Android, iPhone ou a infraestrutura.
 """
 import argparse
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 import json
 from pathlib import Path
 import sys
@@ -39,8 +39,11 @@ def evaluate(value):
                 recorded = datetime.fromisoformat(entry["verified_at"])
                 if recorded.tzinfo is None or recorded.utcoffset() is None:
                     raise ValueError()
+                # Aceita pequena margem de relógio; impede atestados datados no futuro.
+                if recorded > datetime.now(timezone.utc) + timedelta(minutes=5):
+                    raise ValueError()
             except (TypeError, ValueError):
-                raise ValueError("Falta data com fuso em " + key) from None
+                raise ValueError("Data ausente, sem fuso ou futura em " + key) from None
             complete.append(key)
         else:
             if entry["verified_at"] is not None or entry["evidence_ref"] is not None:
