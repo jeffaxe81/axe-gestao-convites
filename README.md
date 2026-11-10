@@ -4,6 +4,10 @@ Aniversário de dois anos da Isadora — 13/12/2026, às 15h (America/Sao_Paulo)
 
 **Estado: aplicação integrada à `main`, com CI automatizada aprovada. A divulgação de convites reais depende de homologação operacional.**
 
+**Situação verificada em 10/11/2026:** a `main` inclui cadastro Excel/CSV por família, links privados, preparação de WhatsApp sem envio automático, registro manual de distribuição, interesse voluntário e relatório CSV de acompanhamento. [CI #328 aprovada](https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/42787828624) no commit `4ddc271`. O resultado de 230 testes citado abaixo é histórico, não a última contagem. **Prontidão técnica: 100%; liberação operacional: 86%.**
+
+Antes de liberar o domínio, conferir também os arquivos públicos com o [verificador de versão publicada](docs/verificacao-versao-publicada.md). Essa comparação **não valida o backend** nem substitui os testes físicos e o aceite.
+
 ## Barra de avanço verificado
 
 `[██████████████░░] 86% — 6 de 7 etapas completas`
