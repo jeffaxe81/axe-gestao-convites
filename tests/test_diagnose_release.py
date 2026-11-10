@@ -34,6 +34,8 @@ def test_success_still_does_not_authorize_real_invitations(monkeypatch):
     assert result["status"] == "AUTOMATED_PASS"
     assert result["release_approved"] is False
     assert result["read_only"] is True
+    assert result["host_checks_ready"] is False
+    assert result["local_gate_coverage"] == "NOT_TESTED"
     assert result["checkout_sha"] == SHA
     assert result["checks"]["local_configuration"] == "NOT_TESTED"
     assert result["checks"]["local_http"] == "NOT_TESTED"
@@ -111,6 +113,8 @@ def test_local_and_public_checks_run_in_order(monkeypatch):
         URL, env_file="file.env", local_url="http://127.0.0.1:8080",
     )
     assert result["status"] == "AUTOMATED_PASS"
+    assert result["host_checks_ready"] is True
+    assert result["local_gate_coverage"] == "COMPLETE"
     assert all(result["checks"][x] == "PASS" for x in (
         "local_configuration", "local_http", "public_https", "published_assets"
     ))
@@ -152,7 +156,71 @@ def test_cli_success_is_not_deployment_approval(monkeypatch, capsys):
     monkeypatch.setattr(diagnostic, "diagnose", lambda *args, **kw: {
         "status": "AUTOMATED_PASS", "release_approved": False,
         "read_only": True, "checks": {"public_https": "PASS"},
+        "local_gate_coverage": "NOT_TESTED",
         "human_gates_pending": list(diagnostic.HUMAN_GATES),
     })
     assert diagnostic.main(["--url", URL]) == 0
     assert "BLOQUEADA" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("optional", [
+    {},
+    {"env_file": "file.env"},
+    {"local_url": "http://127.0.0.1:8080"},
+])
+def test_host_mode_blocks_missing_local_inputs_without_http(monkeypatch, optional):
+    monkeypatch.setattr(diagnostic, "clean_revision",
+                        lambda _: pytest.fail("Git should not run with missing inputs"))
+    monkeypatch.setattr(diagnostic.check_production, "verify",
+                        lambda _: pytest.fail("External HTTP should not run"))
+    monkeypatch.setattr(diagnostic.check_local, "inspect",
+                        lambda _: pytest.fail("Local HTTP should not run"))
+    result = diagnostic.diagnose(URL, require_local_gates=True, **optional)
+    assert result["status"] == "BLOCKED"
+    assert result["release_approved"] is False
+    assert result["host_checks_ready"] is False
+    assert result["failed_check"] == "required_local_inputs"
+    assert result["checks"]["required_local_inputs"] == "FAIL"
+
+
+def test_host_mode_passes_only_with_all_automatic_checks(monkeypatch):
+    successful_checks(monkeypatch)
+    monkeypatch.setattr(diagnostic.preflight, "load_env",
+                        lambda _: {"APP_PUBLIC_URL": URL})
+    monkeypatch.setattr(diagnostic.preflight, "validate",
+                        lambda values, **kw: [])
+    result = diagnostic.diagnose(
+        URL, env_file="file.env", local_url="http://127.0.0.1:8080",
+        require_local_gates=True,
+    )
+    assert result["status"] == "AUTOMATED_PASS"
+    assert result["host_checks_ready"] is True
+    assert result["local_gate_coverage"] == "COMPLETE"
+    assert result["release_approved"] is False
+
+
+def test_host_mode_blocks_local_failure_without_external_http(monkeypatch):
+    successful_checks(monkeypatch)
+    monkeypatch.setattr(diagnostic.preflight, "load_env",
+                        lambda _: {"APP_PUBLIC_URL": URL})
+    monkeypatch.setattr(diagnostic.preflight, "validate",
+                        lambda values, **kw: ["configuration error"])
+    monkeypatch.setattr(diagnostic.check_production, "verify",
+                        lambda _: pytest.fail("External HTTP should not run"))
+    result = diagnostic.diagnose(
+        URL, env_file="file.env", local_url="http://127.0.0.1:8080",
+        require_local_gates=True,
+    )
+    assert result["status"] == "BLOCKED"
+    assert result["failed_check"] == "local_configuration"
+    assert result["host_checks_ready"] is False
+
+
+def test_cli_strict_mode_reports_missing_inputs_without_secrets(monkeypatch, capsys):
+    monkeypatch.setattr(diagnostic, "clean_revision",
+                        lambda _: pytest.fail("Git should not run"))
+    assert diagnostic.main(["--url", URL, "--require-local-gates", "--json"]) == 1
+    report = json.loads(capsys.readouterr().out)
+    assert report["failed_check"] == "required_local_inputs"
+    assert report["local_gate_coverage"] == "NOT_TESTED"
+    assert report["release_approved"] is False
