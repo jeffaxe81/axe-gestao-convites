@@ -58,12 +58,16 @@ def clean_revision(root):
 def diagnose(url, *, root=ROOT, env_file=None, local_url=None,
              allow_proxy_hop=False, require_local_gates=False):
     """Retorna relatório sanitizado; falhas nunca incluem credenciais/PII."""
+    local_inputs = (env_file is not None, local_url is not None)
+    # Cobertura informa entradas fornecidas, não sucesso ou homologação.
+    input_coverage = ("COMPLETE" if all(local_inputs) else
+                      "PARTIAL" if any(local_inputs) else "NOT_TESTED")
     report = {
         "status": "BLOCKED",
         "read_only": True,
         "release_approved": False,
         "human_gates_pending": list(HUMAN_GATES),
-        "local_gate_coverage": "NOT_TESTED",
+        "local_input_coverage": input_coverage,
         "host_checks_ready": False,
         "checks": {},
     }
@@ -115,12 +119,7 @@ def diagnose(url, *, root=ROOT, env_file=None, local_url=None,
                 check_production.verify(origin)
         gate("public_https", public_check)
         gate("published_assets", lambda: check_deployed_assets.inspect(origin, root))
-        local_checks = (env_file is not None, local_url is not None)
-        report["local_gate_coverage"] = (
-            "COMPLETE" if all(local_checks) else
-            "PARTIAL" if any(local_checks) else "NOT_TESTED"
-        )
-        report["host_checks_ready"] = all(local_checks)
+        report["host_checks_ready"] = all(local_inputs)
         report["status"] = "AUTOMATED_PASS"
     except RuntimeError:
         pass
@@ -149,7 +148,7 @@ def main(argv=None):
         print("Diagnóstico automatizado: " + report["status"])
         for name, status in report["checks"].items():
             print(f"  {name}: {status}")
-        print("Cobertura automática local: " + report["local_gate_coverage"])
+        print("Cobertura das entradas locais: " + report["local_input_coverage"])
         print("Liberação de convites reais: BLOQUEADA até seis evidências humanas.")
         print("Não comprova versão do backend nem o aceite operacional.")
     return 0 if report["status"] == "AUTOMATED_PASS" else 1
