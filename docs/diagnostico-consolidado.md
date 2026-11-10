@@ -18,7 +18,8 @@ git status --short
 
 # No host policorp, após garantir que a aplicação já foi iniciada com segurança:
 python scripts/diagnose_release.py --url https://isadora2anos.org \
-  --env-file .env --local-url http://127.0.0.1:8080 --json
+  --env-file .env --local-url http://127.0.0.1:8080 \
+  --require-local-gates --json
 
 # Em outra rede, para verificar acesso externo, sem disponibilizar o .env:
 python scripts/diagnose_release.py --url https://isadora2anos.org --json
@@ -41,6 +42,15 @@ Se passar `--env-file`, valida os campos obrigatórios, permissões do arquivo
 e igualdade de `APP_PUBLIC_URL` com a URL solicitada. Se passar
 `--local-url`, valida também os oito checks locais de leitura. Checagens
 não solicitadas aparecem explicitamente como `NOT_TESTED`.
+
+**No host `policorp`, use `--require-local-gates`.** O modo estrito exige
+ambos `--env-file` e `--local-url`; a ausência de qualquer um bloqueia
+o resultado **antes de consultar a rede**. O campo `local_gate_coverage`
+indica `NOT_TESTED`, `PARTIAL` ou `COMPLETE`; `host_checks_ready` só é
+`true` quando os dois gates locais e todos os demais checks automáticos
+passaram. Sem o modo estrito, uma execução externa pode retornar
+`AUTOMATED_PASS` com cobertura local incompleta — isso **não** valida o host.
+Nenhum desses campos autoriza convites reais.
 
 ## Como interpretar
 
