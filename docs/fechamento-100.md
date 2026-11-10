@@ -24,7 +24,7 @@ Esses resultados comprovam desenvolvimento/ambiente descartável. A liberação 
 
 ## Coleta sem dados pessoais
 
-Copie `docs/release-evidence-template.json` **para uma pasta privada fora do Git**. Mantenha os valores `verified=false` até a execução real. Quando um teste for concluído, indique `verified=true`, data ISO 8601 com fuso em `verified_at`, e um identificador **não sensível** de evidência em `evidence_ref` (por exemplo, `QA-ANDROID-20261108-001`).
+Copie `docs/release-evidence-template.json` **para uma pasta privada fora do Git**. Mantenha os valores `verified=false` até a execução real. Quando um teste for concluído, indique `verified=true`, data ISO 8601 com fuso em `verified_at` (sem datas futuras, salvo tolerância de 5 minutos para diferenças de relógio), e um identificador **não sensível** de evidência em `evidence_ref` (por exemplo, `QA-ANDROID-20261108-001`).
 
 Não use nomes de convidados, URLs de edição, credenciais, backups nem relatórios nominais nesse arquivo. A evidência propriamente dita deve permanecer no armazenamento privado autorizado.
 
