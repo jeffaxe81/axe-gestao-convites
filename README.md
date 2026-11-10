@@ -8,6 +8,8 @@ Aniversário de dois anos da Isadora — 13/12/2026, às 15h (America/Sao_Paulo)
 
 Antes de liberar o domínio, conferir também os arquivos públicos com o [verificador de versão publicada](docs/verificacao-versao-publicada.md). Essa comparação **não valida o backend** nem substitui os testes físicos e o aceite.
 
+Para uma homologação coordenada no servidor e de uma rede externa, usar o [diagnóstico consolidado somente leitura](docs/diagnostico-consolidado.md). O comando informa gates automáticos aprovados e pendentes, mas nunca autoriza envio de convites reais.
+
 ## Barra de avanço verificado
 
 `[██████████████░░] 86% — 6 de 7 etapas completas`
