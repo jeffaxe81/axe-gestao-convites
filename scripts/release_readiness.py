@@ -43,7 +43,7 @@ def evaluate(value):
                 if recorded > datetime.now(timezone.utc) + timedelta(minutes=5):
                     raise ValueError()
             except (TypeError, ValueError):
-                raise ValueError("Falta data com fuso em " + key) from None
+                raise ValueError("Data ausente, sem fuso ou futura em " + key) from None
             complete.append(key)
         else:
             if entry["verified_at"] is not None or entry["evidence_ref"] is not None:
