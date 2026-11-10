@@ -54,6 +54,45 @@ def test_all_references_only_mark_records_ready_for_human_review():
 
 
 
+def test_acceptance_requires_all_prior_evidence():
+    manifest = empty_manifest()
+    manifest["aceite_operacional"] = {
+        "verified": True,
+        "verified_at": "2026-11-10T18:00:00-03:00",
+        "evidence_ref": "aceite-privado-0001",
+    }
+    with pytest.raises(ValueError, match="outras cinco evidências"):
+        evaluate(manifest)
+
+
+def test_acceptance_must_follow_last_completed_evidence_across_timezones():
+    manifest = empty_manifest()
+    for key in GATES:
+        manifest[key] = {
+            "verified": True,
+            "verified_at": "2026-11-10T17:00:00-03:00",
+            "evidence_ref": "comprovacao-privada-0001",
+        }
+    # 19:00Z = 16:00-03:00, anterior às cinco evidências das 20:00Z.
+    manifest["aceite_operacional"]["verified_at"] = "2026-11-10T19:00:00+00:00"
+    with pytest.raises(ValueError, match="anterior a outra evidência"):
+        evaluate(manifest)
+
+
+def test_acceptance_after_every_evidence_is_eligible_for_human_review():
+    manifest = empty_manifest()
+    for key in GATES:
+        manifest[key] = {
+            "verified": True,
+            "verified_at": "2026-11-09T17:00:00-03:00",
+            "evidence_ref": "comprovacao-privada-0001",
+        }
+    manifest["aceite_operacional"]["verified_at"] = "2026-11-10T21:00:00+00:00"
+    summary, eligible = report(manifest)
+    assert eligible
+    assert "conferência humana final" in summary
+
+
 def test_future_dated_evidence_never_unlocks_human_review():
     manifest = empty_manifest()
     for key in GATES:

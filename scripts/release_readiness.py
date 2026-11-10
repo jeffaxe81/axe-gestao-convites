@@ -24,6 +24,7 @@ def evaluate(value):
     if not isinstance(value, dict) or set(value) != set(GATES):
         raise ValueError("O arquivo deve conter exatamente as seis verificações de liberação.")
     complete, missing = [], []
+    timestamps = {}
     for key, label in GATES.items():
         entry = value[key]
         if not isinstance(entry, dict) or set(entry) != {
@@ -45,10 +46,19 @@ def evaluate(value):
             except (TypeError, ValueError):
                 raise ValueError("Data ausente, sem fuso ou futura em " + key) from None
             complete.append(key)
+            timestamps[key] = recorded.astimezone(timezone.utc)
         else:
             if entry["verified_at"] is not None or entry["evidence_ref"] is not None:
                 raise ValueError("Não registre evidência de teste pendente em " + key)
             missing.append(key)
+    # A autorização não pode ser emitida antes dos demais comprovantes.
+    if "aceite_operacional" in complete:
+        prior_gates = set(GATES) - {"aceite_operacional"}
+        if not prior_gates.issubset(complete):
+            raise ValueError("Aceite operacional exige as outras cinco evidências.")
+        accepted_at = timestamps["aceite_operacional"]
+        if any(accepted_at < timestamps[key] for key in prior_gates):
+            raise ValueError("Aceite operacional anterior a outra evidência.")
     return complete, missing
 
 
