@@ -56,13 +56,19 @@ def clean_revision(root):
 
 
 def diagnose(url, *, root=ROOT, env_file=None, local_url=None,
-             allow_proxy_hop=False):
+             allow_proxy_hop=False, require_local_gates=False):
     """Retorna relatório sanitizado; falhas nunca incluem credenciais/PII."""
+    local_inputs = (env_file is not None, local_url is not None)
+    # Cobertura informa entradas fornecidas, não sucesso ou homologação.
+    input_coverage = ("COMPLETE" if all(local_inputs) else
+                      "PARTIAL" if any(local_inputs) else "NOT_TESTED")
     report = {
         "status": "BLOCKED",
         "read_only": True,
         "release_approved": False,
         "human_gates_pending": list(HUMAN_GATES),
+        "local_input_coverage": input_coverage,
+        "host_checks_ready": False,
         "checks": {},
     }
 
@@ -81,6 +87,10 @@ def diagnose(url, *, root=ROOT, env_file=None, local_url=None,
         origin = gate("public_url", lambda: check_production.validate_origin(url)[0])
         if local_url is not None:
             gate("local_url", lambda: check_local.local_origin(local_url))
+        if require_local_gates and (env_file is None or local_url is None):
+            report["checks"]["required_local_inputs"] = "FAIL"
+            report["failed_check"] = "required_local_inputs"
+            return report
         root = Path(root).resolve()
         report["checkout_sha"] = gate("checkout_clean", lambda: clean_revision(root))
 
@@ -109,6 +119,7 @@ def diagnose(url, *, root=ROOT, env_file=None, local_url=None,
                 check_production.verify(origin)
         gate("public_https", public_check)
         gate("published_assets", lambda: check_deployed_assets.inspect(origin, root))
+        report["host_checks_ready"] = all(local_inputs)
         report["status"] = "AUTOMATED_PASS"
     except RuntimeError:
         pass
@@ -122,11 +133,14 @@ def main(argv=None):
     parser.add_argument("--local-url", help="Loopback HTTP: ex. http://127.0.0.1:8080")
     parser.add_argument("--allow-proxy-hop", action="store_true",
                         help="Somente após validar proxy que sobrescreve X-Forwarded-For")
+    parser.add_argument("--require-local-gates", action="store_true",
+                        help="Bloqueia sem --env-file e --local-url (uso no policorp)")
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
     report = diagnose(
         args.url, env_file=args.env_file, local_url=args.local_url,
         allow_proxy_hop=args.allow_proxy_hop,
+        require_local_gates=args.require_local_gates,
     )
     if args.json:
         print(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True))
@@ -134,6 +148,7 @@ def main(argv=None):
         print("Diagnóstico automatizado: " + report["status"])
         for name, status in report["checks"].items():
             print(f"  {name}: {status}")
+        print("Cobertura das entradas locais: " + report["local_input_coverage"])
         print("Liberação de convites reais: BLOQUEADA até seis evidências humanas.")
         print("Não comprova versão do backend nem o aceite operacional.")
     return 0 if report["status"] == "AUTOMATED_PASS" else 1
