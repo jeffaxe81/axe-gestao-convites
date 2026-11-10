@@ -1,6 +1,6 @@
 """No implicit production authorization from CI or incomplete records."""
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -51,6 +51,34 @@ def test_all_references_only_mark_records_ready_for_human_review():
     assert "conferência humana final" in text
     assert "NÃO comprova" in text
 
+
+
+
+def test_future_dated_evidence_never_unlocks_human_review():
+    manifest = empty_manifest()
+    for key in GATES:
+        manifest[key] = {
+            "verified": True,
+            "verified_at": "2026-11-08T10:00:00-03:00",
+            "evidence_ref": "prova-interna-de-teste-0001",
+        }
+    manifest["aceite_operacional"]["verified_at"] = (
+        datetime.now(timezone.utc) + timedelta(days=1)
+    ).isoformat()
+    with pytest.raises(ValueError):
+        report(manifest)
+
+
+def test_small_clock_skew_is_not_rejected():
+    manifest = empty_manifest()
+    manifest["dns_https"] = {
+        "verified": True,
+        "verified_at": (datetime.now(timezone.utc) + timedelta(minutes=1)).isoformat(),
+        "evidence_ref": "validacao-externa-privada-0001",
+    }
+    complete, missing = evaluate(manifest)
+    assert complete == ["dns_https"]
+    assert len(missing) == 5
 
 @pytest.mark.parametrize("broken", [
     {"bad": True},
