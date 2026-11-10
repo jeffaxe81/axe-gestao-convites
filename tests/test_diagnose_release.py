@@ -35,7 +35,7 @@ def test_success_still_does_not_authorize_real_invitations(monkeypatch):
     assert result["release_approved"] is False
     assert result["read_only"] is True
     assert result["host_checks_ready"] is False
-    assert result["local_gate_coverage"] == "NOT_TESTED"
+    assert result["local_input_coverage"] == "NOT_TESTED"
     assert result["checkout_sha"] == SHA
     assert result["checks"]["local_configuration"] == "NOT_TESTED"
     assert result["checks"]["local_http"] == "NOT_TESTED"
@@ -114,7 +114,7 @@ def test_local_and_public_checks_run_in_order(monkeypatch):
     )
     assert result["status"] == "AUTOMATED_PASS"
     assert result["host_checks_ready"] is True
-    assert result["local_gate_coverage"] == "COMPLETE"
+    assert result["local_input_coverage"] == "COMPLETE"
     assert all(result["checks"][x] == "PASS" for x in (
         "local_configuration", "local_http", "public_https", "published_assets"
     ))
@@ -156,7 +156,7 @@ def test_cli_success_is_not_deployment_approval(monkeypatch, capsys):
     monkeypatch.setattr(diagnostic, "diagnose", lambda *args, **kw: {
         "status": "AUTOMATED_PASS", "release_approved": False,
         "read_only": True, "checks": {"public_https": "PASS"},
-        "local_gate_coverage": "NOT_TESTED",
+        "local_input_coverage": "NOT_TESTED",
         "human_gates_pending": list(diagnostic.HUMAN_GATES),
     })
     assert diagnostic.main(["--url", URL]) == 0
@@ -181,6 +181,9 @@ def test_host_mode_blocks_missing_local_inputs_without_http(monkeypatch, optiona
     assert result["host_checks_ready"] is False
     assert result["failed_check"] == "required_local_inputs"
     assert result["checks"]["required_local_inputs"] == "FAIL"
+    assert result["local_input_coverage"] == (
+        "NOT_TESTED" if not optional else "PARTIAL"
+    )
 
 
 def test_host_mode_passes_only_with_all_automatic_checks(monkeypatch):
@@ -195,7 +198,7 @@ def test_host_mode_passes_only_with_all_automatic_checks(monkeypatch):
     )
     assert result["status"] == "AUTOMATED_PASS"
     assert result["host_checks_ready"] is True
-    assert result["local_gate_coverage"] == "COMPLETE"
+    assert result["local_input_coverage"] == "COMPLETE"
     assert result["release_approved"] is False
 
 
@@ -214,6 +217,7 @@ def test_host_mode_blocks_local_failure_without_external_http(monkeypatch):
     assert result["status"] == "BLOCKED"
     assert result["failed_check"] == "local_configuration"
     assert result["host_checks_ready"] is False
+    assert result["local_input_coverage"] == "COMPLETE"
 
 
 def test_cli_strict_mode_reports_missing_inputs_without_secrets(monkeypatch, capsys):
@@ -222,5 +226,5 @@ def test_cli_strict_mode_reports_missing_inputs_without_secrets(monkeypatch, cap
     assert diagnostic.main(["--url", URL, "--require-local-gates", "--json"]) == 1
     report = json.loads(capsys.readouterr().out)
     assert report["failed_check"] == "required_local_inputs"
-    assert report["local_gate_coverage"] == "NOT_TESTED"
+    assert report["local_input_coverage"] == "NOT_TESTED"
     assert report["release_approved"] is False
