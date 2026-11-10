@@ -11,7 +11,10 @@ from pathlib import Path
 import sys
 from urllib.error import URLError
 
-from scripts.check_production import fetch, validate_origin
+if __package__:
+    from .check_production import fetch, validate_origin
+else:  # Suporta python scripts/check_deployed_assets.py sem instalar o pacote
+    from check_production import fetch, validate_origin
 
 ASSETS = ("site.css", "guest.js", "admin.css", "admin.js")
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
