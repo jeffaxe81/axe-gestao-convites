@@ -35,7 +35,7 @@ python scripts/release_readiness.py --evidence-file docs/release-evidence-templa
 # Retorno 1: liberação bloqueada, enquanto houver itens pendentes.
 ```
 
-O verificador exige os seis registros para considerar **completo o formulário de evidências** e sempre exige revisão humana posterior. Ele não confere sozinho a autenticidade de comprovantes, Android, iPhone ou HTTPS. Preencher `verified=true` sem executar testes é inválido como prova operacional.
+O verificador exige os seis registros para considerar **completo o formulário de evidências**. O `aceite_operacional` só pode ser declarado após as outras cinco evidências estarem marcadas como verificadas e sua data deve ser igual ou posterior à data de conclusão mais recente (comparando fusos horários). Mesmo com todas as datas e referências válidas, exige revisão humana posterior. Ele não confere sozinho a autenticidade de comprovantes, Android, iPhone ou HTTPS. Preencher `verified=true` sem executar testes é inválido como prova operacional.
 
 ## Procedimento recomendado
 
