@@ -6,7 +6,6 @@ import pytest
 from playwright.sync_api import expect
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
 from werkzeug.security import generate_password_hash
 from werkzeug.serving import make_server
 
@@ -18,9 +17,13 @@ from tests.e2e.test_guest import page
 
 
 @pytest.fixture
-def organizer_server():
-    engine = create_engine("sqlite+pysqlite:///:memory:",
-                           connect_args={"check_same_thread": False}, poolclass=StaticPool)
+def organizer_server(tmp_path):
+    # The HTTP server is threaded. An in-memory SQLite + StaticPool fixture shares
+    # one DBAPI connection across concurrent requests, which can corrupt ORM reads.
+    # A temporary file gives each thread its own pooled connection to the same DB.
+    database_file = tmp_path / "organizer-e2e.sqlite3"
+    engine = create_engine(f"sqlite+pysqlite:///{database_file}",
+                           connect_args={"check_same_thread": False})
     Base.metadata.create_all(engine)
     factory = sessionmaker(engine, expire_on_commit=False)
     with factory.begin() as session:
