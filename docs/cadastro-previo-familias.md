@@ -61,3 +61,9 @@ Caso a marcação tenha sido feita por engano, pressione **Desfazer envio regist
 Os indicadores de envio registrado / não registrado e o filtro correspondente não alteram contagem de convidados, buffet ou situação do RSVP. Uma recusa pode permanecer marcada como envio registrado, pois são fatos diferentes.
 
 **Atenção:** o registro manual não é recibo de entrega, leitura ou envio automatizado pela API do WhatsApp. Não há integração com WhatsApp Business API ou confirmação técnica de entrega nesta versão. Para homologação, usar famílias e telefones fictícios no navegador e testar em dispositivos Android/iOS reais antes de liberar em produção.
+
+## PDF individual com QR Code por família
+
+Para a homologação com famílias fictícias, o script `scripts/generate_invitation.py` permite usar o **link individual** copiado do painel via `--family-link-stdin`, sem registrar o token nos argumentos do processo. O PDF gerado traz o link daquela família no QR Code e botão. A execução continua offline e **não marca como enviado**.
+
+Consulte o procedimento [PDF individual vinculado à família](pdf-individual-por-familia.md). O modo antigo `--url` é apenas modelo geral, explicitamente rotulado **NÃO ENVIAR**, não um RSVP ligado à lista de convidados. O envio de convites reais depende da homologação física e aceite.
