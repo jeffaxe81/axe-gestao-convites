@@ -238,7 +238,7 @@ def main():
                 raise ValueError("--check-production exige uma URL HTTPS final.")
             # O verificador só recebe a origem; nunca o fragmento secreto.
             origin = (_public_origin_of_family_link(family_link) if family_link
-                      else validate_url(args.url))
+                      else args.url)
             if __package__:
                 from scripts.check_production import verify
             else:
