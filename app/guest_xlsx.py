@@ -4,6 +4,7 @@ Only literal cells are supported. No formulas, macros or external connections ru
 """
 from io import BytesIO
 from posixpath import join, normpath
+import re
 from zipfile import ZipFile, BadZipFile
 from xml.etree import ElementTree as ET
 
@@ -56,6 +57,30 @@ def first_sheet_path(archive, names):
     return path
 
 
+def hidden_attribute(element):
+    """Excel serializa o atributo hidden como 1/0 ou true/false."""
+    value = element.attrib.get("hidden")
+    return value is not None and value.strip().lower() not in ("0", "false")
+
+
+def verify_visible_columns(sheet):
+    """Não importar uma coluna obrigatória que o organizador não vê."""
+    for column in sheet.findall("x:cols/x:col", NS):
+        if not hidden_attribute(column):
+            continue
+        try:
+            lower = int(column.attrib["min"])
+            upper = int(column.attrib["max"])
+        except (KeyError, ValueError) as exc:
+            raise ValueError("Definição de coluna oculta inválida.") from exc
+        if lower < 1 or upper < lower:
+            raise ValueError("Definição de coluna oculta inválida.")
+        if lower <= 6 and upper >= 1:
+            raise ValueError(
+                "Colunas A até F não podem estar ocultas. Reexiba antes de importar."
+            )
+
+
 def xlsx_rows(contents):
     if len(contents) > 60 * 1024:
         raise ValueError("Planilha excede o limite de 60 KB.")
@@ -76,16 +101,34 @@ def xlsx_rows(contents):
                 for item in root.findall("x:si", NS):
                     strings.append("".join(node.text or "" for node in item.iter(BASE + "t")))
             root = ET.fromstring(archive.read(sheet))
+            verify_visible_columns(root)
             result = []
+            seen_rows = set()
             for row in root.findall(".//x:sheetData/x:row", NS):
+                if hidden_attribute(row):
+                    raise ValueError(
+                        "A planilha contém linhas ocultas. Reexiba antes de importar."
+                    )
+                row_id = row.attrib.get("r")
+                if row_id is not None:
+                    if not row_id.isdecimal() or int(row_id) < 1 or int(row_id) in seen_rows:
+                        raise ValueError("Linha repetida ou inválida na planilha Excel.")
+                    seen_rows.add(int(row_id))
                 values = [""] * 6
+                seen_columns = set()
                 for cell in row.findall("x:c", NS):
                     ref = cell.attrib.get("r", "")
-                    col = "".join(ch for ch in ref if ch.isalpha()).upper()
-                    if not col or len(col) != 1 or not ("A" <= col <= "F"):
-                        if col:
-                            raise ValueError("Use somente as colunas A até F.")
-                        continue
+                    match = re.fullmatch(r"([A-Z]+)([1-9][0-9]*)", ref.upper())
+                    if match is None:
+                        raise ValueError("Referência de célula Excel inválida.")
+                    col, cell_row = match.groups()
+                    if len(col) != 1 or not ("A" <= col <= "F"):
+                        raise ValueError("Use somente as colunas A até F.")
+                    if row_id is not None and int(cell_row) != int(row_id):
+                        raise ValueError("Célula fora da linha declarada no Excel.")
+                    if col in seen_columns:
+                        raise ValueError("Célula duplicada na planilha Excel.")
+                    seen_columns.add(col)
                     if cell.find("x:f", NS) is not None:
                         raise ValueError("Não use fórmulas na planilha de convidados.")
                     data_type = cell.attrib.get("t")
