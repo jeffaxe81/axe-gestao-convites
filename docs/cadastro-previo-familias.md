@@ -18,7 +18,7 @@ O exemplo acima é fictício e deve ser removido antes de importar convidados re
 
 A importação é transacional e idempotente: repetir a mesma planilha mantém cadastros; alterar dados de uma família já cadastrada provoca erro e não importa nenhuma linha daquela operação. Nenhum convidado importado é contabilizado como confirmação; as famílias permanecem em estado `PENDING`.
 
-**Segurança:** exigir autenticação de organizador e token CSRF; nunca guardar a planilha original no servidor ou divulgar listas nominalmente na API pública. Arquivos XLSX com fórmulas não são aceitos. Planilhas sem o catálogo de abas e relacionamentos internos válidos, com primeira aba oculta ou com relação externa também são recusadas. O sistema não executa links nem fórmulas embutidos no Excel. Não publicar links individuais ou disparar WhatsApp nesta entrega.
+**Segurança:** exigir autenticação de organizador e token CSRF; nunca guardar a planilha original no servidor ou divulgar listas nominalmente na API pública. Arquivos XLSX com fórmulas não são aceitos. Planilhas sem o catálogo de abas e relacionamentos internos válidos, com primeira aba oculta ou com relação externa também são recusadas. **Antes de importar, reexiba todas as linhas da primeira aba e as colunas A a F**: linhas/colunas ocultas e células duplicadas ou fora da linha declarada são recusadas para evitar importar contatos invisíveis ou ambíguos. Filtros do Excel podem ocultar linhas; limpe os filtros e reexiba os dados. O sistema não executa links nem fórmulas embutidos no Excel. Não publicar links individuais ou disparar WhatsApp nesta entrega.
 
 ## Links individuais e respostas vinculadas
 
