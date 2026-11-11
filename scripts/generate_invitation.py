@@ -5,12 +5,15 @@ O script é offline e não envia WhatsApp nem publica o convite.
 O modo --preview cria uma demonstração SEM link de confirmação.
 """
 import argparse
+import getpass
 from io import BytesIO
 import ipaddress
 import os
 from pathlib import Path
 import re
+import sys
 from urllib.parse import urlsplit
+from uuid import UUID
 
 from reportlab.graphics import renderPDF
 from reportlab.graphics.barcode.qr import QrCodeWidget
@@ -52,6 +55,43 @@ def validate_url(value):
     return "https://" + host
 
 
+def validate_family_link(value):
+    """Aceita somente um link individual canônico /convite#UUID.TOKEN.
+
+    O fragmento é uma credencial privada: nunca vai para check_production,
+    arquivos de log, URL de origem ou uma mensagem de diagnóstico.
+    """
+    if not isinstance(value, str) or len(value) > 420:
+        raise ValueError("Link familiar inválido.")
+    try:
+        parsed = urlsplit(value)
+        origin = validate_url(parsed.scheme + "://" + parsed.netloc)
+    except ValueError:
+        raise ValueError("Link familiar inválido.") from None
+    if parsed.path != "/convite" or parsed.query:
+        raise ValueError("O link familiar deve apontar para /convite.")
+    parts = parsed.fragment.split(".")
+    if len(parts) != 2:
+        raise ValueError("O link familiar exige identificador e token.")
+    family_id, token = parts
+    try:
+        family_uuid = UUID(family_id)
+    except (TypeError, ValueError, AttributeError):
+        raise ValueError("Identificador familiar inválido.") from None
+    if (family_uuid.version != 4 or str(family_uuid) != family_id or
+            not re.fullmatch(r"[0-9a-f]{64}", token)):
+        raise ValueError("Identificador ou token familiar inválido.")
+    canonical = origin + "/convite#" + family_id + "." + token
+    if canonical != value:
+        raise ValueError("Use o link familiar HTTPS original, sem alterações.")
+    return canonical
+
+
+def _public_origin_of_family_link(link):
+    """Extrai apenas a origem pública; nunca entrega um token ao verificador."""
+    validated = validate_family_link(link)
+    return validated.split("/convite#", 1)[0]
+
 def _flower(pdf, cx, cy, radius=12):
     pdf.setFillColor(WHITE)
     for dx, dy in [(0, radius), (radius, 0), (0, -radius), (-radius, 0),
@@ -77,11 +117,17 @@ def _qr(pdf, text, x, y, side):
     renderPDF.draw(drawing, pdf, x, y)
 
 
-def invitation_bytes(url=None, venue=None, *, preview=False):
-    if preview and url is not None:
+def invitation_bytes(url=None, venue=None, *, preview=False, family_link=None):
+    if preview and (url is not None or family_link is not None):
         raise ValueError("Demonstração não pode conter URL real.")
-    if not preview:
-        url = validate_url(url)
+    if not preview and (url is None) == (family_link is None):
+        raise ValueError("Informe apenas a origem geral ou um link individual.")
+    if family_link is not None:
+        target_url = validate_family_link(family_link)
+    elif not preview:
+        target_url = validate_url(url)
+    else:
+        target_url = None
     venue = " ".join((venue or "Local a confirmar").split())
     if not venue or len(venue) > 160:
         raise ValueError("Local deve ter até 160 caracteres.")
@@ -120,26 +166,35 @@ def invitation_bytes(url=None, venue=None, *, preview=False):
         _center(pdf, "O botão e o QR Code aparecerão", 169, "Helvetica", 12)
         _center(pdf, "após configurar o domínio real.", 152, "Helvetica", 12)
     else:
-        _qr(pdf, url, (width - 81) / 2, 155, 81)
-        _center(pdf, "Escaneie o QR Code ou toque no botão:", 143, "Helvetica", 10)
+        _qr(pdf, target_url, (width - 81) / 2, 155, 81)
+        hint = ("QR individual: escaneie ou toque no botão." if family_link
+                else "QR geral: não substitui o link individual.")
+        _center(pdf, hint, 143, "Helvetica", 10)
 
     button_x, button_y, button_width, button_height = 67, 87, width - 134, 42
     pdf.setFillColor(GREEN if not preview else colors.HexColor("#9C998B"))
     pdf.roundRect(button_x, button_y, button_width, button_height, 16, stroke=0, fill=1)
-    _center(pdf, "CONFIRMAR PRESENÇA", 101, "Helvetica-Bold", 13, WHITE)
+    button_label = "CONFIRMAR PRESENÇA" if family_link else "ACESSAR O SITE"
+    _center(pdf, button_label, 101, "Helvetica-Bold", 13, WHITE)
     if not preview:
-        pdf.linkURL(url, (button_x, button_y, button_x + button_width,
-                          button_y + button_height), relative=0, thickness=0)
+        pdf.linkURL(target_url, (button_x, button_y, button_x + button_width,
+                                 button_y + button_height), relative=0, thickness=0)
         # A área do QR também abre o link em leitores PDF.
-        pdf.linkURL(url, ((width - 81) / 2, 155, (width + 81) / 2, 236),
+        pdf.linkURL(target_url, ((width - 81) / 2, 155, (width + 81) / 2, 236),
                     relative=0, thickness=0)
+        if family_link:
+            _center(pdf, "Convite individual: compartilhe só com a família.", 73,
+                    "Helvetica", 9)
+        else:
+            _center(pdf, "MODELO GERAL - NÃO ENVIAR AOS CONVIDADOS", 73,
+                    "Helvetica-Bold", 9, GREEN)
     _center(pdf, "Com carinho, nossa família", 53, "Helvetica-Oblique", 11, GREEN)
     pdf.showPage()
     pdf.save()
     return buffer.getvalue()
 
 
-def save_invitation(destination, *, url=None, venue=None, preview=False):
+def save_invitation(destination, *, url=None, venue=None, preview=False, family_link=None):
     path = Path(destination).expanduser()
     repository = Path(__file__).resolve().parents[1]
     dest = path.parent.resolve() / path.name
@@ -147,7 +202,7 @@ def save_invitation(destination, *, url=None, venue=None, preview=False):
         raise ValueError("Grave o PDF fora do repositório.")
     if dest.suffix.lower() != ".pdf" or not dest.parent.is_dir():
         raise ValueError("Informe arquivo .pdf em uma pasta existente.")
-    pdf = invitation_bytes(url=url, venue=venue, preview=preview)
+    pdf = invitation_bytes(url=url, venue=venue, preview=preview, family_link=family_link)
     fd = os.open(dest, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
     try:
         with os.fdopen(fd, "wb") as output:
@@ -161,7 +216,9 @@ def save_invitation(destination, *, url=None, venue=None, preview=False):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     selected = parser.add_mutually_exclusive_group(required=True)
-    selected.add_argument("--url", help="Origem HTTPS final, ex.: https://convites.seudominio.com.br")
+    selected.add_argument("--url", help="Origem HTTPS geral: somente modelo, NÃO enviar.")
+    selected.add_argument("--family-link-stdin", action="store_true",
+                          help="Lê link familiar secreto da entrada padrão, sem gravá-lo no shell.")
     selected.add_argument("--preview", action="store_true", help="PDF de demonstração sem link")
     parser.add_argument("--output", required=True, help="Caminho de saída .pdf fora do Git")
     parser.add_argument("--venue", help="Local da festa, se já confirmado")
@@ -169,24 +226,36 @@ def main():
                         help="Confere HTTPS e acesso privado antes de gerar PDF final")
     args = parser.parse_args()
     try:
+        family_link = None
+        if args.family_link_stdin:
+            if sys.stdin.isatty():
+                raw_link = getpass.getpass("Cole o link familiar (oculto): ")
+            else:
+                raw_link = sys.stdin.readline(513).rstrip("\r\n")
+            family_link = validate_family_link(raw_link)
         if args.check_production:
             if args.preview:
-                raise ValueError("--check-production exige --url HTTPS final.")
-            # Also works when invoked as: python scripts/generate_invitation.py
+                raise ValueError("--check-production exige uma URL HTTPS final.")
+            # O verificador só recebe a origem; nunca o fragmento secreto.
+            origin = (_public_origin_of_family_link(family_link) if family_link
+                      else validate_url(args.url))
             if __package__:
                 from scripts.check_production import verify
             else:
                 from check_production import verify
-            verify(args.url)
+            verify(origin)
         target = save_invitation(args.output, url=args.url, venue=args.venue,
-                                 preview=args.preview)
+                                 preview=args.preview, family_link=family_link)
     except (ValueError, RuntimeError, OSError) as error:
         parser.error(str(error))
     print("Convite criado: " + str(target))
     if args.preview:
         print("DEMONSTRAÇÃO - PDF sem links. Não envie aos convidados.")
+    elif not family_link:
+        print("MODELO GERAL - sem vínculo familiar; NÃO enviar aos convidados.")
     else:
-        print("ATENÇÃO: confirme HTTPS e teste o QR/WhatsApp antes de compartilhar.")
+        print("PDF individual privado. Testar QR/WhatsApp antes de compartilhar.")
+        print("O PDF contém credencial familiar: não publicar nem versionar.")
 
 
 if __name__ == "__main__":
