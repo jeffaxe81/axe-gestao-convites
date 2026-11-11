@@ -21,6 +21,10 @@ A execução **verde** da CI do GitHub Actions inclui um artefato **isadora-rele
 7. Fazer homologação de PDF recebido via WhatsApp em **Android e iPhone físicos**; testar confirmação, recusa, edição, acompanhante, idade, perda de rede e reenvio.
 8. Registrar revisão de segurança independente, aprovador e aceite de operação antes de distribuir os convites.
 
+## Proteção contra confirmações sem convite
+
+Em produção, a rota genérica de criação `POST /api/rsvps` foi desativada por padrão e não pode ser reativada via configuração de produção: retorna HTTP `403 INVITATION_REQUIRED`, sem escrever no banco. O formulário na página inicial `/` fica indisponível para novas respostas; o convidado deve abrir seu link individual `/convite#id.token`, associado ao registro de família importado. Tokens legítimos de edição das respostas anteriores continuam válidos. Confirmar o comportamento em homologação com famílias fictícias, inclusive dados inválidos e contagem antes/depois. Não alterar as tabelas nem apagar registros existentes durante a implantação.
+
 ## Gate final
 
 - [x] Regras, formulários, API, painel e proteção de acesso implementados
