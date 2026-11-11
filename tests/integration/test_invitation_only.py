@@ -16,7 +16,11 @@ from tests.integration.test_organizer_api import login
 def private_client(store):
     app = create_app({
         "TESTING": True, "RSVP_STORE": store,
-        "API_RATE_LIMIT": 0, "INVITATION_ONLY": True,
+        "SECRET_KEY": "organizer-session-only-in-unit-tests-1234",
+        "ORGANIZER_USERNAME": "isadora-admin",
+        "ORGANIZER_PASSWORD_HASH": generate_password_hash("minha-senha-de-teste"),
+        "AUTH_RATE_LIMIT": 0, "API_RATE_LIMIT": 0,
+        "INVITATION_ONLY": True,
     })
     return app.test_client()
 
