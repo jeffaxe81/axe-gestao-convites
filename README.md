@@ -18,6 +18,8 @@ Ver [docs/progresso.md](docs/progresso.md). Os testes automatizados de navegador
 
 ## Implementado
 
+**Fluxo de confirmação em produção:** para evitar presenças anônimas não vinculadas a convidados, novas respostas precisam do **link individual** fornecido ao responsável pela família cadastrada. A página inicial orienta a obter o link com o organizador, sem formulário aberto; `POST /api/rsvps` retorna `403 INVITATION_REQUIRED`. A confirmação por `/convite#id.token` continua funcional, assim como a edição de respostas anteriores com seus tokens privados. O modo de testes preserva o endpoint legado exclusivamente para regressão, sem opção de desativar a exigência em produção. Essa nova regra precisa de homologação com famílias fictícias no servidor antes de liberar convites reais.
+
 - Regras de confirmação positiva/negativa com convidados e acompanhantes.
 - Crianças de 0 a 5 anos: lembrancinha, sem consumir buffet. Crianças de 6 a 12: buffet e lembrancinha. Acima de 12: buffet.
 - Limite de 40 apenas como alerta interno; não bloqueia convidados.
