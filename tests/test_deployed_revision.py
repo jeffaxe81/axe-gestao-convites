@@ -93,9 +93,10 @@ def test_cli_failure_never_claims_release_approval(monkeypatch, capsys):
 
 
 def test_cli_success_still_requires_human_release(monkeypatch, capsys, tmp_path):
+    actual_inspect = checker.inspect
     monkeypatch.setattr(checker, "inspect",
-                        lambda: checker.inspect(tmp_path, execute_command=runner()[0],
-                                                checkout=fake_checkout))
+                        lambda: actual_inspect(tmp_path, execute_command=runner()[0],
+                                               checkout=fake_checkout))
     assert checker.main(["--json"]) == 0
     report = json.loads(capsys.readouterr().out)
     assert report["status"] == "PASS"
