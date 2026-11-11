@@ -6,6 +6,7 @@ import pytest
 
 from app.guest_list import preview_xlsx
 from app.guest_xlsx_template import template_xlsx
+from tests.integration.test_public_api import store
 from tests.integration.test_organizer_api import client, login
 
 MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
