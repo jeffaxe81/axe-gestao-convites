@@ -25,6 +25,8 @@ A execução **verde** da CI do GitHub Actions inclui um artefato **isadora-rele
 
 Em produção, a rota genérica de criação `POST /api/rsvps` foi desativada por padrão e não pode ser reativada via configuração de produção: retorna HTTP `403 INVITATION_REQUIRED`, sem escrever no banco. O formulário na página inicial `/` fica indisponível para novas respostas; o convidado deve abrir seu link individual `/convite#id.token`, associado ao registro de família importado. Tokens legítimos de edição das respostas anteriores continuam válidos. Confirmar o comportamento em homologação com famílias fictícias, inclusive dados inválidos e contagem antes/depois. Não alterar as tabelas nem apagar registros existentes durante a implantação.
 
+O teste de persistência `scripts/check_persistence.py` é **exclusivo da CI descartável**: cria família fictícia por importação administrativa, confirma via token individual, testa rejeição de RSVP anônimo e recria os serviços Docker de teste para validar volume MySQL. Por alterar dados e contêineres, ele se recusa a iniciar fora do GitHub Actions e **não pode ser utilizado no servidor `policorp`**. No servidor real, usar somente os verificadores de leitura e procedimentos de homologação supervisionados.
+
 ## Gate final
 
 - [x] Regras, formulários, API, painel e proteção de acesso implementados
