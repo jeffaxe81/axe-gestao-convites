@@ -24,8 +24,14 @@ def excel(rows, with_formula=False):
              '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
              '<sheetData>' + "".join(cells) + '</sheetData></worksheet>')
     stream = BytesIO()
-    with ZipFile(stream, "w", ZIP_DEFLATED) as archive:
-        archive.writestr("xl/worksheets/sheet1.xml", sheet)
+    # Workbook completo: o importador confere a ordem declarada das abas
+    # e não aceita mais um ZIP com apenas sheet1.xml.
+    with ZipFile(BytesIO(template_xlsx())) as original:
+        with ZipFile(stream, "w", ZIP_DEFLATED) as archive:
+            for member in original.infolist():
+                data = (sheet.encode("utf-8") if member.filename == "xl/worksheets/sheet1.xml"
+                        else original.read(member.filename))
+                archive.writestr(member, data)
     return stream.getvalue()
 
 

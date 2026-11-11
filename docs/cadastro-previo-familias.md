@@ -4,7 +4,7 @@ Acesse `/organizar`, faça login e procure **Lista de famílias — preparar pla
 
 1. Baixe o modelo **CSV ou Excel (.xlsx)** diretamente no painel. Ambos incluem uma linha fictícia de exemplo.
 2. Substitua a linha fictícia por seus próprios dados e preencha uma linha para cada família. Os nomes das colunas devem permanecer iguais e na ordem especificada.
-3. Salve como CSV UTF-8 separado por ponto e vírgula ou arquivo Excel .xlsx; apenas a primeira aba é considerada.
+3. Salve como CSV UTF-8 separado por ponto e vírgula ou arquivo Excel .xlsx. No Excel, **somente a primeira aba na ordem mostrada pelo arquivo** será importada, mesmo que ela esteja armazenada internamente como `sheet2.xml` ou outro nome. Deixe a aba desejada na primeira posição e visível.
 4. Envie o arquivo e clique em **Validar planilha**. O servidor não grava cadastros nesta etapa.
 5. Depois de revisar os totais, clique em **Confirmar cadastro prévio** para gravar os registros no MySQL.
 
@@ -18,7 +18,7 @@ O exemplo acima é fictício e deve ser removido antes de importar convidados re
 
 A importação é transacional e idempotente: repetir a mesma planilha mantém cadastros; alterar dados de uma família já cadastrada provoca erro e não importa nenhuma linha daquela operação. Nenhum convidado importado é contabilizado como confirmação; as famílias permanecem em estado `PENDING`.
 
-**Segurança:** exigir autenticação de organizador e token CSRF; nunca guardar a planilha original no servidor ou divulgar listas nominalmente na API pública. Arquivos XLSX com fórmulas não são aceitos. Não publicar links individuais ou disparar WhatsApp nesta entrega.
+**Segurança:** exigir autenticação de organizador e token CSRF; nunca guardar a planilha original no servidor ou divulgar listas nominalmente na API pública. Arquivos XLSX com fórmulas não são aceitos. Planilhas sem o catálogo de abas e relacionamentos internos válidos, com primeira aba oculta ou com relação externa também são recusadas. O sistema não executa links nem fórmulas embutidos no Excel. Não publicar links individuais ou disparar WhatsApp nesta entrega.
 
 ## Links individuais e respostas vinculadas
 
