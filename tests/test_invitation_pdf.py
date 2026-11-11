@@ -178,4 +178,4 @@ def test_family_pdf_cli_fails_closed_without_valid_secret(tmp_path, monkeypatch,
         generate_invitation.main()
     assert error.value.code == 2
     assert not target.exists()
-    assert "Link familiar" in capsys.readouterr().err
+    assert "link familiar" in capsys.readouterr().err.lower()
