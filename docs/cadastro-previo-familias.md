@@ -22,6 +22,8 @@ A importação é transacional e idempotente: repetir a mesma planilha mantém c
 
 ## Links individuais e respostas vinculadas
 
+**Controle de acesso em produção:** novas confirmações são aceitas somente pelo link individual de família pré-cadastrada. A página inicial `/` informa como obter o link e não exibe formulário anônimo. A rota antiga `POST /api/rsvps` responde `403 INVITATION_REQUIRED` antes de gravar dados; os links de edição de confirmações anteriores continuam válidos. A rota autenticada por token de família `/api/invitations/<id>/response` permanece funcional e idempotente. O modo de testes isolados mantém o fluxo legado para regressão, mas não é configurável para desativar a proteção em produção.
+
 Depois de importar as famílias, clique em **Exportar links individuais (CSV)**. O arquivo traz uma linha por família com código, responsável, telefone, situação e link secreto. A geração usa a URL configurada em `APP_PUBLIC_URL`; para compartilhar, use o domínio HTTPS homologado, nunca endereços localhost. O envio por WhatsApp continua manual.
 
 Cada link tem o formato `https://seu-dominio/convite#id.token`. O identificador e o segredo ficam no fragmento, que o navegador não envia nas requisições HTTP. A página solicita apenas os dados autorizados daquela família e mostra quantidades previstas da planilha, sem inseri-las como confirmações. O convidado informa nomes e idades reais antes de enviar.

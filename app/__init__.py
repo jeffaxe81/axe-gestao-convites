@@ -33,6 +33,16 @@ def create_app(test_config=None):
     )
     if test_config:
         app.config.update(test_config)
+    # Produção: somente famílias pré-cadastradas com link individual
+    # podem criar novas confirmações. Os testes legados podem exercer a
+    # API genérica separadamente; isso NÃO configura o servidor de produção.
+    app.config["INVITATION_ONLY"] = not bool(app.config.get("TESTING"))
+    if test_config and "INVITATION_ONLY" in test_config:
+        if not app.config.get("TESTING"):
+            raise ValueError("INVITATION_ONLY não pode ser sobrescrito em produção.")
+        if type(test_config["INVITATION_ONLY"]) is not bool:
+            raise ValueError("INVITATION_ONLY deve ser booleano.")
+        app.config["INVITATION_ONLY"] = test_config["INVITATION_ONLY"]
 
     proxy_hops = int(app.config["TRUSTED_PROXY_HOPS"])
     if proxy_hops not in (0, 1):
