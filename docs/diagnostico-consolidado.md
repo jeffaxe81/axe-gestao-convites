@@ -19,7 +19,7 @@ git status --short
 # No host policorp, após garantir que a aplicação já foi iniciada com segurança:
 python scripts/diagnose_release.py --url https://isadora2anos.org \
   --env-file .env --local-url http://127.0.0.1:8080 \
-  --require-local-gates --json
+  --require-local-gates --require-deployed-revision --json
 
 # Em outra rede, para verificar acesso externo, sem disponibilizar o .env:
 python scripts/diagnose_release.py --url https://isadora2anos.org --json
