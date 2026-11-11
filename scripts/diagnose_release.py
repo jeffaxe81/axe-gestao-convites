@@ -181,7 +181,7 @@ def main(argv=None):
             print(f"  {name}: {status}")
         print("Cobertura das entradas locais: " + report["local_input_coverage"])
         print("Revisão declarada da imagem verificada: " +
-              ("SIM" if report["image_revision_verified"] else "NÃO"))
+              ("SIM" if report.get("image_revision_verified", False) else "NÃO"))
         print("Liberação de convites reais: BLOQUEADA até seis evidências humanas.")
         print("Não comprova versão do backend nem o aceite operacional.")
     return 0 if report["status"] == "AUTOMATED_PASS" else 1
