@@ -17,7 +17,7 @@ A execução **verde** da CI do GitHub Actions inclui um artefato **isadora-rele
 3. Executar `python scripts/preflight.py --env-file .env`, depois `docker compose up -d --build --wait`. Deixar MySQL e porta 8080 não expostos ao público.
 4. Executar de rede externa `python scripts/check_production.py --url https://DOMINIO_REAL`; registrar evidência de TLS, HSTS, política CSP, dados privados protegidos e cookie administrativo seguro.
 5. Configurar backup cifrado **externo** e política de retenção; testar restauração no host definitivo com banco temporário, sem sobrescrever dados reais.
-6. Gerar o PDF final com `python scripts/generate_invitation.py --url https://DOMINIO_REAL --check-production --output /PASTA-PRIVADA/convite.pdf --venue "LOCAL_CONFIRMADO"`.
+6. Gerar PDF **individual por família** com `python scripts/generate_invitation.py --family-link-stdin --check-production --output /PASTA-PRIVADA/convite-teste.pdf --venue "LOCAL_CONFIRMADO"`, colando o link secreto da família fictícia na entrada oculta. O modo `--url` é apenas modelo geral e **NÃO deve ser distribuído**. Consulte [procedimento de PDF individual](pdf-individual-por-familia.md).
 7. Fazer homologação de PDF recebido via WhatsApp em **Android e iPhone físicos**; testar confirmação, recusa, edição, acompanhante, idade, perda de rede e reenvio.
 8. Registrar revisão de segurança independente, aprovador e aceite de operação antes de distribuir os convites.
 

@@ -1,8 +1,13 @@
 """Verifica a geração segura do convite PDF, os links e o modo de demonstração."""
+import io
+import os
+import sys
+
 import pytest
 from pypdf import PdfReader
 
-from scripts.generate_invitation import invitation_bytes, save_invitation, validate_url
+from scripts.generate_invitation import (invitation_bytes, save_invitation,
+                                         validate_url, validate_family_link)
 
 
 @pytest.mark.parametrize("url", [
@@ -31,7 +36,8 @@ def test_invitation_has_clickable_url_and_readable_text(tmp_path):
     assert "Isadora" in text
     assert "13 de dezembro de 2026" in text
     assert "Salão das Flores" in text
-    assert "CONFIRMAR PRESENÇA" in text
+    assert "ACESSAR O SITE" in text
+    assert "MODELO GERAL" in text
     annotations = reader.pages[0].get("/Annots")
     assert annotations and len(annotations) == 2
     assert all(ref.get_object()["/A"]["/URI"] == url for ref in annotations)
@@ -106,3 +112,70 @@ def test_cli_checked_pdf_resolves_checker_import_without_pythonpath(tmp_path):
     assert "ModuleNotFoundError" not in process.stderr
     assert "origem HTTPS" in process.stderr
     assert not (tmp_path / "never.pdf").exists()
+
+
+FAMILY_LINK = (
+    "https://convites.festa.com.br/convite#"
+    "550e8400-e29b-41d4-a716-446655440000." + "a" * 64
+)
+
+
+def test_family_pdf_has_exact_secret_link_and_private_permissions(tmp_path):
+    target = tmp_path / "convite-individual.pdf"
+    assert validate_family_link(FAMILY_LINK) == FAMILY_LINK
+    save_invitation(target, family_link=FAMILY_LINK, venue="Salão das Flores")
+    page = PdfReader(str(target)).pages[0]
+    assert "CONFIRMAR PRESENÇA" in page.extract_text()
+    assert "Convite individual" in page.extract_text()
+    assert all(ref.get_object()["/A"]["/URI"] == FAMILY_LINK
+               for ref in page.get("/Annots"))
+    assert os.stat(target).st_mode & 0o777 == 0o600
+
+
+@pytest.mark.parametrize("link", [
+    "https://convites.festa.com.br/convite",
+    "http://convites.festa.com.br/convite#550e8400-e29b-41d4-a716-446655440000." + "a"*64,
+    "https://convites.festa.com.br/#550e8400-e29b-41d4-a716-446655440000." + "a"*64,
+    "https://convites.festa.com.br/convite?x=1#550e8400-e29b-41d4-a716-446655440000." + "a"*64,
+    "https://convites.festa.com.br/convite#550e8400-e29b-41d4-a716-446655440000." + "X"*64,
+    "https://convites.festa.com.br/convite#550e8400-e29b-41d4-a716-446655440000.bad",
+    "https://convites.festa.com.br/convite#550e8400-e29b-11d4-a716-446655440000." + "a"*64,
+    "https://convites.festa.com.br/convite#550e8400-e29b-41d4-a716-446655440000." + "a"*64 + " ",
+    "https://convites.festa.com.br.evil.invalid/convite#550e8400-e29b-41d4-a716-446655440000." + "a"*64,
+])
+def test_family_link_rejects_malformed_or_tampered_capability(link):
+    with pytest.raises(ValueError):
+        validate_family_link(link)
+
+
+def test_family_pdf_cli_hides_token_and_checks_only_public_origin(tmp_path, monkeypatch, capsys):
+    from scripts import check_production, generate_invitation
+    target = tmp_path / "convite-privado.pdf"
+    checks = []
+    monkeypatch.setattr(check_production, "verify", lambda url: checks.append(url))
+    monkeypatch.setattr(sys, "stdin", io.StringIO(FAMILY_LINK + "\n"))
+    monkeypatch.setattr(sys, "argv", [
+        "generate_invitation.py", "--family-link-stdin",
+        "--check-production", "--output", str(target),
+    ])
+    generate_invitation.main()
+    printed = capsys.readouterr()
+    assert "a" * 64 not in printed.out + printed.err
+    assert checks == ["https://convites.festa.com.br"]
+    assert target.exists()
+    assert all(ref.get_object()["/A"]["/URI"] == FAMILY_LINK
+               for ref in PdfReader(str(target)).pages[0].get("/Annots"))
+
+
+def test_family_pdf_cli_fails_closed_without_valid_secret(tmp_path, monkeypatch, capsys):
+    from scripts import generate_invitation
+    target = tmp_path / "nao-criado.pdf"
+    monkeypatch.setattr(sys, "stdin", io.StringIO("https://convites.festa.com.br\n"))
+    monkeypatch.setattr(sys, "argv", [
+        "generate_invitation.py", "--family-link-stdin", "--output", str(target),
+    ])
+    with pytest.raises(SystemExit) as error:
+        generate_invitation.main()
+    assert error.value.code == 2
+    assert not target.exists()
+    assert "link familiar" in capsys.readouterr().err.lower()
