@@ -15,7 +15,10 @@ services:
       timeout: 5s
       retries: 15
   app:
-    build: .
+    build:
+      context: .
+      args:
+        SOURCE_REVISION: ${SOURCE_REVISION:-unknown}
     restart: unless-stopped
     ports:
       - "127.0.0.1:8080:8080"
