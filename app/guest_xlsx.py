@@ -3,12 +3,57 @@
 Only literal cells are supported. No formulas, macros or external connections run.
 """
 from io import BytesIO
+from posixpath import join, normpath
 from zipfile import ZipFile, BadZipFile
 from xml.etree import ElementTree as ET
 
 NS = {"x": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
 BASE = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
 MAX_UNCOMPRESSED = 2 * 1024 * 1024
+WORKBOOK_REL = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id"
+PACKAGE_REL = "{http://schemas.openxmlformats.org/package/2006/relationships}"
+WORKSHEET_REL_TYPE = (
+    "http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet"
+)
+
+
+def first_sheet_path(archive, names):
+    """Resolve a primeira aba exibida no Excel via workbook + relacionamentos.
+
+    O nome físico sheet1.xml pode pertencer a uma aba posterior. Uma planilha
+    sem metadados ou com aba oculta como primeira é rejeitada em vez de importar
+    dados de uma aba diferente da que o organizador selecionou.
+    """
+    if "xl/workbook.xml" not in names or "xl/_rels/workbook.xml.rels" not in names:
+        raise ValueError("Estrutura XLSX incompleta: informações das abas ausentes.")
+    workbook = ET.fromstring(archive.read("xl/workbook.xml"))
+    first = workbook.find("x:sheets/x:sheet", NS)
+    if first is None:
+        raise ValueError("Nenhuma aba Excel disponível.")
+    if first.attrib.get("state", "visible") != "visible":
+        raise ValueError("A primeira aba Excel precisa estar visível.")
+    relationship_id = first.attrib.get(WORKBOOK_REL)
+    if not relationship_id:
+        raise ValueError("Primeira aba Excel sem relacionamento válido.")
+
+    rels = ET.fromstring(archive.read("xl/_rels/workbook.xml.rels"))
+    matching = [
+        item for item in rels.findall(PACKAGE_REL + "Relationship")
+        if item.attrib.get("Id") == relationship_id
+    ]
+    if (len(matching) != 1 or
+            matching[0].attrib.get("Type") != WORKSHEET_REL_TYPE or
+            matching[0].attrib.get("TargetMode", "Internal") != "Internal"):
+        raise ValueError("Relacionamento da primeira aba Excel inválido.")
+
+    target = matching[0].attrib.get("Target", "")
+    if not target or "\\" in target or "%" in target or "?" in target or "#" in target:
+        raise ValueError("Caminho da primeira aba Excel inválido.")
+    path = (normpath(target.lstrip("/")) if target.startswith("/")
+            else normpath(join("xl", target)))
+    if not path.startswith("xl/worksheets/") or not path.endswith(".xml") or path not in names:
+        raise ValueError("Primeira aba Excel não encontrada no arquivo.")
+    return path
 
 
 def xlsx_rows(contents):
@@ -24,9 +69,7 @@ def xlsx_rows(contents):
                 raise ValueError("Arquivo Excel excede o limite de expansão.")
             if any(name.endswith("vbaProject.bin") for name in names):
                 raise ValueError("Planilhas com macros não são aceitas.")
-            sheet = "xl/worksheets/sheet1.xml"
-            if sheet not in names:
-                raise ValueError("Primeira aba Excel não encontrada.")
+            sheet = first_sheet_path(archive, names)
             strings = []
             if "xl/sharedStrings.xml" in names:
                 root = ET.fromstring(archive.read("xl/sharedStrings.xml"))
