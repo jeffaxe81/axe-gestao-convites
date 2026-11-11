@@ -16,8 +16,8 @@ if __package__:
 else:
     from diagnose_release import ROOT, clean_revision
 
-SHA = re.compile(r"[0-9a-f]{40}\\Z")
-CONTAINER_ID = re.compile(r"[0-9a-f]{12,64}\\Z")
+SHA = re.compile(r"[0-9a-f]{40}\Z")
+CONTAINER_ID = re.compile(r"[0-9a-f]{12,64}\Z")
 # Metadado OPC de imagem propagado para o contêiner pelo Docker.
 INSPECT_FORMAT = (
     '{{.State.Running}}|'
