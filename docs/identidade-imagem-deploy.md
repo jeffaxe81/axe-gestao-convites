@@ -37,7 +37,7 @@ python scripts/check_deployed_revision.py --json
 python scripts/diagnose_release.py \
   --url https://isadora2anos.org \
   --env-file .env --local-url http://127.0.0.1:8080 \
-  --require-local-gates --json
+  --require-local-gates --require-deployed-revision --json
 ```
 
 O comando de conferência da revisão retorna `PASS` somente se a imagem em execução foi **etiquetada com o mesmo SHA** do checkout e o contêiner está saudável. Imagens antigas sem etiqueta retornarão `BLOCKED`; isso não significa que o aplicativo esteja fora do ar. Não alterar serviços apenas para silenciar este resultado.
