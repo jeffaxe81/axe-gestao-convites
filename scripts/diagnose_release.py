@@ -56,7 +56,8 @@ def clean_revision(root):
 
 
 def diagnose(url, *, root=ROOT, env_file=None, local_url=None,
-             allow_proxy_hop=False, require_local_gates=False):
+             allow_proxy_hop=False, require_local_gates=False,
+             require_deployed_revision=False):
     """Retorna relatório sanitizado; falhas nunca incluem credenciais/PII."""
     local_inputs = (env_file is not None, local_url is not None)
     # Cobertura informa entradas fornecidas, não sucesso ou homologação.
@@ -69,6 +70,7 @@ def diagnose(url, *, root=ROOT, env_file=None, local_url=None,
         "human_gates_pending": list(HUMAN_GATES),
         "local_input_coverage": input_coverage,
         "host_checks_ready": False,
+        "image_revision_verified": False,
         "checks": {},
     }
 
@@ -90,6 +92,11 @@ def diagnose(url, *, root=ROOT, env_file=None, local_url=None,
         if require_local_gates and (env_file is None or local_url is None):
             report["checks"]["required_local_inputs"] = "FAIL"
             report["failed_check"] = "required_local_inputs"
+            return report
+        # A revisão Docker só faz sentido no host, com diagnóstico local completo.
+        if require_deployed_revision and not require_local_gates:
+            report["checks"]["required_host_mode_for_revision"] = "FAIL"
+            report["failed_check"] = "required_host_mode_for_revision"
             return report
         root = Path(root).resolve()
         report["checkout_sha"] = gate("checkout_clean", lambda: clean_revision(root))
@@ -114,6 +121,27 @@ def diagnose(url, *, root=ROOT, env_file=None, local_url=None,
         else:
             report["checks"]["local_http"] = "NOT_TESTED"
 
+        if require_deployed_revision:
+            def deployed_image_revision():
+                # Import local evita circularidade: check_deployed_revision
+                # reutiliza clean_revision deste módulo.
+                if __package__:
+                    from . import check_deployed_revision
+                else:
+                    import check_deployed_revision
+                current = check_deployed_revision.inspect(
+                    root=root, checkout=lambda _root: report["checkout_sha"],
+                )
+                if (current.get("status") != "PASS" or
+                        current.get("running_image_revision") != report["checkout_sha"] or
+                        current.get("revision_label_matches_checkout") is not True or
+                        current.get("running_container_healthy") is not True):
+                    raise RuntimeError("Revisão da imagem não confirmada.")
+            gate("deployed_revision", deployed_image_revision)
+            report["image_revision_verified"] = True
+        else:
+            report["checks"]["deployed_revision"] = "NOT_TESTED"
+
         def public_check():
             with redirect_stdout(io.StringIO()):
                 check_production.verify(origin)
@@ -135,12 +163,15 @@ def main(argv=None):
                         help="Somente após validar proxy que sobrescreve X-Forwarded-For")
     parser.add_argument("--require-local-gates", action="store_true",
                         help="Bloqueia sem --env-file e --local-url (uso no policorp)")
+    parser.add_argument("--require-deployed-revision", action="store_true",
+                        help="Exige também contêiner Docker app saudável, com SHA igual ao checkout; requer --require-local-gates")
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
     report = diagnose(
         args.url, env_file=args.env_file, local_url=args.local_url,
         allow_proxy_hop=args.allow_proxy_hop,
         require_local_gates=args.require_local_gates,
+        require_deployed_revision=args.require_deployed_revision,
     )
     if args.json:
         print(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True))
@@ -149,6 +180,8 @@ def main(argv=None):
         for name, status in report["checks"].items():
             print(f"  {name}: {status}")
         print("Cobertura das entradas locais: " + report["local_input_coverage"])
+        print("Revisão declarada da imagem verificada: " +
+              ("SIM" if report.get("image_revision_verified", False) else "NÃO"))
         print("Liberação de convites reais: BLOQUEADA até seis evidências humanas.")
         print("Não comprova versão do backend nem o aceite operacional.")
     return 0 if report["status"] == "AUTOMATED_PASS" else 1

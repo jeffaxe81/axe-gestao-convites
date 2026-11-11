@@ -19,7 +19,7 @@ git status --short
 # No host policorp, após garantir que a aplicação já foi iniciada com segurança:
 python scripts/diagnose_release.py --url https://isadora2anos.org \
   --env-file .env --local-url http://127.0.0.1:8080 \
-  --require-local-gates --json
+  --require-local-gates --require-deployed-revision --json
 
 # Em outra rede, para verificar acesso externo, sem disponibilizar o .env:
 python scripts/diagnose_release.py --url https://isadora2anos.org --json
@@ -92,4 +92,6 @@ A suíte geral da PR e a CI da `main` após o merge devem estar verdes.
 
 ## Identidade declarada da imagem Docker
 
-Como complemento **local** ao diagnóstico HTTP, o novo script `python scripts/check_deployed_revision.py --json` compara o SHA do checkout limpo ao rótulo da imagem em execução. O rótulo só estará presente quando o build for efetuado com `SOURCE_REVISION`, conforme o [procedimento de identidade de implantação](identidade-imagem-deploy.md). O resultado é **somente leitura** e **não comprova o conteúdo binário do backend** nem a disponibilidade pública.
+No `policorp`, inclua `--require-deployed-revision` junto de `--require-local-gates`. O diagnóstico consulta o contêiner saudável e compara sua revisão declarada ao SHA do checkout **antes de qualquer verificação HTTP pública**; se não coincidir, retorna `BLOCKED`, com `checks.deployed_revision=FAIL`. O campo `image_revision_verified` informa se a checagem realmente foi concluída. Sem o parâmetro, aparece `checks.deployed_revision=NOT_TESTED` e `image_revision_verified=false`, mesmo quando outros checks passam. Esse modo exige um build etiquetado com `SOURCE_REVISION`; imagens antigas serão bloqueadas no diagnóstico, não desligadas.
+
+Também é possível executar separadamente `python scripts/check_deployed_revision.py --json`, que compara o SHA do checkout limpo ao rótulo da imagem em execução. O rótulo só estará presente quando o build for efetuado com `SOURCE_REVISION`, conforme o [procedimento de identidade de implantação](identidade-imagem-deploy.md). O resultado é **somente leitura** e **não comprova o conteúdo binário do backend** nem a disponibilidade pública.

@@ -228,3 +228,118 @@ def test_cli_strict_mode_reports_missing_inputs_without_secrets(monkeypatch, cap
     assert report["failed_check"] == "required_local_inputs"
     assert report["local_input_coverage"] == "NOT_TESTED"
     assert report["release_approved"] is False
+
+
+def test_image_revision_not_checked_by_default(monkeypatch):
+    successful_checks(monkeypatch)
+    result = diagnostic.diagnose(URL)
+    assert result["checks"]["deployed_revision"] == "NOT_TESTED"
+    assert result["image_revision_verified"] is False
+    assert result["release_approved"] is False
+
+
+def test_revision_gate_requires_explicit_host_mode_before_network(monkeypatch):
+    monkeypatch.setattr(diagnostic, "clean_revision",
+                        lambda _: pytest.fail("Git must not run outside host mode"))
+    monkeypatch.setattr(diagnostic.check_production, "verify",
+                        lambda _: pytest.fail("Network must not run outside host mode"))
+    result = diagnostic.diagnose(URL, require_deployed_revision=True)
+    assert result["status"] == "BLOCKED"
+    assert result["failed_check"] == "required_host_mode_for_revision"
+    assert result["image_revision_verified"] is False
+
+
+def test_host_image_gate_passes_but_never_releases_invitations(monkeypatch):
+    from scripts import check_deployed_revision as image_check
+    calls = successful_checks(monkeypatch)
+    monkeypatch.setattr(diagnostic.preflight, "load_env",
+                        lambda _: {"APP_PUBLIC_URL": URL})
+    monkeypatch.setattr(diagnostic.preflight, "validate",
+                        lambda values, **kw: [])
+    def inspect_image(*, root, checkout):
+        calls.append(("image", checkout(root)))
+        return {
+            "status": "PASS",
+            "running_image_revision": SHA,
+            "revision_label_matches_checkout": True,
+            "running_container_healthy": True,
+        }
+    monkeypatch.setattr(image_check, "inspect", inspect_image)
+    result = diagnostic.diagnose(
+        URL, env_file="file.env", local_url="http://127.0.0.1:8080",
+        require_local_gates=True, require_deployed_revision=True,
+    )
+    assert result["status"] == "AUTOMATED_PASS"
+    assert result["host_checks_ready"] is True
+    assert result["image_revision_verified"] is True
+    assert result["checks"]["deployed_revision"] == "PASS"
+    assert result["release_approved"] is False
+    assert len(result["human_gates_pending"]) == 6
+    assert calls == [
+        ("local", "http://127.0.0.1:8080"),
+        ("image", SHA), ("public", URL), ("assets", URL),
+    ]
+
+
+@pytest.mark.parametrize("broken", [
+    {"status": "PASS", "running_image_revision": "b" * 40,
+     "revision_label_matches_checkout": True, "running_container_healthy": True},
+    {"status": "PASS", "running_image_revision": SHA,
+     "revision_label_matches_checkout": False, "running_container_healthy": True},
+    {"status": "PASS", "running_image_revision": SHA,
+     "revision_label_matches_checkout": True, "running_container_healthy": False},
+    {"status": "BLOCKED", "running_image_revision": SHA,
+     "revision_label_matches_checkout": True, "running_container_healthy": True},
+])
+def test_image_gate_fails_closed_before_public_checks(monkeypatch, broken):
+    from scripts import check_deployed_revision as image_check
+    successful_checks(monkeypatch)
+    monkeypatch.setattr(diagnostic.preflight, "load_env",
+                        lambda _: {"APP_PUBLIC_URL": URL})
+    monkeypatch.setattr(diagnostic.preflight, "validate",
+                        lambda values, **kw: [])
+    monkeypatch.setattr(diagnostic.check_production, "verify",
+                        lambda _: pytest.fail("No public HTTP before valid Docker revision"))
+    monkeypatch.setattr(image_check, "inspect",
+                        lambda **kwargs: broken)
+    result = diagnostic.diagnose(
+        URL, env_file="file.env", local_url="http://127.0.0.1:8080",
+        require_local_gates=True, require_deployed_revision=True,
+    )
+    assert result["status"] == "BLOCKED"
+    assert result["failed_check"] == "deployed_revision"
+    assert result["checks"]["deployed_revision"] == "FAIL"
+    assert result["image_revision_verified"] is False
+    assert result["release_approved"] is False
+
+
+def test_docker_error_does_not_expose_sensitive_text(monkeypatch):
+    from scripts import check_deployed_revision as image_check
+    successful_checks(monkeypatch)
+    monkeypatch.setattr(diagnostic.preflight, "load_env",
+                        lambda _: {"APP_PUBLIC_URL": URL})
+    monkeypatch.setattr(diagnostic.preflight, "validate",
+                        lambda values, **kw: [])
+    monkeypatch.setattr(diagnostic.check_production, "verify",
+                        lambda _: pytest.fail("No public HTTP on Docker failure"))
+    def blocked(**kwargs):
+        raise RuntimeError("TOKEN_SECRET=NEVER_EXPOSE")
+    monkeypatch.setattr(image_check, "inspect", blocked)
+    result = diagnostic.diagnose(
+        URL, env_file="file.env", local_url="http://127.0.0.1:8080",
+        require_local_gates=True, require_deployed_revision=True,
+    )
+    assert result["status"] == "BLOCKED"
+    assert "NEVER_EXPOSE" not in json.dumps(result)
+
+
+def test_cli_requires_host_mode_when_image_revision_requested(monkeypatch, capsys):
+    monkeypatch.setattr(diagnostic, "clean_revision",
+                        lambda _: pytest.fail("Git should not run"))
+    code = diagnostic.main([
+        "--url", URL, "--require-deployed-revision", "--json",
+    ])
+    assert code == 1
+    result = json.loads(capsys.readouterr().out)
+    assert result["failed_check"] == "required_host_mode_for_revision"
+    assert result["release_approved"] is False
