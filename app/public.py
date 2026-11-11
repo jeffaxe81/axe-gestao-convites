@@ -137,6 +137,13 @@ def robots():
 
 @public.post("/api/rsvps")
 def create_rsvp():
+    if current_app.config.get("INVITATION_ONLY", True):
+        # Fail closed before parsing names, keys or touching the database.
+        # Previously issued edit links and per-family responses still work.
+        return error_response(
+            403, "INVITATION_REQUIRED",
+            "Para confirmar presença, abra o link individual enviado à sua família.",
+        )
     key = request.headers.get("Idempotency-Key", "")
     if not 16 <= len(key) <= 160:
         raise InputError("Identificador de envio inválido ou ausente.")
@@ -214,7 +221,11 @@ def invitation_page():
 
 @public.get("/")
 def guest_page():
-    return render_template("index.html")
+    # The public landing page is informative; it does not offer anonymous RSVP.
+    return render_template(
+        "index.html",
+        invitation_only=current_app.config.get("INVITATION_ONLY", True),
+    )
 
 
 @public.get("/editar")
