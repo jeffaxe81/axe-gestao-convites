@@ -45,7 +45,11 @@ jobs:
       - name: Prepare disposable Compose credentials
         run: python scripts/generate_ci_env.py
       - name: Build and start Compose
+        env:
+          SOURCE_REVISION: ${{ github.sha }}
         run: docker compose up -d --build --wait
+      - name: Verify running image revision against the checkout
+        run: python scripts/check_deployed_revision.py --json
       - name: Read-only local acceptance smoke test
         run: python scripts/check_local.py --json
       - name: Verify Compose persistence and idempotency

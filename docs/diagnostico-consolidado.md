@@ -89,3 +89,7 @@ python -m pytest -q tests/test_diagnose_release.py
 ```
 
 A suíte geral da PR e a CI da `main` após o merge devem estar verdes.
+
+## Identidade declarada da imagem Docker
+
+Como complemento **local** ao diagnóstico HTTP, o novo script `python scripts/check_deployed_revision.py --json` compara o SHA do checkout limpo ao rótulo da imagem em execução. O rótulo só estará presente quando o build for efetuado com `SOURCE_REVISION`, conforme o [procedimento de identidade de implantação](identidade-imagem-deploy.md). O resultado é **somente leitura** e **não comprova o conteúdo binário do backend** nem a disponibilidade pública.

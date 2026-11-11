@@ -40,3 +40,7 @@ O projeto pode ser concluído antes da escolha do DNS. Veja [guia de domínio fl
 ## Verificação final do gate de publicação
 
 Consultar [fechamento para 100%](fechamento-100.md). Há um manifesto-modelo para registrar seis evidências operacionais sem PII (`docs/release-evidence-template.json`) e um script `scripts/release_readiness.py` que recusa declarar o checklist completo enquanto faltar qualquer uma. A aplicação também recusa URLs públicas inseguras diretamente na inicialização, sem confiar apenas no pré-check opcional. A comprovação real de Android/iPhone, HTTPS e restauração de produção continua externa.
+
+## Rastreabilidade do código na imagem Docker
+
+Uma verificação local adicional está disponível em `scripts/check_deployed_revision.py --json`. A ferramenta compara o SHA do checkout limpo ao rótulo OCI do app em execução, depois de um build explicitamente etiquetado com `SOURCE_REVISION`. Veja [procedimento de identidade](identidade-imagem-deploy.md). Esta conferência não verifica bytes da imagem e **não** autoriza distribuição de convites.
