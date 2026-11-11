@@ -59,3 +59,7 @@ O script de produção deve executar fora do servidor ou em rede externa para co
 | Aceite para envio real | Pendente | Aprovação explícita |
 
 Relacionados: issues #14–#21, PRs #12 e #13 (já integradas), [CI #328 da main](https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/42787828624).
+
+## Conferência complementar da versão em execução
+
+Após uma implantação controlada e **sem reiniciar nada apenas para diagnóstico**, execute `python scripts/check_deployed_revision.py --json`. O procedimento [Identidade da imagem Docker](identidade-imagem-deploy.md) descreve como etiquetar a imagem no build e verificar se o rótulo corresponde ao SHA do Git. Essa correlação não é prova criptográfica do backend, mas ajuda a detectar imagens antigas ou etiquetadas com revisão diferente. Imagens anteriores à mudança não possuem rótulo e serão sinalizadas como `BLOCKED`, sem afetar a execução.
