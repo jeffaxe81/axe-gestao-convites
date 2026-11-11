@@ -26,7 +26,15 @@
 
     <section class="panel" aria-labelledby="form-title">
       <div id="connection-status" class="notice connection-status" role="status" aria-live="polite" hidden></div>
-      <p id="stage-indicator" class="stage-indicator" role="status" aria-live="polite">Etapa 1 de 3 — Sua resposta</p>
+      {% if invitation_only | default(false) %}
+      <div id="invitation-required" class="notice" role="status">
+        <strong>Confirmação somente pelo convite individual.</strong>
+        <p>Para responder, abra o link enviado à sua família pelo organizador.
+        Se você perdeu o link, solicite um novo acesso ao organizador.</p>
+        <p>Não é possível confirmar presença apenas pela página inicial.</p>
+      </div>
+      {% endif %}
+      <p id="stage-indicator" class="stage-indicator" role="status" aria-live="polite"{% if invitation_only | default(false) %} hidden{% endif %}>Etapa 1 de 3 — Sua resposta</p>
       <noscript><p class="notice error">Ative o JavaScript do navegador para confirmar sua presença.</p></noscript>
       <div id="error" class="notice error" role="alert" hidden></div>
       <p id="loading" class="notice" role="status" hidden>Carregando sua confirmação...</p>
@@ -36,7 +44,7 @@
         <button type="button" id="interest-btn" class="secondary">💛 Gostei do convite</button>
         <p id="interest-status" role="status" aria-live="polite" class="muted"></p>
       </div>
-      <form id="rsvp-form" novalidate>
+      <form id="rsvp-form" novalidate{% if invitation_only | default(false) %} hidden{% endif %}>
         <p class="eyebrow">Confirmação de presença</p>
         <h2 id="form-title">Vamos festejar juntos?</h2>
         <p class="muted">Conte para nós se você poderá participar. Se vier acompanhado, inclua cada pessoa.</p>
