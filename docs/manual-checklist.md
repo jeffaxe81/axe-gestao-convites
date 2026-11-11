@@ -74,6 +74,11 @@ Todas as caixas abaixo permanecem desmarcadas até testes reais. Registrar data,
 
 ## Famílias cadastradas, links individuais e interesse voluntário — aceite final
 
+- [ ] Com a aplicação de produção em ambiente isolado, acessar a página inicial `/`: confirmar que apresenta instrução para usar o link individual e não mostra formulário aberto.
+- [ ] Tentar criar um RSVP sem token por `POST /api/rsvps` com dados fictícios: exigir `403 INVITATION_REQUIRED` e nenhuma alteração nas contagens.
+- [ ] Abrir `/convite#id.token` de família fictícia; confirmar/recusar normalmente, repetir o envio sem duplicidade e editar com o token privado.
+- [ ] Verificar que confirmação antiga já criada continua editável pelo token legítimo, sem permitir nova confirmação genérica.
+
 - [ ] Baixar no painel os modelos CSV e Excel, confirmar a linha fictícia de exemplo e importar apenas dados fictícios de homologação.
 - [ ] Tentar reimportar a mesma planilha; confirmar que não duplica famílias, respostas nem links.
 - [ ] Testar planilha inválida e conflito de uma família já cadastrada; nenhum cadastro parcial deve persistir.
