@@ -6,7 +6,8 @@ import sys
 import pytest
 from pypdf import PdfReader
 
-from scripts.generate_invitation import (invitation_bytes, save_invitation,\n                                         validate_url, validate_family_link)
+from scripts.generate_invitation import (invitation_bytes, save_invitation,
+                                         validate_url, validate_family_link)
 
 
 @pytest.mark.parametrize("url", [
