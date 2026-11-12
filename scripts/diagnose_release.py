@@ -58,7 +58,7 @@ def clean_revision(root):
 
 def diagnose(url, *, root=ROOT, env_file=None, local_url=None,
              allow_proxy_hop=False, require_local_gates=False,
-             require_deployed_revision=False, expected_sha=None):
+             require_deployed_revision=False, expected_sha=None, ci_run_id=None):
     """Retorna relatório sanitizado; falhas nunca incluem credenciais/PII."""
     local_inputs = (env_file is not None, local_url is not None)
     # Cobertura informa entradas fornecidas, não sucesso ou homologação.
@@ -73,6 +73,7 @@ def diagnose(url, *, root=ROOT, env_file=None, local_url=None,
         "host_checks_ready": False,
         "image_revision_verified": False,
         "expected_revision_checked": False,
+        "ci_main_verified": False,
         "checks": {},
     }
 
@@ -105,6 +106,15 @@ def diagnose(url, *, root=ROOT, env_file=None, local_url=None,
                 report["failed_check"] = "expected_revision_host_mode"
                 return report
             report["expected_sha"] = expected_sha
+        if ci_run_id is not None and (
+            expected_sha is None
+            or not (require_local_gates and require_deployed_revision)
+            or type(ci_run_id) is not int
+            or not 0 < ci_run_id <= 9999999999999999999
+        ):
+            report["checks"]["ci_main_inputs"] = "FAIL"
+            report["failed_check"] = "ci_main_inputs"
+            return report
         if require_local_gates and (env_file is None or local_url is None):
             report["checks"]["required_local_inputs"] = "FAIL"
             report["failed_check"] = "required_local_inputs"
@@ -124,6 +134,26 @@ def diagnose(url, *, root=ROOT, env_file=None, local_url=None,
             report["expected_revision_checked"] = True
         else:
             report["checks"]["expected_revision"] = "NOT_TESTED"
+
+        if ci_run_id is not None:
+            def approved_main_ci():
+                # Import only after the SHA / strict-host checks. All HTTP
+                # targets remain fixed to the repository API at api.github.com.
+                if __package__:
+                    from . import check_green_main_ci
+                else:
+                    import check_green_main_ci
+                proof = check_green_main_ci.verify(expected_sha, ci_run_id)
+                if (proof.get("status") != "PASS" or
+                        proof.get("ci_main_verified") is not True or
+                        proof.get("approved_sha") != report["checkout_sha"] or
+                        proof.get("workflow_run_id") != ci_run_id):
+                    raise RuntimeError("CI da main não comprovada.")
+            gate("ci_main", approved_main_ci)
+            report["ci_main_verified"] = True
+            report["ci_main_run_id"] = ci_run_id
+        else:
+            report["checks"]["ci_main"] = "NOT_TESTED"
 
         if env_file is not None:
             def local_config():
@@ -191,6 +221,8 @@ def main(argv=None):
                         help="Exige também contêiner Docker app saudável, com SHA igual ao checkout; requer --require-local-gates")
     parser.add_argument("--expected-sha",
                         help="SHA completo (40 caracteres) do commit aprovado na CI; requer modo host e revisão Docker")
+    parser.add_argument("--ci-run-id", type=int,
+                        help="ID do workflow verde na main ATUAL; requer --expected-sha e modo host estrito")
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
     report = diagnose(
@@ -199,6 +231,7 @@ def main(argv=None):
         require_local_gates=args.require_local_gates,
         require_deployed_revision=args.require_deployed_revision,
         expected_sha=args.expected_sha,
+        ci_run_id=args.ci_run_id,
     )
     if args.json:
         print(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True))
@@ -209,6 +242,8 @@ def main(argv=None):
         print("Cobertura das entradas locais: " + report["local_input_coverage"])
         print("Comparação com SHA aprovado: " +
               ("SIM" if report.get("expected_revision_checked", False) else "NÃO"))
+        print("CI da main atual validada no GitHub: " +
+              ("SIM" if report.get("ci_main_verified", False) else "NÃO"))
         print("Revisão declarada da imagem verificada: " +
               ("SIM" if report.get("image_revision_verified", False) else "NÃO"))
         print("Liberação de convites reais: BLOQUEADA até seis evidências humanas.")
