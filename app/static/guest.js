@@ -204,8 +204,20 @@
       const response = await fetch(url, {...(options || {}), signal: controller.signal});
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        if (response.status === 409) throw new Error('Sua resposta foi atualizada em outra aba. Copie seus dados e recarregue a página.');
-        if (response.status === 403) throw new Error('O prazo para editar esta resposta terminou.');
+        if (response.status === 409) {
+          throw new Error(invited && !editing
+            ? 'Este convite já tem uma resposta diferente. Abra seu link de edição para alterá-la.'
+            : 'Sua resposta foi atualizada em outra aba. Copie seus dados e recarregue a página.');
+        }
+        if (response.status === 403) {
+          if (data.error && data.error.code === 'INVITATION_REQUIRED') {
+            throw new Error('Para confirmar presença, abra o link individual enviado à sua família.');
+          }
+          if (data.error && data.error.code === 'EDIT_CLOSED') {
+            throw new Error('O prazo para editar esta resposta terminou.');
+          }
+          throw new Error('A solicitação não foi autorizada. Verifique seu link de convite.');
+        }
         throw new Error((data.error && data.error.message) || 'Não foi possível concluir. Tente novamente.');
       }
       return data;
