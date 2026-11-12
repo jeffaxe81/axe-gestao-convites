@@ -7,6 +7,7 @@ import pytest
 from app.guest_list import preview_xlsx
 from app.guest_xlsx_template import template_xlsx
 from tests.integration.test_organizer_api import client, login
+from tests.integration.test_public_api import store
 from tests.integration.test_xlsx_hidden_and_duplicates import modified_sheet
 from tests.integration.test_xlsx_tab_order import rewrite
 
@@ -16,7 +17,7 @@ MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 @pytest.mark.parametrize("value", [
     b"0", b"0002", b"1048577", b"9999999", b"9" * 5000,
     "٢".encode("utf-8"), b"segredo-pessoal",
-])
+], ids=["zero", "leading-zero", "beyond-excel", "seven-digit", "overlong", "unicode", "sensitive"])
 def test_rejects_invalid_row_number_without_echoing_content(value):
     document = modified_sheet(b'<row r="2">', b'<row r="' + value + b'">')
     with pytest.raises(ValueError, match="Número de linha Excel inválido") as error:
@@ -26,7 +27,7 @@ def test_rejects_invalid_row_number_without_echoing_content(value):
 
 @pytest.mark.parametrize("value", [
     b"B0", b"B1048577", b"B9999999", b"B" + b"9" * 5000,
-])
+], ids=["zero", "beyond-excel", "seven-digit", "overlong"])
 def test_rejects_out_of_bounds_cell_reference(value):
     document = modified_sheet(
         b'r="B2" t="inlineStr"', b'r="' + value + b'" t="inlineStr"'
@@ -57,7 +58,7 @@ def test_last_valid_excel_row_is_accepted():
     (b'<row r="2">', b'<row r="1048577">'),
     (b'r="B2" t="inlineStr"', b'r="B1048577" t="inlineStr"'),
     (b'r="B2" t="inlineStr"', b'r="B' + b"9" * 5000 + b'" t="inlineStr"'),
-])
+], ids=["huge-row", "beyond-excel-row", "beyond-excel-cell", "huge-cell"])
 def test_malformed_row_returns_422_without_saving_families(client, old, new):
     csrf = login(client).json["csrf_token"]
     response = client.post(
