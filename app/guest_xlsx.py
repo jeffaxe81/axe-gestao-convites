@@ -135,10 +135,15 @@ def xlsx_rows(contents):
                     value = cell.find("x:v", NS)
                     inline = cell.find("x:is", NS)
                     text = value.text if value is not None and value.text is not None else ""
-                    if data_type == "s" and text:
+                    if data_type == "s":
+                        # Índices XLSX devem ser decimais ASCII. Evite converter
+                        # dados arbitrários ou inteiros enormes e nunca exponha
+                        # o conteúdo inválido na mensagem de erro ao organizador.
+                        if not re.fullmatch(r"[0-9]{1,10}", text):
+                            raise ValueError("Índice de texto compartilhado inválido no Excel.")
                         idx = int(text)
-                        if idx < 0 or idx >= len(strings):
-                            raise ValueError("Texto compartilhado inválido no Excel.")
+                        if idx >= len(strings):
+                            raise ValueError("Índice de texto compartilhado inválido no Excel.")
                         text = strings[idx]
                     elif data_type == "inlineStr" and inline is not None:
                         text = "".join(n.text or "" for n in inline.iter(BASE + "t"))
