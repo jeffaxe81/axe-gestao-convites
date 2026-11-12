@@ -55,7 +55,7 @@ def test_optional_header_row_number_is_inferred():
 @pytest.mark.parametrize("transform", [mismatched_implicit_row, reversed_rows],
                          ids=["cell-from-different-row", "out-of-order-rows"])
 def test_ambiguous_row_locations_are_rejected(transform):
-    with pytest.raises(ValueError, match="linha"):
+    with pytest.raises(ValueError, match=r"[Ll]inha"):
         preview_xlsx(changed_sheet(transform))
 
 
