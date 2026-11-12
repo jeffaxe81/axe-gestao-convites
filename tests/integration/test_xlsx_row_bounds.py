@@ -33,7 +33,7 @@ def test_rejects_out_of_bounds_cell_reference(value):
     )
     with pytest.raises(ValueError) as error:
         preview_xlsx(document)
-    assert "inválida" in str(error.value)
+    assert "inválid" in str(error.value)
 
 
 def test_last_valid_excel_row_is_accepted():
