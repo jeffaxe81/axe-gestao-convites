@@ -11,6 +11,7 @@ from xml.etree import ElementTree as ET
 NS = {"x": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
 BASE = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
 MAX_UNCOMPRESSED = 2 * 1024 * 1024
+MAX_EXCEL_ROWS = 1_048_576
 WORKBOOK_REL = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id"
 PACKAGE_REL = "{http://schemas.openxmlformats.org/package/2006/relationships}"
 WORKSHEET_REL_TYPE = (
@@ -55,6 +56,20 @@ def first_sheet_path(archive, names):
     if not path.startswith("xl/worksheets/") or not path.endswith(".xml") or path not in names:
         raise ValueError("Primeira aba Excel não encontrada no arquivo.")
     return path
+
+
+def parse_excel_row(value):
+    """Rejeitar índices fora do formato e limite Excel antes de chamar int().
+
+    O uso anterior de isdecimal()/int() permitia números com milhares de
+    dígitos, que geravam ValueError não normalizado e podiam virar HTTP 500.
+    """
+    if not re.fullmatch(r"[1-9][0-9]{0,6}", value):
+        raise ValueError("Número de linha Excel inválido.")
+    number = int(value)
+    if number > MAX_EXCEL_ROWS:
+        raise ValueError("Número de linha Excel inválido.")
+    return number
 
 
 def hidden_attribute(element):
@@ -110,21 +125,24 @@ def xlsx_rows(contents):
                         "A planilha contém linhas ocultas. Reexiba antes de importar."
                     )
                 row_id = row.attrib.get("r")
+                row_number = None
                 if row_id is not None:
-                    if not row_id.isdecimal() or int(row_id) < 1 or int(row_id) in seen_rows:
+                    row_number = parse_excel_row(row_id)
+                    if row_number in seen_rows:
                         raise ValueError("Linha repetida ou inválida na planilha Excel.")
-                    seen_rows.add(int(row_id))
+                    seen_rows.add(row_number)
                 values = [""] * 6
                 seen_columns = set()
                 for cell in row.findall("x:c", NS):
                     ref = cell.attrib.get("r", "")
-                    match = re.fullmatch(r"([A-Z]+)([1-9][0-9]*)", ref.upper())
+                    match = re.fullmatch(r"([A-Z]+)([1-9][0-9]{0,6})", ref.upper())
                     if match is None:
                         raise ValueError("Referência de célula Excel inválida.")
                     col, cell_row = match.groups()
                     if len(col) != 1 or not ("A" <= col <= "F"):
                         raise ValueError("Use somente as colunas A até F.")
-                    if row_id is not None and int(cell_row) != int(row_id):
+                    cell_number = parse_excel_row(cell_row)
+                    if row_number is not None and cell_number != row_number:
                         raise ValueError("Célula fora da linha declarada no Excel.")
                     if col in seen_columns:
                         raise ValueError("Célula duplicada na planilha Excel.")
