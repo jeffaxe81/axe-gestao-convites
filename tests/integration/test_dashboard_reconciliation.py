@@ -38,6 +38,8 @@ def _import_fictional_families(client, csrf):
 
 def _answer(client, store, family, *, attending, participants):
     token = store.invitation_token(family["id"])
+    if attending:
+        participants = [{**participants[0], "name": family["name"]}, *participants[1:]]
     response = client.post(
         f"/api/invitations/{family['id']}/response",
         headers={"Authorization": "Bearer " + token},
@@ -48,6 +50,8 @@ def _answer(client, store, family, *, attending, participants):
 
 
 def _edit(client, receipt, *, attending, participants):
+    if attending:
+        participants = [{**participants[0], "name": "Pessoa Editada"}, *participants[1:]]
     response = client.put(
         "/api/rsvps/" + receipt["id"],
         headers={"Authorization": "Bearer " + receipt["edit_token"]},
