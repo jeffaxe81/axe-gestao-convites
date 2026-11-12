@@ -26,23 +26,27 @@ def _forbid_io(monkeypatch):
     monkeypatch.setattr(ci, "verify", forbid)
 
 
-@pytest.mark.parametrize("args", [
-    {"ci_run_id": RUN_ID},
-    {"ci_run_id": RUN_ID, "expected_sha": SHA},
-    {"ci_run_id": RUN_ID, "expected_sha": SHA, "require_local_gates": True},
-    {"ci_run_id": RUN_ID, "expected_sha": SHA, "require_deployed_revision": True},
-    {"ci_run_id": 0, "expected_sha": SHA, "require_local_gates": True,
-     "require_deployed_revision": True},
-    {"ci_run_id": "not-integer", "expected_sha": SHA, "require_local_gates": True,
-     "require_deployed_revision": True},
-    {"ci_run_id": True, "expected_sha": SHA, "require_local_gates": True,
-     "require_deployed_revision": True},
+@pytest.mark.parametrize("args,expected_failure", [
+    ({"ci_run_id": RUN_ID}, "ci_main_inputs"),
+    ({"ci_run_id": RUN_ID, "expected_sha": SHA}, "expected_revision_host_mode"),
+    ({"ci_run_id": RUN_ID, "expected_sha": SHA, "require_local_gates": True},
+     "expected_revision_host_mode"),
+    ({"ci_run_id": RUN_ID, "expected_sha": SHA, "require_deployed_revision": True},
+     "expected_revision_host_mode"),
+    ({"ci_run_id": 0, "expected_sha": SHA, "require_local_gates": True,
+      "require_deployed_revision": True}, "ci_main_inputs"),
+    ({"ci_run_id": "not-integer", "expected_sha": SHA, "require_local_gates": True,
+      "require_deployed_revision": True}, "ci_main_inputs"),
+    ({"ci_run_id": True, "expected_sha": SHA, "require_local_gates": True,
+      "require_deployed_revision": True}, "ci_main_inputs"),
 ])
-def test_ci_gate_invalid_host_mode_or_run_id_is_rejected_before_io(monkeypatch, args):
+def test_ci_gate_invalid_host_mode_or_run_id_is_rejected_before_io(
+    monkeypatch, args, expected_failure
+):
     _forbid_io(monkeypatch)
     report = diag.diagnose(URL, **args)
     assert report["status"] == "BLOCKED"
-    assert report["failed_check"] == "ci_main_inputs"
+    assert report["failed_check"] == expected_failure
     assert report["ci_main_verified"] is False
     assert report["release_approved"] is False
 
