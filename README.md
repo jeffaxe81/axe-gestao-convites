@@ -4,7 +4,7 @@ Aniversário de dois anos da Isadora — 13/12/2026, às 15h (America/Sao_Paulo)
 
 **Estado: aplicação integrada à `main`, com CI automatizada aprovada. A divulgação de convites reais depende de homologação operacional.**
 
-**Situação verificada em 10/11/2026:** a `main` inclui cadastro Excel/CSV por família, links privados, preparação de WhatsApp sem envio automático, registro manual de distribuição, interesse voluntário e relatório CSV de acompanhamento. [CI #328 aprovada](https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/42787828624) no commit `4ddc271`. O resultado de 230 testes citado abaixo é histórico, não a última contagem. **Prontidão técnica: 100%; liberação operacional: 86%.**
+**Marco verificado em 12/11/2026:** a `main` no commit `2540261e8c0bcd1d1a3187d2417d075e013a0daf` passou na [CI #389](https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/43268985665), com **24/24 etapas do job aprovadas**, incluindo pytest, navegadores móveis emulados, Docker Compose/MySQL, restauração descartável e conferência da revisão da imagem. O número 24 indica **etapas da CI, não 24 testes unitários**. A aplicação inclui cadastro Excel/CSV por família, links individuais privados, preparação de WhatsApp **sem envio automático**, registro manual de distribuição, interesse voluntário e relatório CSV. **Prontidão técnica para homologação: 100% (10/10 gates); liberação operacional: 86% (6/7 etapas)**. A CI não comprova publicação no `policorp`, disponibilidade HTTPS externa, Android/iPhone físicos, backup externo no host, revisão independente nem aceite. Sem essas evidências, **não enviar convites reais nem alterar artificialmente o progresso operacional para 90% ou 100%**.
 
 Antes de liberar o domínio, conferir também os arquivos públicos com o [verificador de versão publicada](docs/verificacao-versao-publicada.md). Essa comparação **não valida o backend** nem substitui os testes físicos e o aceite.
 
@@ -47,7 +47,7 @@ O verificador confirma oito endpoints locais: saúde do banco, dados públicos, 
 ## Testes
 
 **230 testes aprovados** na CI integral de 08/11/2026, com MySQL real, API, concorrência, Chromium e proteção HTTP. Docker Compose validado com reinício, persistência, backup e restauração isolada e criptografada. Incluem-se testes de respostas administrativas HTTP 200 inconsistentes, edições concorrentes, prazo após locks MySQL, geração de convite PDF com QR Code e validação de URL HTTPS segura.
-**CI atual aprovada:** https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/42478818971 (230 testes, Docker, MySQL e restauração). A [verificação técnica anterior de 25/10/2026](docs/release-1-final-verification.md) documenta os ensaios de concorrência/locks e continua válida como histórico. Ver execuções em:
+**CI histórica aprovada em 08/11/2026:** https://github.com/jeffaxe81/axe-gestao-convites/actions/runs/42478818971 (230 testes, Docker, MySQL e restauração). **Para evidência mais recente, consultar o marco de 12/11/2026 no início deste README; após novos commits, confirmar a CI do novo SHA da `main`.** A [verificação técnica anterior de 25/10/2026](docs/release-1-final-verification.md) documenta os ensaios de concorrência/locks e continua válida como histórico. Ver execuções em:
 https://github.com/jeffaxe81/axe-gestao-convites/actions
 
 Para executar:
