@@ -20,10 +20,11 @@ git status --short
 # Copie este SHA completo de um run verde da CI da main; não use
 # git rev-parse HEAD para preencher automaticamente esta expectativa.
 SHA_APROVADO="<SHA_COMPLETO_DE_40_CARACTERES_DA_CI_MAIN>"
+RUN_APROVADO="<ID_NUMERICO_DO_RUN_VERDE_NO_SHA_DA_MAIN>"
 python scripts/diagnose_release.py --url https://isadora2anos.org \
   --env-file .env --local-url http://127.0.0.1:8080 \
   --require-local-gates --require-deployed-revision \
-  --expected-sha "$SHA_APROVADO" --json
+  --expected-sha "$SHA_APROVADO" --ci-run-id "$RUN_APROVADO" --json
 
 # Em outra rede, para verificar acesso externo, sem disponibilizar o .env:
 python scripts/diagnose_release.py --url https://isadora2anos.org --json
@@ -114,3 +115,22 @@ Para um fechamento técnico controlado, informe `--expected-sha` com o **SHA com
 Uma revisão diferente da aprovada retorna `BLOCKED` com `failed_check=expected_revision` **antes de acessar .env, rede ou Docker**; um SHA malformado também é recusado antes de consultar o ambiente. O JSON registra `checks.expected_revision` e `expected_revision_checked`. Sem `--expected-sha`, a verificação aparece `NOT_TESTED`, e não pode ser alegada como confirmação do commit aprovado.
 
 A correspondência dos SHAs e os demais gates automáticos **não demonstram que o backend possui bytes autenticados nem que a hospedagem foi homologada**. A execução local também não prova acesso independente por redes móveis; mantenha as seis evidências humanas e aprovação explícita antes de distribuir qualquer convite. Nunca coloque token, senha, nome de família ou conteúdo de `.env` no relatório.
+
+
+## Comprovação adicional da CI atual da `main` (somente leitura)
+
+Informe `--ci-run-id` **junto com** `--expected-sha` e os dois parâmetros do modo host estrito. A ferramenta consulta apenas os endpoints públicos fixos da API do GitHub para confirmar que:
+
+- O SHA fornecido ainda é o **commit atual da branch `main`** de `jeffaxe81/axe-gestao-convites`;
+- O run indicado pertence ao mesmo repositório, ao workflow `.github/workflows/ci.yml`, foi disparado por `push` em `main` e terminou com `conclusion=success` no SHA exato;
+- O checkout local corresponde ao SHA antes de consultar GitHub, o `.env`, o contêiner Docker ou os endpoints do aplicativo.
+
+O JSON retorna `checks.ci_main=PASS` e `ci_main_verified=true` apenas depois da verificação real. Se omitido, retorna `ci_main=NOT_TESTED`; um run falho/cancelado, de PR, antigo ou inacessível bloqueia a etapa. O GitHub pode aplicar limites temporários à API sem autenticação; falhas de rede bloqueiam, nunca são aceitas como aprovação. Esta consulta não envia tokens de convidados, arquivos privados ou senhas.
+
+Para verificar **somente a evidência do GitHub**, sem tocar no servidor:
+
+```bash
+python scripts/check_green_main_ci.py --sha "$SHA_APROVADO" --run-id "$RUN_APROVADO" --json
+```
+
+A CI verde e a igualdade entre commit e imagem são somente evidências automatizadas, e não substituem o backup externo testado, DNS/HTTPS externo, homologação física e aceite. Nunca obtenha `SHA_APROVADO` a partir de `git rev-parse HEAD` sem conferir uma execução verde de GitHub Actions.
