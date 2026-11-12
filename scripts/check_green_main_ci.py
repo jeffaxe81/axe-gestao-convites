@@ -65,10 +65,12 @@ def verify(sha, run_id, *, get_json=_api_json):
         raise ValueError("ID da execução GitHub Actions inválido.")
 
     branch = get_json("branches/main")
-    if branch.get("commit", {}).get("sha") != sha:
+    if not isinstance(branch, dict) or not isinstance(branch.get("commit"), dict) or branch["commit"].get("sha") != sha:
         raise RuntimeError("O SHA selecionado não é a revisão atual da main.")
 
     run = get_json(f"actions/runs/{run_id}")
+    if not isinstance(run, dict):
+        raise RuntimeError("Resposta da execução GitHub Actions inválida.")
     if (
         run.get("id") != run_id
         or run.get("head_sha") != sha
