@@ -121,19 +121,21 @@ def xlsx_rows(contents):
             root = ET.fromstring(archive.read(sheet))
             verify_visible_columns(root)
             result = []
-            seen_rows = set()
+            previous_row = 0
             for row in root.findall(".//x:sheetData/x:row", NS):
                 if hidden_attribute(row):
                     raise ValueError(
                         "A planilha contém linhas ocultas. Reexiba antes de importar."
                     )
                 row_id = row.attrib.get("r")
-                row_number = None
-                if row_id is not None:
-                    row_number = parse_excel_row(row_id)
-                    if row_number in seen_rows:
-                        raise ValueError("Linha repetida ou inválida na planilha Excel.")
-                    seen_rows.add(row_number)
+                # O atributo r pode ser omitido por certos geradores. Nesse
+                # caso, a próxima linha física é imediatamente posterior à
+                # anterior; células não podem declarar outra linha.
+                row_number = (parse_excel_row(row_id) if row_id is not None
+                              else previous_row + 1)
+                if row_number <= previous_row or row_number > MAX_EXCEL_ROWS:
+                    raise ValueError("Linha repetida ou inválida na planilha Excel.")
+                previous_row = row_number
                 values = [""] * 6
                 seen_columns = set()
                 for cell in row.findall("x:c", NS):
@@ -145,7 +147,7 @@ def xlsx_rows(contents):
                     if len(col) != 1 or not ("A" <= col <= "F"):
                         raise ValueError("Use somente as colunas A até F.")
                     cell_number = parse_excel_row(cell_row)
-                    if row_number is not None and cell_number != row_number:
+                    if cell_number != row_number:
                         raise ValueError("Célula fora da linha declarada no Excel.")
                     if col in seen_columns:
                         raise ValueError("Célula duplicada na planilha Excel.")
