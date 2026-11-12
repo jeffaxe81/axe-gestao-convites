@@ -28,7 +28,7 @@ python scripts/generate_invitation.py \
 
 - `--family-link-stdin` exige domínio público HTTPS sem porta e o caminho exato `/convite#UUIDv4.token-hexadecimal` com token de 64 caracteres. Links gerais, localhost, parâmetros de consulta, formato alterado ou token ausente são rejeitados.
 - `--check-production` verifica **somente a origem HTTPS**, sem repassar token de família ao verificador. Isso não certifica a validade da família ou dos dados cadastrais, nem entrega da mensagem.
-- `--url https://isadora2anos.org` agora produz um **modelo geral identificado como NÃO ENVIAR**. O modo `--preview` permanece sem links.
+- `--url https://isadora2anos.org` produz um **modelo geral identificado como NÃO ENVIAR**, sem QR Code e sem links/ações PDF clicáveis. A origem HTTPS é validada, mas não aparece como link de confirmação. O modo `--preview` também permanece sem links. Somente `--family-link-stdin` habilita QR Code e botão com o link individual.
 - A impressão, extração, encaminhamento ou captura do PDF expõe a credencial da família. Elimine arquivos de teste quando não necessários e não inclua PDFs nem links em issues, logs, anexos públicos ou Git.
 
 ## Critério de liberação
