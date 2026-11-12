@@ -140,7 +140,8 @@ def test_cli_failed_ci_outputs_no_operational_approval(monkeypatch, capsys):
 
 
 def test_cli_success_still_requires_real_host_evidence(monkeypatch, capsys):
-    monkeypatch.setattr(ci, "verify", lambda *args: ci.verify(
+    real_verify = ci.verify
+    monkeypatch.setattr(ci, "verify", lambda *args: real_verify(
         SHA, ID, get_json=good_api))
     assert ci.main(["--sha", SHA, "--run-id", str(ID), "--json"]) == 0
     result = json.loads(capsys.readouterr().out)
