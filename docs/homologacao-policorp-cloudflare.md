@@ -70,3 +70,13 @@ Após uma implantação controlada e **sem reiniciar nada apenas para diagnósti
 Antes de aprovar o diagnóstico da instalação, obtenha **o SHA completo da `main` e o ID de sua execução verde mais recente** na página de Actions do GitHub. Não use um run de PR ou um SHA diferente do checkout. O verificador `scripts/check_green_main_ci.py` apenas lê a API pública do GitHub e compara a ponta atual da `main`, o SHA do workflow e seu resultado. Use os valores confirmados com `scripts/diagnose_release.py --expected-sha SHA_APROVADO --ci-run-id ID_RUN_VERDE --require-local-gates --require-deployed-revision --env-file .env --local-url http://127.0.0.1:8080 --url https://isadora2anos.org --json`.
 
 A checagem da CI é **bloqueante em caso de indisponibilidade da API, divergência ou execução pendente/falha**; não realiza `git pull`, não envia dados do evento e não publica o aplicativo. Para detalhes do relatório, consulte [diagnóstico consolidado](diagnostico-consolidado.md). Ainda é obrigatório testar HTTPS a partir de outra rede, fazer backup/restore isolado no host e obter aceite.
+
+
+## Exportação segura dos diagnósticos
+
+Para registrar o resultado dos verificadores sem expor segredos em tickets ou
+no Git, consulte o [guia de evidências privadas](evidencias-privadas-policorp.md).
+O script `scripts/collect_host_evidence.py` cria um arquivo JSON `0600`
+em diretório `0700`, fora do repositório, e nunca altera configuração,
+backup ou RSVPs. O documento resultante **não substitui** ensaios reais de
+DNS, backup/restauração, dispositivos físicos, segurança ou aceite.
