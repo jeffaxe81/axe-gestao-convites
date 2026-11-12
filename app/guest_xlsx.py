@@ -83,12 +83,15 @@ def verify_visible_columns(sheet):
     for column in sheet.findall("x:cols/x:col", NS):
         if not hidden_attribute(column):
             continue
-        try:
-            lower = int(column.attrib["min"])
-            upper = int(column.attrib["max"])
-        except (KeyError, ValueError) as exc:
-            raise ValueError("Definição de coluna oculta inválida.") from exc
-        if lower < 1 or upper < lower:
+        # Não converter índices arbitrariamente longos: int() pode falhar
+        # com texto do usuário na exceção e expô-lo no erro HTTP.
+        raw_min = column.attrib.get("min", "")
+        raw_max = column.attrib.get("max", "")
+        if (not re.fullmatch(r"[1-9][0-9]{0,4}", raw_min) or
+                not re.fullmatch(r"[1-9][0-9]{0,4}", raw_max)):
+            raise ValueError("Definição de coluna oculta inválida.")
+        lower, upper = int(raw_min), int(raw_max)
+        if upper > 16384 or upper < lower:
             raise ValueError("Definição de coluna oculta inválida.")
         if lower <= 6 and upper >= 1:
             raise ValueError(
