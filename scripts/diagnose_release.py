@@ -8,6 +8,7 @@ import argparse
 from contextlib import redirect_stdout
 import io
 import json
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -57,7 +58,7 @@ def clean_revision(root):
 
 def diagnose(url, *, root=ROOT, env_file=None, local_url=None,
              allow_proxy_hop=False, require_local_gates=False,
-             require_deployed_revision=False):
+             require_deployed_revision=False, expected_sha=None):
     """Retorna relatório sanitizado; falhas nunca incluem credenciais/PII."""
     local_inputs = (env_file is not None, local_url is not None)
     # Cobertura informa entradas fornecidas, não sucesso ou homologação.
@@ -71,6 +72,7 @@ def diagnose(url, *, root=ROOT, env_file=None, local_url=None,
         "local_input_coverage": input_coverage,
         "host_checks_ready": False,
         "image_revision_verified": False,
+        "expected_revision_checked": False,
         "checks": {},
     }
 
@@ -89,6 +91,20 @@ def diagnose(url, *, root=ROOT, env_file=None, local_url=None,
         origin = gate("public_url", lambda: check_production.validate_origin(url)[0])
         if local_url is not None:
             gate("local_url", lambda: check_local.local_origin(local_url))
+        if expected_sha is not None:
+            # This SHA is chosen from an approved CI run independently of
+            # the local checkout. Never treat HEAD as proof of its own approval.
+            if not isinstance(expected_sha, str) or not re.fullmatch(
+                r"[0-9a-f]{40}", expected_sha
+            ):
+                report["checks"]["expected_revision_input"] = "FAIL"
+                report["failed_check"] = "expected_revision_input"
+                return report
+            if not (require_local_gates and require_deployed_revision):
+                report["checks"]["expected_revision_host_mode"] = "FAIL"
+                report["failed_check"] = "expected_revision_host_mode"
+                return report
+            report["expected_sha"] = expected_sha
         if require_local_gates and (env_file is None or local_url is None):
             report["checks"]["required_local_inputs"] = "FAIL"
             report["failed_check"] = "required_local_inputs"
@@ -100,6 +116,14 @@ def diagnose(url, *, root=ROOT, env_file=None, local_url=None,
             return report
         root = Path(root).resolve()
         report["checkout_sha"] = gate("checkout_clean", lambda: clean_revision(root))
+        if expected_sha is not None:
+            def approved_revision():
+                if report["checkout_sha"] != expected_sha:
+                    raise RuntimeError("O checkout difere da revisão selecionada.")
+            gate("expected_revision", approved_revision)
+            report["expected_revision_checked"] = True
+        else:
+            report["checks"]["expected_revision"] = "NOT_TESTED"
 
         if env_file is not None:
             def local_config():
@@ -165,6 +189,8 @@ def main(argv=None):
                         help="Bloqueia sem --env-file e --local-url (uso no policorp)")
     parser.add_argument("--require-deployed-revision", action="store_true",
                         help="Exige também contêiner Docker app saudável, com SHA igual ao checkout; requer --require-local-gates")
+    parser.add_argument("--expected-sha",
+                        help="SHA completo (40 caracteres) do commit aprovado na CI; requer modo host e revisão Docker")
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
     report = diagnose(
@@ -172,6 +198,7 @@ def main(argv=None):
         allow_proxy_hop=args.allow_proxy_hop,
         require_local_gates=args.require_local_gates,
         require_deployed_revision=args.require_deployed_revision,
+        expected_sha=args.expected_sha,
     )
     if args.json:
         print(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True))
@@ -180,6 +207,8 @@ def main(argv=None):
         for name, status in report["checks"].items():
             print(f"  {name}: {status}")
         print("Cobertura das entradas locais: " + report["local_input_coverage"])
+        print("Comparação com SHA aprovado: " +
+              ("SIM" if report.get("expected_revision_checked", False) else "NÃO"))
         print("Revisão declarada da imagem verificada: " +
               ("SIM" if report.get("image_revision_verified", False) else "NÃO"))
         print("Liberação de convites reais: BLOQUEADA até seis evidências humanas.")
