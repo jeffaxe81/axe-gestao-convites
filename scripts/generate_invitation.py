@@ -125,7 +125,10 @@ def invitation_bytes(url=None, venue=None, *, preview=False, family_link=None):
     if family_link is not None:
         target_url = validate_family_link(family_link)
     elif not preview:
-        target_url = validate_url(url)
+        # Origem geral só valida o domínio. Não contém um token de
+        # família e, portanto, não pode habilitar ações no PDF.
+        validate_url(url)
+        target_url = None
     else:
         target_url = None
     venue = " ".join((venue or "Local a confirmar").split())
@@ -161,33 +164,34 @@ def invitation_bytes(url=None, venue=None, *, preview=False, family_link=None):
     for i, line in enumerate(lines):
         _center(pdf, line, 266 - 17 * i, "Helvetica", 13)
 
-    if preview:
-        _center(pdf, "DEMONSTRAÇÃO - NÃO ENVIAR", 194, "Helvetica-Bold", 15, GREEN)
-        _center(pdf, "O botão e o QR Code aparecerão", 169, "Helvetica", 12)
-        _center(pdf, "após configurar o domínio real.", 152, "Helvetica", 12)
-    else:
+    if family_link:
         _qr(pdf, target_url, (width - 81) / 2, 155, 81)
-        hint = ("QR individual: escaneie ou toque no botão." if family_link
-                else "QR geral: não substitui o link individual.")
-        _center(pdf, hint, 143, "Helvetica", 10)
+        _center(pdf, "QR individual: escaneie ou toque no botão.", 143,
+                "Helvetica", 10)
+    else:
+        heading = ("DEMONSTRAÇÃO - NÃO ENVIAR" if preview
+                   else "MODELO GERAL - NÃO ENVIAR")
+        _center(pdf, heading, 194, "Helvetica-Bold", 15, GREEN)
+        _center(pdf, "QR Code e botão ativos somente", 169, "Helvetica", 12)
+        _center(pdf, "no convite individual da família.", 152, "Helvetica", 12)
 
     button_x, button_y, button_width, button_height = 67, 87, width - 134, 42
-    pdf.setFillColor(GREEN if not preview else colors.HexColor("#9C998B"))
+    pdf.setFillColor(GREEN if family_link else colors.HexColor("#9C998B"))
     pdf.roundRect(button_x, button_y, button_width, button_height, 16, stroke=0, fill=1)
-    button_label = "CONFIRMAR PRESENÇA" if family_link else "ACESSAR O SITE"
-    _center(pdf, button_label, 101, "Helvetica-Bold", 13, WHITE)
-    if not preview:
+    button_label = ("CONFIRMAR PRESENÇA" if family_link
+                    else "SEM LINK DE CONFIRMAÇÃO")
+    _center(pdf, button_label, 101, "Helvetica-Bold", 12, WHITE)
+    if family_link:
         pdf.linkURL(target_url, (button_x, button_y, button_x + button_width,
                                  button_y + button_height), relative=0, thickness=0)
         # A área do QR também abre o link em leitores PDF.
         pdf.linkURL(target_url, ((width - 81) / 2, 155, (width + 81) / 2, 236),
                     relative=0, thickness=0)
-        if family_link:
-            _center(pdf, "Convite individual: compartilhe só com a família.", 73,
-                    "Helvetica", 9)
-        else:
-            _center(pdf, "MODELO GERAL - NÃO ENVIAR AOS CONVIDADOS", 73,
-                    "Helvetica-Bold", 9, GREEN)
+        _center(pdf, "Convite individual: compartilhe só com a família.", 73,
+                "Helvetica", 9)
+    elif not preview:
+        _center(pdf, "MODELO GERAL - NÃO ENVIAR AOS CONVIDADOS", 73,
+                "Helvetica-Bold", 9, GREEN)
     _center(pdf, "Com carinho, nossa família", 53, "Helvetica-Oblique", 11, GREEN)
     pdf.showPage()
     pdf.save()
@@ -252,7 +256,7 @@ def main():
     if args.preview:
         print("DEMONSTRAÇÃO - PDF sem links. Não envie aos convidados.")
     elif not family_link:
-        print("MODELO GERAL - sem vínculo familiar; NÃO enviar aos convidados.")
+        print("MODELO GERAL - sem QR e sem links ativos; NÃO enviar aos convidados.")
     else:
         print("PDF individual privado. Testar QR/WhatsApp antes de compartilhar.")
         print("O PDF contém credencial familiar: não publicar nem versionar.")

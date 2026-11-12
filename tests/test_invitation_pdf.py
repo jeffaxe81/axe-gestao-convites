@@ -26,21 +26,21 @@ def test_refuse_unsafe_invitation_links(url):
         validate_url(url)
 
 
-def test_invitation_has_clickable_url_and_readable_text(tmp_path):
+def test_generic_pdf_has_no_clickable_url_or_qr(tmp_path):
     url = "https://convites.festa.com.br"
     file = tmp_path / "convite.pdf"
     save_invitation(file, url=url, venue="Salão das Flores")
     reader = PdfReader(str(file))
     assert len(reader.pages) == 1
-    text = reader.pages[0].extract_text()
+    page = reader.pages[0]
+    text = page.extract_text()
     assert "Isadora" in text
     assert "13 de dezembro de 2026" in text
     assert "Salão das Flores" in text
-    assert "ACESSAR O SITE" in text
     assert "MODELO GERAL" in text
-    annotations = reader.pages[0].get("/Annots")
-    assert annotations and len(annotations) == 2
-    assert all(ref.get_object()["/A"]["/URI"] == url for ref in annotations)
+    assert "SEM LINK DE CONFIRMAÇÃO" in text
+    assert not page.get("/Annots")
+    assert url.encode("ascii") not in file.read_bytes()
 
 
 def test_preview_is_explicitly_not_shareable(tmp_path):
@@ -80,6 +80,7 @@ def test_checked_pdf_requires_successful_live_verification(monkeypatch, tmp_path
     generate_invitation.main()
     assert checked == ["https://convites.festa.com.br"]
     assert target.is_file()
+    assert not PdfReader(str(target)).pages[0].get("/Annots")
 
 
 def test_pdf_not_written_when_live_check_fails(monkeypatch, tmp_path):
