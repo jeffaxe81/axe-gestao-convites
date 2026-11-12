@@ -134,3 +134,14 @@ python scripts/check_green_main_ci.py --sha "$SHA_APROVADO" --run-id "$RUN_APROV
 ```
 
 A CI verde e a igualdade entre commit e imagem são somente evidências automatizadas, e não substituem o backup externo testado, DNS/HTTPS externo, homologação física e aceite. Nunca obtenha `SHA_APROVADO` a partir de `git rev-parse HEAD` sem conferir uma execução verde de GitHub Actions.
+
+
+## Arquivo privado de evidências automáticas
+
+Para guardar um resumo sanitizado dos gates, com permissões `0600` e sem
+expor `.env` ou nomes de convidados, use
+[`scripts/collect_host_evidence.py`](../scripts/collect_host_evidence.py)
+conforme o [procedimento de evidências privadas](evidencias-privadas-policorp.md).
+Ele exige SHA e ID de CI da `main`, modo host estrito e diretório `0700`
+**fora do checkout**. O resultado, mesmo com gates aprovados, declara
+`release_approved=false` e **não marca nenhuma prova humana como concluída**.
