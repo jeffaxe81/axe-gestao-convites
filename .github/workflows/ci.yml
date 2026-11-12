@@ -3,9 +3,11 @@ on:
   push:
     branches: [main]
   pull_request:
+# Preserve a full CI result for every integrated main commit. Superseded
+# commits on the same pull-request branch can still be cancelled safely.
 concurrency:
-  group: isadora-ci-${{ github.head_ref || github.ref_name }}
-  cancel-in-progress: true
+  group: isadora-ci-${{ github.event_name }}-${{ github.event_name == 'push' && github.sha || github.head_ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   tests:
     runs-on: ubuntu-24.04  # Playwright 1.56 Chromium não suporta ubuntu-26.04
