@@ -96,3 +96,25 @@ libera automaticamente o envio de convites.
 **Situação da Release 1:** 100% de critérios técnicos (10/10), mas apenas
 86% de liberação operacional (6/7) até a homologação real. Não enviar
 convites reais antes do aceite formal.
+
+## Acompanhamento automatizado, sem liberação
+
+Para acompanhar separadamente o andamento das **seis evidências humanas**
+sem imprimir o caminho privado de cada comprovante, execute:
+
+```bash
+python scripts/release_readiness.py \
+  --evidence-file "$HOME/isadora-evidencias/evidencias-humanas.json" --json
+```
+
+O JSON informa `technical_gates_documented=10` (referência histórica;
+**não valida CI nesta execução**), `operational_steps_complete=6` de 7,
+quantos comprovantes humanos foram declarados, e quais identificadores
+continuam pendentes. O campo `release_approved` é **sempre false**,
+inclusive quando `ready_for_human_review=true`. Não é uma autorização para
+envio ou publicação. A saída omite os conteúdos de `evidence_ref`.
+
+Saídas: código 1 para pendências, código 0 somente para registros completos
+**a submeter à conferência humana**, e código 2 para estrutura inválida.
+A validação de CI, do SHA implantado e a verificação externa são ações
+distintas, documentadas acima.

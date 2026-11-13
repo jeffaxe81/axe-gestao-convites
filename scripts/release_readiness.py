@@ -62,10 +62,29 @@ def evaluate(value):
     return complete, missing
 
 
+def status_payload(value):
+    """Resumo estruturado e sem referências privadas; nunca autoriza publicação."""
+    complete, missing = evaluate(value)
+    return {
+        "schema_version": 1,
+        "technical_gates_documented": 10,
+        "technical_gates_total": 10,
+        "operational_steps_complete": 6,
+        "operational_steps_total": 7,
+        "human_evidence_declared": len(complete),
+        "human_evidence_total": len(GATES),
+        "human_gates_pending": missing,
+        "ready_for_human_review": not missing,
+        "ci_or_deployed_revision_verified": False,
+        "release_approved": False,
+    }
+
+
 def report(value):
     complete, missing = evaluate(value)
     rows = [
-        "Entrega técnica: 6/7 etapas validadas por CI.",
+        "Prontidão técnica documentada: 10/10 critérios; esta ferramenta não valida CI ou SHA.",
+        "Etapas operacionais: 6/7 concluídas; liberação ainda depende de homologação real.",
         "Homologação operacional: {}/{} verificações com evidências declaradas.".format(
             len(complete), len(GATES)
         ),
@@ -80,13 +99,20 @@ def report(value):
     return "\n".join(rows), not missing
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--evidence-file", required=True)
-    args = parser.parse_args()
+    parser.add_argument("--json", action="store_true",
+                        help="Resumo JSON sem referências privadas, sem liberação automática")
+    args = parser.parse_args(argv)
     try:
         doc = json.loads(Path(args.evidence_file).read_text(encoding="utf-8"))
-        output, complete = report(doc)
+        if args.json:
+            summary = status_payload(doc)
+            output = json.dumps(summary, ensure_ascii=False, sort_keys=True)
+            complete = summary["ready_for_human_review"]
+        else:
+            output, complete = report(doc)
     except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as exc:
         print("FALHA: " + str(exc), file=sys.stderr)
         return 2

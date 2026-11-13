@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from scripts.release_readiness import GATES, evaluate, report, main
+from scripts.release_readiness import GATES, evaluate, report, status_payload, main
 
 
 def empty_manifest():
@@ -139,3 +139,66 @@ def test_incomplete_manifest_exits_nonzero(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr("sys.argv", ["gate", "--evidence-file", str(manifest)])
     assert main() == 1
     assert "LIBERAÇÃO BLOQUEADA" in capsys.readouterr().out
+
+
+def test_structured_progress_separates_development_from_operational_release():
+    summary = status_payload(empty_manifest())
+    assert summary["technical_gates_documented"] == 10
+    assert summary["operational_steps_complete"] == 6
+    assert summary["operational_steps_total"] == 7
+    assert summary["human_evidence_declared"] == 0
+    assert len(summary["human_gates_pending"]) == 6
+    assert summary["ci_or_deployed_revision_verified"] is False
+    assert summary["ready_for_human_review"] is False
+    assert summary["release_approved"] is False
+
+
+def test_complete_declarations_never_authorize_real_invitations():
+    manifest = empty_manifest()
+    for key in GATES:
+        manifest[key] = {
+            "verified": True,
+            "verified_at": "2026-11-10T20:00:00+00:00",
+            "evidence_ref": "registro-interno-00001",
+        }
+    summary = status_payload(manifest)
+    assert summary["human_evidence_declared"] == 6
+    assert summary["human_gates_pending"] == []
+    assert summary["ready_for_human_review"] is True
+    assert summary["release_approved"] is False
+    assert summary["ci_or_deployed_revision_verified"] is False
+
+
+def test_json_cli_redacts_private_references_and_keeps_blocked_exit(tmp_path, capsys):
+    manifest = empty_manifest()
+    manifest["dns_https"] = {
+        "verified": True,
+        "verified_at": "2026-11-10T20:00:00+00:00",
+        "evidence_ref": "arquivo-privado-nao-exibir-familia-abc",
+    }
+    path = tmp_path / "human-evidence.json"
+    path.write_text(json.dumps(manifest), encoding="utf-8")
+    assert main(["--evidence-file", str(path), "--json"]) == 1
+    raw = capsys.readouterr().out
+    summary = json.loads(raw)
+    assert "familia-abc" not in raw
+    assert "evidence_ref" not in raw
+    assert summary["human_evidence_declared"] == 1
+    assert "dns_https" not in summary["human_gates_pending"]
+    assert summary["release_approved"] is False
+
+
+def test_json_cli_complete_manifest_only_enters_human_review(tmp_path, capsys):
+    manifest = empty_manifest()
+    for key in GATES:
+        manifest[key] = {
+            "verified": True,
+            "verified_at": "2026-11-10T20:00:00+00:00",
+            "evidence_ref": "registro-privado-de-homologacao",
+        }
+    path = tmp_path / "human-evidence.json"
+    path.write_text(json.dumps(manifest), encoding="utf-8")
+    assert main(["--evidence-file", str(path), "--json"]) == 0
+    summary = json.loads(capsys.readouterr().out)
+    assert summary["ready_for_human_review"] is True
+    assert summary["release_approved"] is False
