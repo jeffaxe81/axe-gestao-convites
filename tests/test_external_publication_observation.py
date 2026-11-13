@@ -72,7 +72,8 @@ def test_https_tls_or_policy_failure_is_blocked_and_sanitized():
 
 
 def test_cli_failure_keeps_nonzero_and_no_release(monkeypatch, capsys):
-    monkeypatch.setattr(probe, "observe", lambda: probe.observe(
+    real_observe = probe.observe
+    monkeypatch.setattr(probe, "observe", lambda: real_observe(
         lookup=lambda *_args, **kwargs: [], verify=lambda *_: None))
     assert probe.main(["--json"]) == 1
     result = json.loads(capsys.readouterr().out)
@@ -82,7 +83,8 @@ def test_cli_failure_keeps_nonzero_and_no_release(monkeypatch, capsys):
 
 
 def test_cli_success_is_not_release_approval(monkeypatch, capsys):
-    monkeypatch.setattr(probe, "observe", lambda: probe.observe(
+    real_observe = probe.observe
+    monkeypatch.setattr(probe, "observe", lambda: real_observe(
         lookup=public_dns, verify=lambda origin: None))
     assert probe.main(["--json"]) == 0
     result = json.loads(capsys.readouterr().out)
