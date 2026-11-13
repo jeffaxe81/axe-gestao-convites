@@ -81,3 +81,10 @@ Para execução automatizada sem terminal, a variável `ISADORA_BACKUP_PASSPHRAS
 ## Atualização de novembro — tabela de histórico
 
 A nova migração 002 adiciona audit_events (tipo e horário de movimentações, sem nomes/tokens). O verificador de restauração agora compara **quatro tabelas**: event_settings, families, participants e audit_events. Testar a migração antes de gerar o primeiro backup no novo release.
+
+
+## Proteção contra travamento em falhas de MySQL
+
+Os subprocessos `mysqldump`, consultas de comparação de tabelas e restauração isolada agora descartam `stderr` diretamente no sistema operacional (`subprocess.DEVNULL`). Não há segundo pipe de erros sem consumo concorrente: um fluxo de erros muito grande não bloqueia a leitura do dump ou o envio do SQL, e credenciais ou dados de convidados nunca são capturados para relatórios da ferramenta. As exceções exibem apenas a operação e o código de saída, sem a mensagem bruta do MySQL.
+
+Caso haja falha, o operador deve consultar os diagnósticos do Docker e do MySQL **somente no ambiente privado**, com controle de acesso e sem copiar segredos, nomes ou conteúdo de backup para GitHub/issues/chats. A ferramenta continua sem sobrescrever o banco original; uma validação no runner da CI não substitui prova de restauração real no `policorp`.
