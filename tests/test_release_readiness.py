@@ -136,6 +136,7 @@ def test_invalid_record_rejected(broken):
 def test_incomplete_manifest_exits_nonzero(tmp_path, monkeypatch, capsys):
     manifest = tmp_path / "manifest.json"
     manifest.write_text(json.dumps(empty_manifest()), encoding="utf-8")
+    manifest.chmod(0o600)
     monkeypatch.setattr("sys.argv", ["gate", "--evidence-file", str(manifest)])
     assert main() == 1
     assert "LIBERAÇÃO BLOQUEADA" in capsys.readouterr().out
@@ -178,6 +179,7 @@ def test_json_cli_redacts_private_references_and_keeps_blocked_exit(tmp_path, ca
     }
     path = tmp_path / "human-evidence.json"
     path.write_text(json.dumps(manifest), encoding="utf-8")
+    path.chmod(0o600)
     assert main(["--evidence-file", str(path), "--json"]) == 1
     raw = capsys.readouterr().out
     summary = json.loads(raw)
@@ -198,6 +200,7 @@ def test_json_cli_complete_manifest_only_enters_human_review(tmp_path, capsys):
         }
     path = tmp_path / "human-evidence.json"
     path.write_text(json.dumps(manifest), encoding="utf-8")
+    path.chmod(0o600)
     assert main(["--evidence-file", str(path), "--json"]) == 0
     summary = json.loads(capsys.readouterr().out)
     assert summary["ready_for_human_review"] is True
