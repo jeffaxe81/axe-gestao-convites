@@ -97,8 +97,12 @@ e ter **permissão 0600**, sem links simbólicos, fora do checkout e com no máx
 
 ```bash
 mkdir -p "$HOME/isadora-evidencias" && chmod 700 "$HOME/isadora-evidencias"
-install -m 600 docs/release-evidence-template.json "$HOME/isadora-evidencias/evidencias-humanas.json"
+( set -C; umask 077; cat docs/release-evidence-template.json > "$HOME/isadora-evidencias/evidencias-humanas.json" )
 ```
+
+O subshell com `set -C` bloqueia sobrescrita se o arquivo já existir.
+Se o comando falhar por isso, preserve a evidência existente e não o repita
+com redirecionamento forçado.
 
 Edite o arquivo privado com as seis evidências **somente após realizar as
 verificações reais**. Jamais preencha aprovações fictícias ou anexe a cópia
