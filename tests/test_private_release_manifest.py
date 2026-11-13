@@ -97,6 +97,19 @@ def test_directory_cannot_be_parsed_as_file(tmp_path):
         readiness.load_private_manifest(str(fake))
 
 
+
+@pytest.mark.skipif(
+    os.name != "posix" or not hasattr(os, "mkfifo") or not hasattr(os, "O_NONBLOCK"),
+    reason="FIFO nonblocking behavior requires POSIX",
+)
+def test_fifo_manifest_is_rejected_without_waiting_for_a_writer(tmp_path):
+    folder = private_folder(tmp_path)
+    fifo = folder / "pipe.json"
+    os.mkfifo(fifo, mode=0o600)
+    with pytest.raises(ValueError, match="0600"):
+        readiness.load_private_manifest(str(fifo))
+
+
 def test_error_messages_do_not_expose_path_or_manifest_bytes(tmp_path, capsys):
     folder = private_folder(tmp_path)
     file = folder / "TOKEN_SECRET-should-never-appear.json"
