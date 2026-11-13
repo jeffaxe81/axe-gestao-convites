@@ -41,6 +41,10 @@ def load_private_manifest(filename, *, root=ROOT):
         flags = os.O_RDONLY
         if hasattr(os, "O_NOFOLLOW"):
             flags |= os.O_NOFOLLOW
+        # A FIFO can block on open() before fstat rejects non-regular files.
+        # Nonblocking open permits rejecting it without waiting for a writer.
+        if hasattr(os, "O_NONBLOCK"):
+            flags |= os.O_NONBLOCK
         fd = os.open(candidate, flags)
         with os.fdopen(fd, "rb") as stream:
             info = os.fstat(stream.fileno())
