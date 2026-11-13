@@ -30,6 +30,24 @@ DATA_COLUMNS = {
     ),
     "participants": "id, family_id, position, name, kind, age_years",
     "audit_events": "id, event_kind, occurred_at_utc",
+    "invited_families": (
+        "id, external_key, contact_name, phone, adults, children_0_5, "
+        "children_6_12, status"
+    ),
+    "invitation_responses": "invited_family_id, family_id",
+    "invitation_dispatches": "invited_family_id, marked_at_utc",
+    "invitation_interests": "invited_family_id, expressed_at_utc",
+    "schema_migrations": "version",
+}
+
+# Algumas tabelas de convite usam invited_family_id como chave primária,
+# enquanto a tabela de controle de schema usa version. A ordenação explícita
+# torna a comparação de bytes determinística sem expor dados nos relatórios.
+ORDER_COLUMNS = {
+    "invitation_responses": "invited_family_id",
+    "invitation_dispatches": "invited_family_id",
+    "invitation_interests": "invited_family_id",
+    "schema_migrations": "version",
 }
 
 
@@ -93,7 +111,7 @@ def backup(target):
 
 def query_digest(database, table, columns):
     query = "SELECT {} FROM {}.{} ORDER BY {};".format(
-        columns, database, table, "id"
+        columns, database, table, ORDER_COLUMNS.get(table, "id")
     )
     script = 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" exec mysql --batch --raw --skip-column-names -uroot -e "$1"'
     proc = subprocess.Popen(
@@ -165,7 +183,9 @@ def verify_restore(source):
                 "Falha: dados atuais diferem do arquivo restaurado. "
                 "Não houve alteração no banco original."
             )
-        print("PASS: restore temporário validado; quatro tabelas idênticas ao original.")
+        print("PASS: restore temporário validado; {} tabelas idênticas ao original.".format(
+            len(DATA_COLUMNS)
+        ))
     finally:
         if created:
             run_db(ROOT_SQL, "DROP DATABASE {};".format(temporary))
