@@ -27,6 +27,36 @@ Em produção, a rota genérica de criação `POST /api/rsvps` foi desativada po
 
 O teste de persistência `scripts/check_persistence.py` é **exclusivo da CI descartável**: cria família fictícia por importação administrativa, confirma via token individual, testa rejeição de RSVP anônimo e recria os serviços Docker de teste para validar volume MySQL. Por alterar dados e contêineres, ele se recusa a iniciar fora do GitHub Actions e **não pode ser utilizado no servidor `policorp`**. No servidor real, usar somente os verificadores de leitura e procedimentos de homologação supervisionados.
 
+## Escopo de aceite técnico (atualizado em 12/11/2026)
+
+**Por solicitação do responsável, os testes em ambiente real foram excluídos
+do escopo desta etapa de desenvolvimento.** Isso inclui ensaios presenciais
+com Android/iPhone, WhatsApp efetivo, validação no `policorp`, restauração
+externa de produção e prova de HTTPS de campo. Eles não devem ser exigidos
+para considerar **a entrega técnica** finalizada.
+
+A conclusão do escopo técnico depende exclusivamente de uma CI verde na
+`main`, com testes unitários, E2E automatizados, Docker descartável,
+persistência e restauração de testes. O relatório pode ser obtido por:
+
+```bash
+python scripts/release_readiness.py --scope technical \
+  --sha ffbf57d1e8fd86d8871c61ef7f2929ff22164f07 \
+  --run-id 43351834734 --json
+```
+
+Use sempre o SHA e o número da CI **mais recentes e correspondentes** à
+`main`, caso outros commits sejam integrados. O resultado `technical_completion_percent=100`
+significa apenas desenvolvimento e testes automatizados concluídos;
+`operational_status=NOT_EVALUATED`, `ready_for_publication=false` e
+`release_approved=false` impedem interpretar essa conclusão como
+homologação de produção.
+
+As verificações reais permanecem documentadas como procedimento separado e
+**não realizado**, caso a publicação pública seja solicitada futuramente.
+Não declarar execução fictícia de testes nem divulgar convites reais com base
+apenas neste aceite técnico.
+
 ## Gate final
 
 - [x] Regras, formulários, API, painel e proteção de acesso implementados
@@ -37,7 +67,7 @@ O teste de persistência `scripts/check_persistence.py` é **exclusivo da CI des
 - [ ] PDF via WhatsApp testado em Android e iPhone físicos
 - [ ] Revisão de segurança e aceite operacional
 
-**Situação: código da Release 1 mesclado à main com 230 testes aprovados; publicação ainda não liberada.** Barra de liberação: **86%** (6/7 etapas concluídas). Não tratar CI de código como teste de campo.
+**Situação desta entrega: escopo técnico concluído em 100%, condicionado à CI atual da main.** Testes reais excluídos desta etapa por solicitação. A antiga métrica de liberação operacional (86%, 6/7) é histórica e **não se aplica ao aceite técnico**; publicação pública continua não avaliada e não liberada.
 
 ## Domínio opcional durante a finalização
 
