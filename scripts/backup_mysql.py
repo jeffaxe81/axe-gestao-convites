@@ -80,9 +80,7 @@ def backup(target):
                 code = proc.wait()
                 if code:
                     raise RuntimeError(
-                        "mysqldump falhou (código {}): {}".format(
-                            code, errors.decode("utf-8", "replace")[:800]
-                        )
+                        "mysqldump falhou (código {}). Consulte o diagnóstico privado do banco.".format(code)
                     )
         if destination.stat().st_size < 100:
             raise RuntimeError("Backup inesperadamente pequeno; verifique o banco.")
@@ -117,9 +115,7 @@ def query_digest(database, table, columns):
     code = proc.wait()
     if code:
         raise RuntimeError(
-            "Comparação {}.{} falhou (código {}): {}".format(
-                database, table, code, errors.decode("utf-8", "replace")[:800]
-            )
+            "Comparação da tabela {} falhou (código {}).".format(table, code)
         )
     return digest.hexdigest(), total
 
@@ -162,9 +158,7 @@ def verify_restore(source):
             code = proc.wait()
             if code:
                 raise RuntimeError(
-                    "Restauração falhou (código {}): {}".format(
-                        code, errors.decode("utf-8", "replace")[:800]
-                    )
+                    "Restauração isolada falhou (código {}). Verifique o banco em ambiente privado.".format(code)
                 )
         restored = {
             table: query_digest(temporary, table, columns)
