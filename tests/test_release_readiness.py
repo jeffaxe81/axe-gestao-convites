@@ -1,11 +1,13 @@
 """No implicit production authorization from CI or incomplete records."""
 import json
+import os
+import stat
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
 
-from scripts.release_readiness import GATES, evaluate, report, status_payload, main
+from scripts.release_readiness import GATES, evaluate, report, status_payload, main, load_private_manifest, MAX_MANIFEST_BYTES
 
 
 def empty_manifest():
@@ -136,6 +138,7 @@ def test_invalid_record_rejected(broken):
 def test_incomplete_manifest_exits_nonzero(tmp_path, monkeypatch, capsys):
     manifest = tmp_path / "manifest.json"
     manifest.write_text(json.dumps(empty_manifest()), encoding="utf-8")
+    manifest.chmod(0o600)
     monkeypatch.setattr("sys.argv", ["gate", "--evidence-file", str(manifest)])
     assert main() == 1
     assert "LIBERAÇÃO BLOQUEADA" in capsys.readouterr().out
@@ -178,6 +181,7 @@ def test_json_cli_redacts_private_references_and_keeps_blocked_exit(tmp_path, ca
     }
     path = tmp_path / "human-evidence.json"
     path.write_text(json.dumps(manifest), encoding="utf-8")
+    path.chmod(0o600)
     assert main(["--evidence-file", str(path), "--json"]) == 1
     raw = capsys.readouterr().out
     summary = json.loads(raw)
@@ -198,7 +202,78 @@ def test_json_cli_complete_manifest_only_enters_human_review(tmp_path, capsys):
         }
     path = tmp_path / "human-evidence.json"
     path.write_text(json.dumps(manifest), encoding="utf-8")
+    path.chmod(0o600)
     assert main(["--evidence-file", str(path), "--json"]) == 0
     summary = json.loads(capsys.readouterr().out)
     assert summary["ready_for_human_review"] is True
     assert summary["release_approved"] is False
+
+
+def test_private_manifest_loader_rejects_public_files(tmp_path):
+    source = tmp_path / "manifest.json"
+    source.write_text(json.dumps(empty_manifest()), encoding="utf-8")
+    source.chmod(0o644)
+    with pytest.raises(ValueError, match="0600"):
+        load_private_manifest(str(source))
+
+
+def test_private_manifest_loader_accepts_secure_file(tmp_path):
+    source = tmp_path / "manifest.json"
+    source.write_text(json.dumps(empty_manifest()), encoding="utf-8")
+    source.chmod(0o600)
+    assert load_private_manifest(str(source)) == empty_manifest()
+    assert stat.S_IMODE(source.stat().st_mode) == 0o600
+
+
+def test_private_manifest_loader_rejects_symlink(tmp_path):
+    original = tmp_path / "original.json"
+    original.write_text(json.dumps(empty_manifest()), encoding="utf-8")
+    original.chmod(0o600)
+    linked = tmp_path / "linked.json"
+    linked.symlink_to(original)
+    with pytest.raises(ValueError, match="link simbólico"):
+        load_private_manifest(str(linked))
+
+
+def test_private_manifest_loader_rejects_unsafe_parent(tmp_path):
+    folder = tmp_path / "world-readable"
+    folder.mkdir()
+    folder.chmod(0o755)
+    target = folder / "manifest.json"
+    target.write_text(json.dumps(empty_manifest()), encoding="utf-8")
+    target.chmod(0o600)
+    with pytest.raises(ValueError, match="0700"):
+        load_private_manifest(str(target))
+
+
+def test_private_manifest_loader_refuses_checkout_file(tmp_path):
+    checkout = tmp_path / "repo"
+    checkout.mkdir(mode=0o700)
+    target = checkout / "evidence.json"
+    target.write_text(json.dumps(empty_manifest()), encoding="utf-8")
+    target.chmod(0o600)
+    with pytest.raises(ValueError, match="fora do repositório"):
+        load_private_manifest(str(target), root=checkout)
+
+
+def test_private_manifest_loader_blocks_oversized_document(tmp_path):
+    target = tmp_path / "evidence.json"
+    target.write_bytes(b"x" * (MAX_MANIFEST_BYTES + 1))
+    target.chmod(0o600)
+    with pytest.raises(ValueError, match="64 KB"):
+        load_private_manifest(str(target))
+
+
+def test_private_manifest_cli_never_prints_private_payload(tmp_path, capsys):
+    target = tmp_path / "evidence.json"
+    target.write_bytes(b'{"private":"contato-telefone-sigiloso"')
+    target.chmod(0o600)
+    assert main(["--evidence-file", str(target), "--json"]) == 2
+    logs = capsys.readouterr()
+    assert "contato-telefone-sigiloso" not in logs.err
+    assert "contato-telefone-sigiloso" not in logs.out
+
+
+def test_private_manifest_cli_rejects_path_in_repo(capsys):
+    assert main(["--evidence-file", "docs/release-evidence-template.json"]) == 2
+    assert "absoluto" in capsys.readouterr().err
