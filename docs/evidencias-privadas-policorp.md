@@ -89,7 +89,22 @@ As seis verificações finais precisam ser executadas e registradas
 Após realizar esses ensaios, o operador registra referências privadas e datas
 no manifesto do modelo `docs/release-evidence-template.json`, mantido **fora
 do Git**, e executa `python scripts/release_readiness.py --evidence-file
-/CAMINHO/PRIVADO/evidencias-humanas.json`. O verificador apenas confere a
+/CAMINHO/PRIVADO/evidencias-humanas.json`.
+
+O manifesto real deve estar em **diretório do próprio operador com modo 0700**
+e ter **permissão 0600**, sem links simbólicos, fora do checkout e com no máximo
+64 KB. Para criar um arquivo inicial sem dados pessoais no terminal privado:
+
+```bash
+mkdir -p "$HOME/isadora-evidencias" && chmod 700 "$HOME/isadora-evidencias"
+install -m 600 docs/release-evidence-template.json "$HOME/isadora-evidencias/evidencias-humanas.json"
+```
+
+Edite o arquivo privado com as seis evidências **somente após realizar as
+verificações reais**. Jamais preencha aprovações fictícias ou anexe a cópia
+privada a PRs, chats ou issues. O verificador passa a rejeitar arquivo
+acessível por outros usuários, diretório público, link simbólico e manifesto
+no Git. O verificador apenas confere a
 integridade dos registros declarados: **não autentica seu conteúdo** e não
 libera automaticamente o envio de convites.
 
