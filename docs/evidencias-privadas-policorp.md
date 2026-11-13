@@ -71,6 +71,40 @@ não representa assinatura digital independente.
 Se a pasta for acessível por outros usuários, o script bloqueia a criação.
 Não grave o JSON dentro do repositório ou em diretório público.
 
+## Observação externa automatizada de DNS e HTTPS (informativa)
+
+Cada CI de **push na branch `main`** executa
+`scripts/observe_external_publication.py --json` a partir da **rede
+do runner GitHub**, independente da conexão local do `policorp`.
+O teste consulta DNS público e executa `check_production.py` via
+HTTPS com verificação TLS, somente com requisições de leitura. O
+resultado é impresso em JSON sanitizado no log e resumido na página
+do workflow. Não divulga endereços IP, cookies ou conteúdo de convidados.
+
+- `dns_status=PASS`: o runner resolveu o domínio para endereços globais.
+- `https_smoke_status=PASS`: o smoke test HTTPS, políticas de
+  cabeçalhos e acesso administrativo não autenticado passaram.
+- `BLOCKED`, `FAIL` ou `NOT_TESTED`: publicação **não verificada**
+  por aquela execução; o resultado não atesta indisponibilidade permanente.
+
+**O passo é informativo, não bloqueia CI nem comprova a release.**
+Aprovação das demais etapas de CI não significa que esse teste
+independente tenha passado. O JSON mantém
+`human_evidence_certified=false`,
+`host_deployment_revision_verified=false` e `release_approved=false`.
+O teste também não confere o Cloudflare Tunnel, a revisão do contêiner
+no host ou acesso por redes móveis do usuário. Para o gate humano
+DNS/HTTPS, a equipe deve repetir e registrar um acesso de rede externa
+controlada com data, origem e aprovação independente.
+
+Em um computador conectado a outra rede, o operador pode executar:
+
+```bash
+python scripts/observe_external_publication.py --json
+```
+
+Este procedimento não modifica configurações nem envia convites.
+
 ## Evidências independentes (não automatizadas)
 
 As seis verificações finais precisam ser executadas e registradas
