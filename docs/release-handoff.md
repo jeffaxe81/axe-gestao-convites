@@ -10,7 +10,7 @@ A execução **verde** da CI do GitHub Actions inclui um artefato **isadora-rele
 
 **O ZIP não é um instalador e não contém credenciais ou banco de convidados.** A página `gh-pages` é somente uma prévia visual sem confirmação real, e não é a hospedagem de produção.
 
-## Procedimento para publicação
+## Procedimento para publicação futura (fora do escopo técnico atual)
 
 1. Informar domínio definitivo e servidor (não constam nas configurações do projeto); instalar Docker/Compose e configurar proxy HTTPS ou Cloudflare Tunnel.
 2. Criar arquivo `.env` **privado** no host com segredos únicos e hash de senha administrativa, `chmod 600 .env`. Não copiar credenciais ao GitHub ou chat.
@@ -57,15 +57,21 @@ As verificações reais permanecem documentadas como procedimento separado e
 Não declarar execução fictícia de testes nem divulgar convites reais com base
 apenas neste aceite técnico.
 
-## Gate final
+## Critérios de aceite da entrega técnica (sem testes reais)
 
 - [x] Regras, formulários, API, painel e proteção de acesso implementados
-- [x] Testes automatizados, Docker, persistência e recuperação verificados em ambiente descartável na última CI verde
+- [x] Testes automatizados, Docker, persistência e recuperação verificados em ambiente descartável na CI verde da `main`
 - [x] Empacotamento técnico preparado para gerar arquivo somente após CI verde
-- [ ] Domínio, DNS, HTTPS e proxy/túnel no ambiente real
-- [ ] Backup externo e restauração validados no host definitivo
-- [ ] PDF via WhatsApp testado em Android e iPhone físicos
-- [ ] Revisão de segurança e aceite operacional
+
+### Fora de escopo desta entrega, não executado nem homologado
+
+- DNS, HTTPS e proxy/túnel no ambiente real
+- Backup externo e restauração no host definitivo
+- PDF/WhatsApp e RSVP em Android e iPhone físicos
+- Revisão independente de segurança e aceite operacional para distribuição pública
+
+Essas verificações **não impedem o encerramento do escopo técnico**. Entretanto,
+sem elas não há comprovação de prontidão operacional ou autorização de produção.
 
 **Situação desta entrega: escopo técnico concluído em 100%, condicionado à CI atual da main.** Testes reais excluídos desta etapa por solicitação. A antiga métrica de liberação operacional (86%, 6/7) é histórica e **não se aplica ao aceite técnico**; publicação pública continua não avaliada e não liberada.
 
@@ -73,7 +79,7 @@ apenas neste aceite técnico.
 
 O projeto pode ser concluído antes da escolha do DNS. Veja [guia de domínio flexível](dominio-flexivel.md). Para informar o domínio no futuro, execute `scripts/set_public_url.py --domain NOME` no servidor, recrie somente `app` e faça a checagem HTTPS. Não exige recompilar a aplicação nem alterar o MySQL.
 
-## Verificação final do gate de publicação
+## Verificação futura do gate de publicação (fora do escopo técnico atual)
 
 Consultar [fechamento para 100%](fechamento-100.md). Há um manifesto-modelo para registrar seis evidências operacionais sem PII (`docs/release-evidence-template.json`) e um script `scripts/release_readiness.py` que recusa declarar o checklist completo enquanto faltar qualquer uma. A aplicação também recusa URLs públicas inseguras diretamente na inicialização, sem confiar apenas no pré-check opcional. A comprovação real de Android/iPhone, HTTPS e restauração de produção continua externa.
 
