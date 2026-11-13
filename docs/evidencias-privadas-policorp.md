@@ -97,6 +97,35 @@ libera automaticamente o envio de convites.
 86% de liberação operacional (6/7) até a homologação real. Não enviar
 convites reais antes do aceite formal.
 
+## Privacidade obrigatória do manifesto de evidências humanas
+
+O arquivo `evidencias-humanas.json` contém referências internas de aceites,
+por isso deve estar **fora do checkout**, em pasta do operador com permissão
+`0700`, e ser **arquivo regular `0600`**, do mesmo operador, sem link
+simbólico. O verificador `scripts/release_readiness.py` recusa arquivos
+acessíveis a grupo/outros usuários, caminhos relativos, diretórios públicos e
+arquivos grandes demais (limite 64 KiB); o erro não divulga o nome ou conteúdo
+do arquivo. A proteção é conferida na abertura do arquivo, não apenas nesta
+documentação.
+
+Para criar o manifesto privado pela primeira vez, sem sobrescrever registros
+existentes, no host autorizado execute:
+
+```bash
+mkdir -p "$HOME/isadora-evidencias"
+chmod 700 "$HOME/isadora-evidencias"
+test ! -e "$HOME/isadora-evidencias/evidencias-humanas.json" &&
+  install -m 600 docs/release-evidence-template.json \
+    "$HOME/isadora-evidencias/evidencias-humanas.json"
+```
+
+O modelo copiado inicia as seis verificações como **não verificadas**.
+Somente depois de cada ensaio presencial/externo, um responsável deve
+preencher a respectiva referência privada e data real. Não publicar o
+manifesto, não inserir nomes/telefones/tokens ou senhas nas referências,
+e não reutilizar exemplos fictícios como evidências reais. O estado
+`ready_for_human_review=true` continua **sem autorizar envio real**.
+
 ## Acompanhamento automatizado, sem liberação
 
 Para acompanhar separadamente o andamento das **seis evidências humanas**
