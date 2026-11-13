@@ -264,6 +264,21 @@ def test_private_manifest_loader_blocks_oversized_document(tmp_path):
         load_private_manifest(str(target))
 
 
+
+@pytest.mark.skipif(
+    os.name != "posix" or not hasattr(os, "mkfifo") or not hasattr(os, "O_NONBLOCK"),
+    reason="POSIX FIFO required",
+)
+def test_private_manifest_rejects_fifo_without_blocking_on_open(tmp_path):
+    folder = tmp_path / "evidencias"
+    folder.mkdir(mode=0o700)
+    folder.chmod(0o700)
+    fifo = folder / "stream.json"
+    os.mkfifo(fifo, mode=0o600)
+    with pytest.raises(ValueError, match="arquivo regular"):
+        load_private_manifest(str(fifo))
+
+
 def test_private_manifest_cli_never_prints_private_payload(tmp_path, capsys):
     target = tmp_path / "evidence.json"
     target.write_bytes(b'{"private":"contato-telefone-sigiloso"')
