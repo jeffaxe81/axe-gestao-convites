@@ -41,6 +41,8 @@ def preview_rows(reader, include_records=False):
         header = next(iterator)
     except StopIteration as exc:
         raise ValueError("Planilha vazia.") from exc
+    except csv.Error as exc:
+        raise ValueError("CSV malformado, confira as aspas e os separadores.") from exc
     if tuple(header) != HEADERS:
         raise ValueError("Cabeçalho inválido. Use as seis colunas do modelo.")
     rows, records, seen, errors = [], [], set(), []

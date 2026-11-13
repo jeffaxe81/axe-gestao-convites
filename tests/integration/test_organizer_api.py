@@ -1,5 +1,6 @@
 """Organizer API security and private statistics contract."""
 from datetime import datetime, timezone
+import time
 from uuid import uuid4
 
 import pytest
@@ -49,6 +50,28 @@ def test_login_requires_matching_csrf(client):
     token = csrf(client)
     assert client.post("/api/auth/login", json=payload, headers={"X-CSRF-Token": token+"x"}).status_code == 403
     assert client.get("/api/admin/dashboard").status_code == 401
+
+
+@pytest.mark.parametrize("authenticated", [False, True])
+def test_non_ascii_csrf_is_rejected_without_server_error(client, store, authenticated):
+    if authenticated:
+        assert login(client).status_code == 200
+        method, path = "PUT", "/api/admin/settings"
+        body = {"venue": "Não deve ser gravado", "edit_deadline_utc": None}
+    else:
+        csrf(client)
+        method, path = "POST", "/api/auth/login"
+        body = {"username": "isadora-admin", "password": "minha-senha-de-teste"}
+
+    before = store.settings()
+    response = client.open(path, method=method, json=body,
+                           headers={"X-CSRF-Token": "inválido"})
+
+    assert response.status_code == 403
+    assert response.json["error"]["code"] == "INVALID_CSRF"
+    assert store.settings() == before
+    if not authenticated:
+        assert client.get("/api/admin/dashboard").status_code == 401
 
 
 def test_invalid_password_does_not_authenticate(client):
@@ -106,6 +129,39 @@ def test_logout_invalidates_access(client):
     assert client.get("/api/admin/dashboard").status_code == 200
     assert client.post("/api/auth/logout", headers={"X-CSRF-Token": token}).status_code == 200
     assert client.get("/api/admin/dashboard").status_code == 401
+
+
+def test_expired_session_cannot_read_private_data_or_change_settings(client, store, monkeypatch):
+    send(client, invitation("Família sintética privada"))
+    token = login(client).json["csrf_token"]
+    assert client.get("/api/admin/dashboard").status_code == 200
+    issued_at = int(time.time())
+    lifetime = int(client.application.permanent_session_lifetime.total_seconds())
+    monkeypatch.setattr("itsdangerous.timed.TimestampSigner.get_timestamp",
+                        lambda self: issued_at + lifetime + 1)
+
+    private_paths = [
+        "/api/admin/dashboard", "/api/admin/activity", "/api/admin/settings",
+        "/api/admin/export.csv", "/api/admin/planning.csv",
+        "/api/admin/invitation-links.csv", "/api/admin/invitation-followup.csv",
+        "/api/admin/guest-list-template.csv", "/api/admin/guest-list-template.xlsx",
+        "/api/admin/guest-list-summary", "/api/admin/invitations",
+        "/api/admin/invitations/synthetic-id/link",
+    ]
+    for path in private_paths:
+        response = client.get(path)
+        assert response.status_code == 401, path
+        assert response.json == {"error": {
+            "code": "UNAUTHORIZED", "message": "Acesso não autorizado.",
+        }}, path
+        assert response.headers["Cache-Control"] == "no-store"
+
+    before = store.settings()
+    response = client.put("/api/admin/settings",
+                          json={"venue": "Não deve ser gravado", "edit_deadline_utc": None},
+                          headers={"X-CSRF-Token": token})
+    assert response.status_code == 401
+    assert store.settings() == before
 
 
 def test_configuration_rejects_unknown_fields(client):

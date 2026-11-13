@@ -42,6 +42,10 @@ def _name(raw: object) -> str:
     normalized = " ".join(raw.split())
     if not normalized or len(normalized) > 160:
         raise InputError("O nome deve ter de 1 a 160 caracteres.")
+    try:
+        normalized.encode("utf-8")
+    except UnicodeEncodeError:
+        raise InputError("Informe um nome válido.") from None
     return normalized
 
 

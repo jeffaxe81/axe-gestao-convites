@@ -153,6 +153,47 @@ def test_malformed_and_invalid_payloads(client):
     assert invalid.status_code == 422
 
 
+@pytest.mark.parametrize("invalid_name", ["Ana\ud800", "Ana\udfff"])
+@pytest.mark.parametrize("field", ["contact", "companion"])
+@pytest.mark.parametrize("individual_invitation", [False, True])
+def test_invalid_unicode_names_rejected_without_creating_rsvp(
+        client, store, invalid_name, field, individual_invitation):
+    client.application.config["PROPAGATE_EXCEPTIONS"] = False
+    data = invitation(invalid_name) if field == "contact" else invitation()
+    if field == "companion":
+        data["participants"][1]["name"] = invalid_name
+    if individual_invitation:
+        store.import_invited_families([{
+            "key": "synthetic-unicode-test", "name": "Ana", "phone": "",
+            "adults": 1, "young": 1, "older": 1,
+        }])
+        invitation_id = store.invitation_roster()[0]["id"]
+        result = client.post("/api/invitations/" + invitation_id + "/response",
+                             json=data, headers=bearer(store.invitation_token(invitation_id)))
+    else:
+        result = send(client, data)
+    assert result.status_code == 422
+    assert result.json["error"]["code"] == "INVALID_INPUT"
+    assert store.summary()["counts"].total == 0
+    assert store.recent_activity() == []
+
+
+def test_invalid_unicode_edit_preserves_existing_response(client, store):
+    client.application.config["PROPAGATE_EXCEPTIONS"] = False
+    receipt = send(client).json
+    data = invitation()
+    data["participants"][1]["name"] = "Cris\ud800"
+    path = "/api/rsvps/" + receipt["id"]
+    result = client.put(path, json={"revision": 1, **data},
+                        headers=bearer(receipt["edit_token"]))
+    assert result.status_code == 422
+    assert result.json["error"]["code"] == "INVALID_INPUT"
+    own = client.get(path, headers=bearer(receipt["edit_token"])).json
+    assert own["revision"] == 1
+    assert own["participants"] == invitation()["participants"]
+    assert len(store.recent_activity()) == 1
+
+
 def test_liveness_and_database_readiness(client):
     assert client.get("/health/live").status_code == 200
     assert client.get("/health/ready").status_code == 200

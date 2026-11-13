@@ -39,7 +39,9 @@ def json_object():
 def csrf_valid():
     sent = request.headers.get("X-CSRF-Token", "")
     expected = session.get("csrf", "")
-    return bool(sent and expected and hmac.compare_digest(sent, expected))
+    # Generated tokens are ASCII; reject malformed headers before compare_digest,
+    # whose string comparison raises TypeError for non-ASCII input.
+    return bool(sent and expected and sent.isascii() and hmac.compare_digest(sent, expected))
 
 
 def settings_safe(raw):

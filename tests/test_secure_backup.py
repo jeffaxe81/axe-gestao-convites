@@ -88,3 +88,38 @@ def test_rejects_invalid_extensions_and_repo_output(tmp_path):
         encrypt(tmp_path / "missing.sql.gz", tmp_path / "x.isadora", PASSPHRASE)
     with pytest.raises(ValueError, match="repositório"):
         encrypt(source, "tests/private.isadora", PASSPHRASE)
+
+
+@pytest.mark.skipif(not hasattr(os, "O_NOFOLLOW"), reason="O_NOFOLLOW required")
+@pytest.mark.parametrize("operation", ["encrypt", "decrypt"])
+def test_source_replaced_by_symlink_after_validation_is_rejected(
+    tmp_path, monkeypatch, operation,
+):
+    import scripts.secure_backup as backup
+
+    raw = sample_file(tmp_path)
+    if operation == "encrypt":
+        source = raw
+        unselected = tmp_path / "unselected.sql.gz"
+        unselected.write_bytes(b"synthetic private data not selected for backup")
+        target = tmp_path / "result.isadora"
+    else:
+        source = tmp_path / "selected.isadora"
+        unselected = tmp_path / "unselected.isadora"
+        encrypt(raw, source, PASSPHRASE)
+        raw.write_bytes(b"synthetic data from another backup")
+        encrypt(raw, unselected, PASSPHRASE)
+        target = tmp_path / "result.sql.gz"
+
+    validate_paths = backup._paths
+
+    def replace_validated_source(*args):
+        checked_source, checked_target = validate_paths(*args)
+        checked_source.unlink()
+        checked_source.symlink_to(unselected)
+        return checked_source, checked_target
+
+    monkeypatch.setattr(backup, "_paths", replace_validated_source)
+    with pytest.raises(ValueError, match="regular"):
+        getattr(backup, operation)(source, target, PASSPHRASE)
+    assert not target.exists()

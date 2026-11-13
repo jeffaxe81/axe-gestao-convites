@@ -112,3 +112,46 @@ def test_individual_mobile_invitation_lost_reply_retry_does_not_duplicate(
         finally:
             context.close()
             browser.close()
+
+
+@pytest.mark.parametrize("engine,device", MOBILE_DEVICES)
+def test_reopened_mobile_invitation_rejects_incomplete_saved_receipt(
+    server, engine, device
+):
+    """A damaged saved receipt must not claim success or expose a broken edit link."""
+    origin, store = server
+    link = _invite(store, origin)
+    with sync_playwright() as playwright:
+        browser, context, page = _mobile(playwright, engine, device)
+        try:
+            page.goto(link)
+            expect(page.locator("#contact-name")).to_have_value("Pessoa Rede Teste")
+            page.locator("#review-btn").click()
+            page.locator("#submit-btn").click()
+            expect(page.locator("#success")).to_be_visible()
+            edit_link = page.locator("#edit-link").input_value()
+
+            def damage_saved_receipt(route):
+                response = route.fetch()
+                data = response.json()
+                # Preserve the real invitation and saved response, but simulate
+                # an intermediary dropping the secret needed to edit it.
+                del data["receipt"]["edit_token"]
+                route.fulfill(response=response, json=data)
+
+            pattern = "**/api/invitations/*"
+            page.route(pattern, damage_saved_receipt)
+            page.reload()
+            expect(page.locator("#error")).to_contain_text("Não foi possível verificar")
+            expect(page.locator("#success")).to_be_hidden()
+            expect(page.locator("#rsvp-form")).to_be_hidden()
+            assert store.summary()["counts"].total == 1
+
+            page.unroute(pattern)
+            page.reload()
+            expect(page.locator("#success")).to_be_visible()
+            expect(page.locator("#edit-link")).to_have_value(edit_link)
+            assert len(store.summary()["confirmed"]) == 1
+        finally:
+            context.close()
+            browser.close()
