@@ -76,6 +76,19 @@ jobs:
         if: always()
         run: if [ -f .env ]; then docker compose down; fi
 
+      - name: Observe public DNS/HTTPS from GitHub runner (informational only)
+        if: github.event_name == 'push'
+        timeout-minutes: 2
+        run: |
+          set -euo pipefail
+          if python scripts/observe_external_publication.py --json > "$RUNNER_TEMP/isadora-public-observation.json"; then
+            echo "PUBLICAÇÃO EXTERNA: PASS (rede do runner GitHub; ainda exige homologação humana)" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "PUBLICAÇÃO EXTERNA: NOT_VERIFIED (DNS, TLS, HTTP ou política não comprovados)" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          cat "$RUNNER_TEMP/isadora-public-observation.json"
+          echo "Este teste independente é informativo e NÃO autoriza convites reais." >> "$GITHUB_STEP_SUMMARY"
+
       - name: Assemble auditable source ZIP
         if: success()
         run: |
