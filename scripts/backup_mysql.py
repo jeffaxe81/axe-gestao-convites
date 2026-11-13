@@ -70,13 +70,13 @@ def backup(target):
             with gzip.GzipFile(fileobj=output, filename="", mode="wb", mtime=0) as gz:
                 proc = subprocess.Popen(
                     COMPOSE + [DUMP],
-                    stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                    stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
                 )
                 assert proc.stdout is not None
-                assert proc.stderr is not None
+                # stderr é descartado pelo SO: não forma um segundo PIPE que
+                # poderia bloquear mysqldump enquanto lemos stdout.
                 shutil.copyfileobj(proc.stdout, gz, length=128 * 1024)
                 proc.stdout.close()
-                errors = proc.stderr.read()
                 code = proc.wait()
                 if code:
                     raise RuntimeError(
@@ -98,10 +98,9 @@ def query_digest(database, table, columns):
     script = 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" exec mysql --batch --raw --skip-column-names -uroot -e "$1"'
     proc = subprocess.Popen(
         COMPOSE + [script, "sh", query],
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
     )
     assert proc.stdout is not None
-    assert proc.stderr is not None
     digest = hashlib.sha256()
     total = 0
     while True:
@@ -111,7 +110,6 @@ def query_digest(database, table, columns):
         digest.update(block)
         total += len(block)
     proc.stdout.close()
-    errors = proc.stderr.read()
     code = proc.wait()
     if code:
         raise RuntimeError(
@@ -146,15 +144,13 @@ def verify_restore(source):
             proc = subprocess.Popen(
                 COMPOSE + [script, "sh", temporary],
                 stdin=subprocess.PIPE, stdout=subprocess.DEVNULL,
-                stderr=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
             )
             assert proc.stdin is not None
-            assert proc.stderr is not None
             try:
                 shutil.copyfileobj(input_sql, proc.stdin, length=128 * 1024)
             finally:
                 proc.stdin.close()
-            errors = proc.stderr.read()
             code = proc.wait()
             if code:
                 raise RuntimeError(
