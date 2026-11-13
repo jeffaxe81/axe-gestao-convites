@@ -292,3 +292,91 @@ def test_private_manifest_cli_never_prints_private_payload(tmp_path, capsys):
 def test_private_manifest_cli_rejects_path_in_repo(capsys):
     assert main(["--evidence-file", "docs/release-evidence-template.json"]) == 2
     assert "absoluto" in capsys.readouterr().err
+
+
+def test_technical_scope_reports_complete_without_real_tests():
+    from scripts.release_readiness import technical_status, technical_report
+    sha = "b" * 40
+    run_id = 43351834734
+    def approved(selected_sha, selected_run):
+        assert (selected_sha, selected_run) == (sha, run_id)
+        return {
+            "status": "PASS", "ci_main_verified": True,
+            "approved_sha": sha, "workflow_run_id": run_id,
+            "release_approved": False,
+        }
+    summary = technical_status(sha, run_id, verify_ci=approved)
+    assert summary["status"] == "PASS"
+    assert summary["technical_completion_percent"] == 100
+    assert summary["real_world_tests_excluded"] is True
+    assert summary["real_world_tests_executed_by_report"] is False
+    assert summary["operational_status"] == "NOT_EVALUATED"
+    assert summary["ready_for_publication"] is False
+    assert summary["release_approved"] is False
+    assert "NÃO AUTORIZADOS" in technical_report(summary)
+
+
+@pytest.mark.parametrize("changed", [
+    {"status": "FAIL"},
+    {"ci_main_verified": False},
+    {"approved_sha": "c" * 40},
+    {"workflow_run_id": 1},
+    {"release_approved": True},
+])
+def test_technical_scope_refuses_unverified_ci(changed):
+    from scripts.release_readiness import technical_status
+    proof = {
+        "status": "PASS", "ci_main_verified": True,
+        "approved_sha": "b" * 40, "workflow_run_id": 123,
+        "release_approved": False,
+    }
+    proof.update(changed)
+    with pytest.raises(RuntimeError, match="CI principal"):
+        technical_status("b" * 40, 123, verify_ci=lambda *_: proof)
+
+
+def test_technical_scope_cli_never_requires_real_world_manifest(monkeypatch, capsys):
+    import scripts.release_readiness as readiness
+    marker = {"called": False}
+    def fake_technical(sha, run):
+        assert sha == "a" * 40
+        assert run == 123
+        marker["called"] = True
+        return {
+            "status": "PASS", "scope": "technical_only",
+            "technical_completion_percent": 100,
+            "real_world_tests_excluded": True,
+            "operational_status": "NOT_EVALUATED",
+            "release_approved": False, "ready_for_publication": False,
+        }
+    monkeypatch.setattr(readiness, "technical_status", fake_technical)
+    assert readiness.main([
+        "--scope", "technical", "--sha", "a" * 40,
+        "--run-id", "123", "--json",
+    ]) == 0
+    assert marker["called"]
+    output = json.loads(capsys.readouterr().out)
+    assert output["technical_completion_percent"] == 100
+    assert output["operational_status"] == "NOT_EVALUATED"
+    assert output["release_approved"] is False
+
+
+def test_technical_scope_failed_ci_never_returns_success(monkeypatch, capsys):
+    import scripts.release_readiness as readiness
+    monkeypatch.setattr(readiness, "technical_status",
+                        lambda *_: (_ for _ in ()).throw(RuntimeError("CI inválida")))
+    assert readiness.main([
+        "--scope", "technical", "--sha", "a" * 40,
+        "--run-id", "123", "--json",
+    ]) == 1
+    output = json.loads(capsys.readouterr().out)
+    assert output["status"] == "BLOCKED"
+    assert output["release_approved"] is False
+
+
+def test_operational_mode_remains_strict_by_default(tmp_path, capsys):
+    path = tmp_path / "manifest.json"
+    path.write_text(json.dumps(empty_manifest()), encoding="utf-8")
+    path.chmod(0o600)
+    assert main(["--scope", "operational", "--evidence-file", str(path)]) == 1
+    assert "LIBERAÇÃO BLOQUEADA" in capsys.readouterr().out
