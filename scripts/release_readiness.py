@@ -7,7 +7,9 @@ não verifica pessoalmente Android, iPhone ou a infraestrutura.
 import argparse
 from datetime import datetime, timedelta, timezone
 import json
+import os
 from pathlib import Path
+import stat
 import sys
 
 GATES = {
@@ -99,6 +101,64 @@ def report(value):
     return "\n".join(rows), not missing
 
 
+
+MAX_MANIFEST_BYTES = 64 * 1024
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+
+def load_private_manifest(filename, *, root=PROJECT_ROOT):
+    """Open a private evidence file without following a final symlink.
+
+    The shipped JSON template in docs is intentionally public and empty;
+    actual human evidence must live outside Git in a private directory.
+    """
+    path = Path(filename).expanduser()
+    if not path.is_absolute() or path.suffix != ".json":
+        raise ValueError("Informe um caminho absoluto para o manifesto privado .json.")
+    try:
+        parent = path.parent.resolve(strict=True)
+        checkout = Path(root).resolve()
+        directory = parent.stat()
+    except (OSError, RuntimeError):
+        raise ValueError("Diretório privado do manifesto não encontrado.") from None
+    if parent == checkout or checkout in parent.parents:
+        raise ValueError("O manifesto privado deve ficar fora do repositório.")
+    if not parent.is_dir():
+        raise ValueError("O diretório privado do manifesto é inválido.")
+    if os.name == "posix" and (
+        directory.st_mode & 0o077 or directory.st_uid != os.geteuid()
+    ):
+        raise ValueError("O diretório do manifesto deve pertencer ao operador e usar 0700.")
+    flags = os.O_RDONLY
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    if hasattr(os, "O_NONBLOCK"):
+        flags |= os.O_NONBLOCK
+    try:
+        # Open against the validated parent and inspect the opened descriptor,
+        # not just the path. Never print the file contents in error messages.
+        fd = os.open(parent / path.name, flags)
+        with os.fdopen(fd, "rb") as source:
+            metadata = os.fstat(source.fileno())
+            if not stat.S_ISREG(metadata.st_mode):
+                raise ValueError("O manifesto deve ser um arquivo regular.")
+            if os.name == "posix" and (
+                metadata.st_mode & 0o077 or metadata.st_uid != os.geteuid()
+            ):
+                raise ValueError("O manifesto deve pertencer ao operador e usar 0600.")
+            if metadata.st_size > MAX_MANIFEST_BYTES:
+                raise ValueError("Manifesto privado acima do limite de 64 KB.")
+            raw = source.read(MAX_MANIFEST_BYTES + 1)
+            if len(raw) > MAX_MANIFEST_BYTES:
+                raise ValueError("Manifesto privado acima do limite de 64 KB.")
+    except OSError:
+        raise ValueError("Manifesto privado inacessível, inválido ou link simbólico.") from None
+    try:
+        return json.loads(raw.decode("utf-8"))
+    except (UnicodeError, json.JSONDecodeError):
+        raise ValueError("O manifesto privado não contém JSON UTF-8 válido.") from None
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--evidence-file", required=True)
@@ -106,7 +166,7 @@ def main(argv=None):
                         help="Resumo JSON sem referências privadas, sem liberação automática")
     args = parser.parse_args(argv)
     try:
-        doc = json.loads(Path(args.evidence_file).read_text(encoding="utf-8"))
+        doc = load_private_manifest(args.evidence_file)
         if args.json:
             summary = status_payload(doc)
             output = json.dumps(summary, ensure_ascii=False, sort_keys=True)
