@@ -7,8 +7,55 @@ não verifica pessoalmente Android, iPhone ou a infraestrutura.
 import argparse
 from datetime import datetime, timedelta, timezone
 import json
+import os
 from pathlib import Path
+import stat
 import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+MAX_MANIFEST_BYTES = 64 * 1024
+
+
+def load_private_manifest(filename, *, root=ROOT):
+    """Lê somente arquivo 0600 de diretório 0700 fora do checkout.
+
+    Usa O_NOFOLLOW e fstat no descritor aberto para não seguir symlinks
+    finais, nem confiar em uma checagem de permissões anterior ao open.
+    Nenhuma mensagem de erro inclui o nome do arquivo ou seu conteúdo.
+    """
+    candidate = Path(filename).expanduser()
+    if not candidate.is_absolute() or candidate.suffix != ".json":
+        raise ValueError("O manifesto deve ser um arquivo .json de caminho absoluto.")
+    try:
+        directory = candidate.parent.resolve(strict=True)
+        checkout = Path(root).resolve()
+        directory_stat = directory.stat()
+        if not directory.is_dir() or directory == checkout or checkout in directory.parents:
+            raise ValueError("O manifesto deve ficar fora do repositório.")
+        if (directory_stat.st_mode & 0o077) or (
+            hasattr(os, "geteuid") and directory_stat.st_uid != os.geteuid()
+        ):
+            raise ValueError("A pasta do manifesto deve pertencer ao operador e ser privada (0700).")
+        if candidate.is_symlink():
+            raise ValueError("Links simbólicos não são aceitos para evidências humanas.")
+        flags = os.O_RDONLY
+        if hasattr(os, "O_NOFOLLOW"):
+            flags |= os.O_NOFOLLOW
+        fd = os.open(candidate, flags)
+        with os.fdopen(fd, "rb") as stream:
+            info = os.fstat(stream.fileno())
+            if (not stat.S_ISREG(info.st_mode) or info.st_mode & 0o077 or
+                    (hasattr(os, "geteuid") and info.st_uid != os.geteuid())):
+                raise ValueError("O manifesto deve ser arquivo privado (0600) do operador.")
+            if info.st_size > MAX_MANIFEST_BYTES:
+                raise ValueError("Manifesto excede o tamanho máximo permitido.")
+            raw = stream.read(MAX_MANIFEST_BYTES + 1)
+        if len(raw) > MAX_MANIFEST_BYTES:
+            raise ValueError("Manifesto excede o tamanho máximo permitido.")
+        return json.loads(raw.decode("utf-8"))
+    except (OSError, RuntimeError, UnicodeError, json.JSONDecodeError):
+        raise ValueError("Não foi possível ler manifesto privado válido.") from None
+
 
 GATES = {
     "dns_https": "DNS e TLS públicos com checagem HTTPS externa",
@@ -106,7 +153,7 @@ def main(argv=None):
                         help="Resumo JSON sem referências privadas, sem liberação automática")
     args = parser.parse_args(argv)
     try:
-        doc = json.loads(Path(args.evidence_file).read_text(encoding="utf-8"))
+        doc = load_private_manifest(args.evidence_file)
         if args.json:
             summary = status_payload(doc)
             output = json.dumps(summary, ensure_ascii=False, sort_keys=True)
