@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Audita registros de aceite da Release 1, sem manusear senhas ou nomes.
+"""Audita a Release 1 por escopo técnico ou por evidências operacionais.
 
-IMPORTANTE: este script confere COMPLETUDE de evidências declaradas,
-não verifica pessoalmente Android, iPhone ou a infraestrutura.
+O modo técnico dispensa ensaios físicos e de host e exige CI verde na main.
+Nenhum modo confere automaticamente autorização de produção.
 """
 import argparse
 from datetime import datetime, timedelta, timezone
@@ -159,12 +159,90 @@ def load_private_manifest(filename, *, root=PROJECT_ROOT):
         raise ValueError("O manifesto privado não contém JSON UTF-8 válido.") from None
 
 
+
+def technical_status(sha, run_id, *, verify_ci=None):
+    """Conclui SOMENTE o escopo técnico, conferindo a CI da main atual."""
+    if verify_ci is None:
+        if __package__:
+            from .check_green_main_ci import verify as verify_ci
+        else:
+            from check_green_main_ci import verify as verify_ci
+    checked = verify_ci(sha, run_id)
+    if (
+        checked.get("status") != "PASS"
+        or checked.get("ci_main_verified") is not True
+        or checked.get("approved_sha") != sha
+        or checked.get("workflow_run_id") != run_id
+        or checked.get("release_approved") is not False
+    ):
+        raise RuntimeError("CI principal não comprovada para o escopo técnico.")
+    return {
+        "schema_version": 1,
+        "status": "PASS",
+        "scope": "technical_only",
+        "technical_gates_complete": 10,
+        "technical_gates_total": 10,
+        "technical_completion_percent": 100,
+        "ci_main_verified": True,
+        "approved_sha": sha,
+        "workflow_run_id": run_id,
+        "real_world_tests_excluded": True,
+        "real_world_tests_executed_by_report": False,
+        "operational_status": "NOT_EVALUATED",
+        "ready_for_publication": False,
+        "release_approved": False,
+    }
+
+
+def technical_report(data):
+    """Texto sem qualquer insinuação de homologação de produção."""
+    return (
+        "PASS: escopo de desenvolvimento e testes automatizados concluído: 10/10 (100%).\n"
+        "CI verde da main confirmada no SHA {} (run #{}).\n"
+        "Testes físicos e do ambiente real: FORA DESTE ESCOPO, NÃO AVALIADOS.\n"
+        "PUBLICAÇÃO E CONVITES REAIS: NÃO AUTORIZADOS por este relatório."
+    ).format(data["approved_sha"], data["workflow_run_id"])
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--evidence-file", required=True)
+    parser.add_argument("--scope", choices=("technical", "operational"),
+                        default="operational",
+                        help="technical: só CI e código; operational: evidências reais")
+    parser.add_argument("--sha", help="SHA atual da main, para modo técnico")
+    parser.add_argument("--run-id", type=int,
+                        help="ID da CI verde da main, para modo técnico")
+    parser.add_argument("--evidence-file",
+                        help="Manifesto privado necessário apenas no modo operacional")
     parser.add_argument("--json", action="store_true",
                         help="Resumo JSON sem referências privadas, sem liberação automática")
     args = parser.parse_args(argv)
+    if args.scope == "technical":
+        if args.evidence_file is not None or args.sha is None or args.run_id is None:
+            parser.error("Modo técnico exige --sha e --run-id e não aceita --evidence-file.")
+        try:
+            result = technical_status(args.sha, args.run_id)
+        except (OSError, RuntimeError, ValueError):
+            result = {
+                "status": "BLOCKED", "scope": "technical_only",
+                "ci_main_verified": False, "real_world_tests_excluded": True,
+                "operational_status": "NOT_EVALUATED",
+                "ready_for_publication": False, "release_approved": False,
+            }
+            print(
+                json.dumps(result, ensure_ascii=False, sort_keys=True)
+                if args.json else
+                "BLOQUEADO: CI da main atual não comprovada; não há aceite técnico.",
+                file=sys.stdout if args.json else sys.stderr,
+            )
+            return 1
+        print(
+            json.dumps(result, ensure_ascii=False, sort_keys=True)
+            if args.json else technical_report(result)
+        )
+        return 0
+    if args.evidence_file is None or args.sha is not None or args.run_id is not None:
+        parser.error("Modo operacional exige --evidence-file e não aceita --sha/--run-id.")
     try:
         doc = load_private_manifest(args.evidence_file)
         if args.json:
