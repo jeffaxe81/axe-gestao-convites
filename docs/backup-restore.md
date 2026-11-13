@@ -24,7 +24,7 @@ Em uma janela sem novas respostas ou alterações dos convidados, executar:
 
     python scripts/backup_mysql.py verify-restore --input "$HOME/isadora-backups/isadora-2026-10-18.sql.gz"
 
-O comando cria um banco temporário de nome aleatório começando por isadora_restore_, importa o dump e compara integralmente os dados ordenados de event_settings, families e participants com o banco de origem. O banco temporário é excluído ao final. **Não sobrescreve nem descarta a base original.**
+O comando cria um banco temporário de nome aleatório começando por isadora_restore_, importa o dump e compara os campos persistidos, em ordem determinística, das **nove tabelas** do projeto (incluindo todas as tabelas de convites e `schema_migrations`) com o banco de origem. O banco temporário é excluído ao final. **Não sobrescreve nem descarta a base original.**
 
 Se os convidados enviarem ou alterarem respostas depois do backup, a comparação com a base atual poderá falhar mesmo que o dump esteja íntegro. Para uma prova consistente, suspender gravações entre a geração do arquivo e a verificação.
 
@@ -80,7 +80,7 @@ Para execução automatizada sem terminal, a variável `ISADORA_BACKUP_PASSPHRAS
 
 ## Atualização de novembro — tabela de histórico
 
-A nova migração 002 adiciona audit_events (tipo e horário de movimentações, sem nomes/tokens). O verificador de restauração agora compara **quatro tabelas**: event_settings, families, participants e audit_events. Testar a migração antes de gerar o primeiro backup no novo release.
+A nova migração 002 adiciona audit_events (tipo e horário de movimentações, sem nomes/tokens). O verificador comparava quatro tabelas; agora verifica **nove** (event_settings, families, participants, audit_events, invited_families, invitation_responses, invitation_dispatches, invitation_interests e schema_migrations), incluindo o histórico de convite e controle de migrações. Testar a migração antes de gerar o primeiro backup no novo release.
 
 
 ## Proteção contra travamento em falhas de MySQL
@@ -88,3 +88,18 @@ A nova migração 002 adiciona audit_events (tipo e horário de movimentações,
 Os subprocessos `mysqldump`, consultas de comparação de tabelas e restauração isolada agora descartam `stderr` diretamente no sistema operacional (`subprocess.DEVNULL`). Não há segundo pipe de erros sem consumo concorrente: um fluxo de erros muito grande não bloqueia a leitura do dump ou o envio do SQL, e credenciais ou dados de convidados nunca são capturados para relatórios da ferramenta. As exceções exibem apenas a operação e o código de saída, sem a mensagem bruta do MySQL.
 
 Caso haja falha, o operador deve consultar os diagnósticos do Docker e do MySQL **somente no ambiente privado**, com controle de acesso e sem copiar segredos, nomes ou conteúdo de backup para GitHub/issues/chats. A ferramenta continua sem sobrescrever o banco original; uma validação no runner da CI não substitui prova de restauração real no `policorp`.
+
+
+## Cobertura integral do esquema no ensaio de restauração
+
+O teste de regressão `tests/test_restore_schema_coverage.py` exige que toda tabela
+criada pelos modelos SQLAlchemy, além de `schema_migrations`, tenha seus campos
+persistentes comparados pelo ensaio de restauração. Também impede que um modelo
+novo seja adicionado sem ampliar a comparação. Para tabelas cujo identificador
+não se chama `id`, o SQL usa a chave primária correta na ordenação.
+
+A verificação compara dados entre a base de origem e o banco temporário, sem
+mostrar nomes, telefones ou tokens em relatórios. Uma diferença ou tabela
+faltante bloqueia o teste. **Importante:** o teste ainda deve ser realizado
+com o serviço de escrita pausado no `policorp` e com backup real externo,
+sem considerar a CI como evidência de homologação operacional.

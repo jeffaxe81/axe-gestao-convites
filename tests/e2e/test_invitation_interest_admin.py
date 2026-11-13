@@ -26,7 +26,17 @@ def test_organizer_sees_voluntary_interest_without_confirming_attendance(page, o
     expect(page.locator("#interest-btn")).to_be_visible()
     expect(page.locator("#interest-btn")).to_be_enabled()
     assert store.invitation_overview()["counts"]["interested"] == 0
-    page.locator("#interest-btn").click()
+    # Disabled is an immediate pending state, not proof that the POST
+    # completed. Synchronize on the real API response instead of racing it.
+    with page.expect_response(
+        lambda response: response.request.method == "POST"
+        and response.url.endswith("/api/invitations/" + family["id"] + "/interest")
+    ) as pending_interest:
+        page.locator("#interest-btn").click()
+    assert pending_interest.value.status == 200
+    expect(page.locator("#interest-status")).to_contain_text(
+        "interesse foi registrado"
+    )
     expect(page.locator("#interest-btn")).to_be_disabled()
     assert store.invitation_overview()["counts"]["interested"] == 1
 
