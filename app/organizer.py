@@ -98,8 +98,14 @@ def login():
     saved_hash = current_app.config.get("ORGANIZER_PASSWORD_HASH")
     if not username or not saved_hash:
         return error_response(503, "SERVICE_UNAVAILABLE", "Acesso ainda não configurado.")
+    try:
+        submitted_username = body["username"].encode("utf-8")
+        configured_username = username.encode("utf-8")
+        body["password"].encode("utf-8")
+    except UnicodeEncodeError:
+        return error_response(401, "INVALID_CREDENTIALS", "Usuário ou senha inválidos.")
     matched = check_password_hash(saved_hash, body["password"])
-    if not (matched and hmac.compare_digest(body["username"], username)):
+    if not (matched and hmac.compare_digest(submitted_username, configured_username)):
         return error_response(401, "INVALID_CREDENTIALS", "Usuário ou senha inválidos.")
     session.clear()
     session.permanent = True

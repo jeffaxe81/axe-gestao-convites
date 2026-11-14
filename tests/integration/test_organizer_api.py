@@ -80,6 +80,33 @@ def test_invalid_password_does_not_authenticate(client):
     assert client.get("/api/admin/dashboard").status_code == 401
 
 
+@pytest.mark.parametrize("username,password", [
+    ("usuário-externo", "minha-senha-de-teste"),
+    ("isadora-admin\ud800", "minha-senha-de-teste"),
+    ("isadora-admin", "senha\ud800"),
+])
+def test_invalid_unicode_login_credentials_return_401_without_authenticating(
+    client, username, password,
+):
+    token = csrf(client)
+    response = client.post("/api/auth/login", json={
+        "username": username, "password": password,
+    }, headers={"X-CSRF-Token": token})
+    assert response.status_code == 401
+    assert response.json["error"]["code"] == "INVALID_CREDENTIALS"
+    assert client.get("/api/admin/dashboard").status_code == 401
+
+
+def test_configured_unicode_organizer_username_can_log_in(client):
+    client.application.config["ORGANIZER_USERNAME"] = "isádora-admin"
+    token = csrf(client)
+    response = client.post("/api/auth/login", json={
+        "username": "isádora-admin", "password": "minha-senha-de-teste",
+    }, headers={"X-CSRF-Token": token})
+    assert response.status_code == 200
+    assert client.get("/api/admin/dashboard").status_code == 200
+
+
 def test_private_dashboard_counts_confirmed_only(client, store):
     send(client, invitation("Ana"))
     send(client, invitation("Beatriz", attending=False))
