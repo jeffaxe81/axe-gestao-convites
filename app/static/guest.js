@@ -354,7 +354,7 @@
           if (!own.receipt || typeof own.receipt.attending !== 'boolean') {
             throw new Error('Não foi possível recuperar sua confirmação.');
           }
-          renderSuccess(own.receipt);
+          renderSuccess(validateReceipt(own.receipt, own.receipt));
         }
       }
     } catch (error) { fail(error.message); if (editing || invited) $('rsvp-form').hidden = true; }

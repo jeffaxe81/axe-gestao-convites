@@ -9,6 +9,7 @@ from getpass import getpass
 import os
 from pathlib import Path
 import secrets
+import stat
 import sys
 
 from cryptography.exceptions import InvalidTag
@@ -53,6 +54,22 @@ def _output(dest):
     return os.fdopen(fd, "wb")
 
 
+def _input(source):
+    # Validate the opened descriptor: the path may change after _paths checks it.
+    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0)
+    try:
+        fd = os.open(source, flags)
+    except OSError:
+        raise ValueError("Arquivo de entrada regular não encontrado.") from None
+    try:
+        if not stat.S_ISREG(os.fstat(fd).st_mode):
+            raise ValueError("Arquivo de entrada deve ser regular.")
+        return os.fdopen(fd, "rb")
+    except BaseException:
+        os.close(fd)
+        raise
+
+
 def encrypt(source, target, passphrase):
     source, target = _paths(source, target, ".isadora")
     salt, nonce = secrets.token_bytes(SALT_SIZE), secrets.token_bytes(NONCE_SIZE)
@@ -64,7 +81,7 @@ def encrypt(source, target, passphrase):
     try:
         with _output(target) as encrypted:
             created = True
-            with source.open("rb") as plain:
+            with _input(source) as plain:
                 encrypted.write(header)
                 while block := plain.read(BLOCK_SIZE):
                     encrypted.write(encryptor.update(block))
@@ -81,11 +98,11 @@ def decrypt(source, target, passphrase):
     source, target = _paths(source, target, ".sql.gz")
     if not source.name.endswith(".isadora"):
         raise ValueError("Entrada deve terminar em .isadora.")
-    length = source.stat().st_size
     header_len = len(MAGIC) + SALT_SIZE + NONCE_SIZE
-    if length < header_len + TAG_SIZE:
-        raise ValueError("Arquivo cifrado incompleto.")
-    with source.open("rb") as encrypted:
+    with _input(source) as encrypted:
+        length = os.fstat(encrypted.fileno()).st_size
+        if length < header_len + TAG_SIZE:
+            raise ValueError("Arquivo cifrado incompleto.")
         header = encrypted.read(header_len)
         if not header.startswith(MAGIC):
             raise ValueError("Formato de backup cifrado inválido.")
